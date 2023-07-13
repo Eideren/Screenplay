@@ -31,7 +31,7 @@ namespace Screenplay.Editor
             }
 
             if (overrides.Count > 0)
-                Debug.LogWarning($"Commands {string.Join(", ", overrides.Select(x => x.Name))} were not set, we'll ignore them");
+                Debug.LogWarning($"Commands '{string.Join(", ", overrides.Select(x => x.Name))}' were not set, we'll ignore them");
 
             scenarioInScene.Overrides = overrides.ToArray();
             var stage = new Stage(scenarioInScene);
