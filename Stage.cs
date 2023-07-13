@@ -236,19 +236,18 @@ namespace Screenplay
             do
             {
                 typewriterActive = typewriter.MoveNext();
-                int nextChar = typewriterActive ? typewriter.Current : ActiveFeed.text.Length - 1;
-                if (nextChar > 0 && CharacterIndex == 0 && string.IsNullOrWhiteSpace(ActiveFeed.text))
+                int nextChar = typewriterActive ? typewriter.Current : ActiveFeed.text.Length;
+                if (nextChar > 0 && CharacterIndex == 0 && CompoundString.IsNullOrWhitespaceOrMarker(ActiveFeed.text) == false)
                     ActiveFeed.gameObject.SetActive(true); // Only show text box when at least one character will be visible
 
                 while (CharacterIndex < nextChar)
                 {
+                    ActiveFeed.maxVisibleCharacters = CharacterIndex;
                     if (ActiveFeed.text[CharacterIndex++] == CompoundString.ContentMarker)
                     {
                         foreach (object item in ((ICommand)compoundString.Contents[contentIndex++].Object).Run(this))
                             yield return item;
                     }
-
-                    ActiveFeed.maxVisibleCharacters = CharacterIndex;
                 }
 
                 ActiveFeed.maxVisibleCharacters = nextChar;
@@ -509,7 +508,7 @@ namespace Screenplay
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(comp.text)) // Start next line right away for lines with only logic
+            if (CompoundString.IsNullOrWhitespaceOrMarker(comp.text)) // Start next line right away for lines with only logic
                 yield break;
 
             while (FastForward() == false) // Waiting for user input before starting next line
