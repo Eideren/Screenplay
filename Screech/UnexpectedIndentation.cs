@@ -1,3 +1,5 @@
+#nullable enable
+
 namespace Screech
 {
     public class UnexpectedIndentation : Error
