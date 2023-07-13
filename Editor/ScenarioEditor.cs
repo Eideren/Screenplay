@@ -136,9 +136,9 @@ Some text {a command}rest of the text
             ApplyRevertGUI();
             serializedObject.Update();
             _scenario.hideFlags &= ~HideFlags.NotEditable;
-            if (_scriptSO == null)
-                _scriptSO = new SerializedObject(_scenario);
+            _scriptSO ??= new SerializedObject(_scenario);
             _scriptSO.Update();
+
             if (_validationIssue is ParseWarnings)
                 GUI.backgroundColor = Color.Lerp(Color.yellow, GUI.backgroundColor, 0.75f);
             else if (_validationIssue != null)
@@ -148,39 +148,46 @@ Some text {a command}rest of the text
 
             Rect lastRect = GUILayoutUtility.GetLastRect();
             _editorStartCache = lastRect.y == 0f ? _editorStartCache : lastRect.y;
-            float heightAvailable = Screen.height - _editorStartCache - 179f;
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.BeginVertical();
-            _tmpContent.text = _scenario.Content;
-            float editorHeight = _style.CalcHeight(_tmpContent, EditorGUIUtility.currentViewWidth);
-            int width = _showBindingsPanel ? Screen.width / 2 : Screen.width;
-            _scrollView = EditorGUILayout.BeginScrollView(_scrollView, GUILayout.Height(heightAvailable), GUILayout.Width(width));
-            Rect textEditorRect = EditorGUILayout.GetControlRect(false, GUILayout.Height(editorHeight), GUILayout.ExpandHeight(true));
-            textEditorRect.x -= 4f;
-            textEditorRect.width += 8f;
-            textEditorRect.height += 4f;
+            float heightAvailable = Screen.height - _editorStartCache - 179f/*Account for the Asset Labels scope*/;
 
-            EditorGUI.BeginChangeCheck();
-            DrawBindingsOverlay(_scriptSO, _scenario, textEditorRect);
-            bool dataChanged = EditorGUI.EndChangeCheck();
+            bool dataChanged;
+            using (new Horizontal()) // Text editor & Bindings panel
+            {
+                using (new Vertical()) // Text editor
+                {
+                    _tmpContent.text = _scenario.Content;
+                    float editorHeight = _style.CalcHeight(_tmpContent, EditorGUIUtility.currentViewWidth);
+                    int width = _showBindingsPanel ? Screen.width / 2 : Screen.width;
 
-            DrawEditor(textEditorRect, _scenario);
-            DrawIssueEditorOverlay(textEditorRect);
+                    using(new ScrollView(ref _scrollView, GUILayout.Height(heightAvailable), GUILayout.Width(width)))
+                    {
+                        Rect textEditorRect = EditorGUILayout.GetControlRect(false, GUILayout.Height(editorHeight), GUILayout.ExpandHeight(true));
+                        textEditorRect.x -= 4f;
+                        textEditorRect.width += 8f;
+                        textEditorRect.height += 4f;
 
-            EditorGUI.BeginChangeCheck();
-            DrawBindingsOverlay(_scriptSO, _scenario, textEditorRect);
-            dataChanged |= EditorGUI.EndChangeCheck();
+                        EditorGUI.BeginChangeCheck();
+                        DrawBindingsOverlay(_scriptSO, _scenario, textEditorRect);
+                        dataChanged = EditorGUI.EndChangeCheck();
 
-            EditorGUILayout.EndScrollView();
-            EditorGUILayout.EndVertical();
-            EditorGUILayout.BeginVertical();
+                        DrawEditor(textEditorRect, _scenario);
 
-            EditorGUI.BeginChangeCheck();
-            DrawBindingsPanel(_scenario, _scriptSO);
-            dataChanged |= EditorGUI.EndChangeCheck();
+                        EditorGUI.BeginChangeCheck();
+                        DrawBindingsOverlay(_scriptSO, _scenario, textEditorRect);
+                        dataChanged |= EditorGUI.EndChangeCheck();
+                    }
+                }
 
-            EditorGUILayout.EndVertical();
-            EditorGUILayout.EndHorizontal();
+                using (new Vertical()) // Bindings panel
+                {
+                    EditorGUI.BeginChangeCheck();
+                    DrawBindingsPanel(_scenario, _scriptSO);
+                    dataChanged |= EditorGUI.EndChangeCheck();
+                }
+            }
+
+            DrawErrorOverlay(/*lastRect.y + lastRect.height*/32f, Screen.width-12f);
+
             serializedObject.ApplyModifiedProperties();
             _scriptSO.ApplyModifiedProperties();
             if (dataChanged || _lastVersion != _scenario.Version)
@@ -429,36 +436,41 @@ Some text {a command}rest of the text
                 if (fwd != -1 && bwd != -1 && content[fwd] == '}' && content[bwd] == '{' && Scenario.CommandPattern.IsMatch(content[bwd..(fwd + 1)]))
                     _keyOnEditorCursor = content.Substring(bwd + 1, fwd - 1 - bwd);
             }
-        }
-
-        void DrawIssueEditorOverlay(Rect textEditor)
-        {
-            if (_validationIssue == null)
-                return;
 
             if (_validationIssue is ParseWarnings parsing)
             {
                 foreach (Issue issue in parsing.Issues)
                 {
-                    Rect lineRect = textEditor;
-                    lineRect.y += _styleNoText.lineHeight * issue.SourceLine + _styleNoText.lineHeight;
+                    Rect lineRect = default;
+                    lineRect.y = _styleNoText.lineHeight * issue.SourceLine + _styleNoText.lineHeight;
                     lineRect.height = 48f;
+                    lineRect.width = textEditorRect.width;
                     using (new GUIColorScope(lineRect.Contains(new Vector2(0f, _lastCursorY)) ? GUI.color.WithAlpha(0.5f) : GUI.color))
                         EditorGUI.HelpBox(lineRect, issue.Text, MessageType.Warning);
                 }
-
-                return;
             }
+        }
+
+        void DrawErrorOverlay(float editorStartHeight, float width)
+        {
+            if (_validationIssue == null)
+                return;
+
+            if (_validationIssue is ParseWarnings)
+                return;
 
             string message = _validationIssue.Message;
-            Rect helpBoxRect = textEditor;
-            helpBoxRect.height = 48f;
-            helpBoxRect.y += textEditor.height - helpBoxRect.height;
-            using (new GUIColorScope(helpBoxRect.Contains(new Vector2(0f, _lastCursorY)) ? GUI.color.WithAlpha(0.5f) : GUI.color))
-            {
-                EditorGUI.DrawRect(helpBoxRect, Color.black.WithAlpha(0.85f));
-                EditorGUI.HelpBox(helpBoxRect, message, MessageType.Error);
-            }
+            Rect helpBoxRect = default;
+            helpBoxRect.height = 100f;
+            helpBoxRect.x = width / 3 * 2;
+            helpBoxRect.width = width / 3;
+            helpBoxRect.y = editorStartHeight;
+
+
+            GUILayout.BeginArea(helpBoxRect);
+            using (new GUIColorScope(GUI.color))
+                EditorGUILayout.HelpBox(message, MessageType.Error);
+            GUILayout.EndArea();
         }
 
         void DrawBindingsOverlay(SerializedObject obj, Scenario script, Rect textEditorRect)
