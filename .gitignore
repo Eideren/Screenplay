@@ -1,0 +1,16 @@
+*.user
+*.lock
+*.lock.json
+.idea/
+Library/
+Logs/
+obj/
+Temp/
+UserSettings/
+Build/
+*.csproj
+*.sln
+*.anim
+*.FBX
+*.tga
+*.ogg

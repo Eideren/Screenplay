@@ -1,0 +1,22 @@
+{
+    "name": "com.eideren.screenplay",
+    "version": "1.0.0",
+    "displayName": "Screenplay",
+    "description": "A tool to create interactive fiction or add interactive story elements to a game.",
+    "unity": "2022.3",
+    "keywords":
+    [
+        "screenplay",
+        "stories",
+        "narration",
+        "text",
+        "no-code",
+        "low-code",
+        "tool"
+    ],
+    "author": 
+    {
+        "name": "Eideren",
+        "url": "https://github.com/Eideren"
+    }
+}
