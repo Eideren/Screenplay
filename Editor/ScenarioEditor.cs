@@ -120,7 +120,7 @@ Some text {a command}rest of the text
             try
             {
                 _scenario.ValidateAll();
-                FormattableString formattedString = _scenario.AsFormattedString(true, Span<BindingOverride>.Empty);
+                FormattableString formattedString = _scenario.AsFormattedString(false, Span<BindingOverride>.Empty);
                 _jobColl.Add((formattedString, this));
                 if (Interlocked.Exchange(ref _bootThread, 1) == 0)
                     Task.Run(ParsingValidationThread);
