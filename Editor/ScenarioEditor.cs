@@ -318,21 +318,24 @@ Some text {a command}rest of the text
 
             GUILayout.FlexibleSpace();
 
-            if (GUILayout.Button("+"))
-                FontSize++;
             if (GUILayout.Button("-"))
                 FontSize--;
+            if (GUILayout.Button("+"))
+                FontSize++;
             if (GUILayout.Button("1:1"))
                 FontSize = EditorStyles.textArea.fontSize;
+
+            GUILayout.FlexibleSpace();
+
             if (GUILayout.Button("Maximize"))
                 EditorWindow.mouseOverWindow.maximized = !EditorWindow.mouseOverWindow.maximized;
 
             GUILayout.FlexibleSpace();
 
-            if (GUILayout.Button("Test From Here"))
+            if (GUILayout.Button("Test"))
             {
                 TestScenarioStub stub = CreateInstance<TestScenarioStub>();
-                stub.Scenario = _scenario;
+                stub.ScenarioRef = _scenario;
                 EditorApplication.isPlaying = true;
                 stub.maxSize = Vector2.one;
                 stub.Show();
