@@ -7,7 +7,7 @@ namespace Screenplay.Variables
     {
         public UInterface<INumber> Variable;
         public string GetInspectorString() => Variable.Reference?.GetInspectorString() ?? "null";
-        public double GetNumber() => Variable.Reference.GetNumber();
+        public decimal GetNumber() => Variable.Reference.GetNumber();
         public bool TryCompare(IValue other, out int compResult) => Variable.Reference.TryCompare(other, out compResult);
         public string EvalString(string format = null, IFormatProvider formatProvider = null) => Variable.Reference.EvalString(format, formatProvider);
 

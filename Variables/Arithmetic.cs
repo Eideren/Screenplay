@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Screenplay.Variables
 {
-    [Serializable] public class Arithmetic : IValue<double>, INumber
+    [Serializable] public class Arithmetic : IValue<decimal>, INumber
     {
         public enum OperatorType
         {
@@ -22,13 +22,13 @@ namespace Screenplay.Variables
         [SerializeReference, SerializeReferenceButton]
         public INumber B;
 
-        public double GetNumber() => Value;
+        public decimal GetNumber() => Value;
 
-        public double Value
+        public decimal Value
         {
             get
             {
-                double result = Operator switch
+                decimal result = Operator switch
                 {
                     OperatorType.Add => A.GetNumber() + B.GetNumber(),
                     OperatorType.Sub => A.GetNumber() - B.GetNumber(),

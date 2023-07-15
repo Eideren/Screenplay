@@ -4,70 +4,81 @@ namespace Screenplay.Variables
 {
     public interface IVariable : IValue
     {
-        bool CanBeSetTo(IValue val, out Action<IVariable, IValue> setter);
+        bool CanBeSetTo(IValue val);
+        void SetTo(IValue val);
     }
 
     public interface IVariable<T> : IVariable, IValue<T> where T : IComparable<T>
     {
-        static Action<IVariable, IValue> DirectTypeSetter;
-        static Action<IVariable, IValue> NumberSetter;
-
-        static IVariable()
-        {
-            DirectTypeSetter = DirectType;
-            NumberSetter = Number;
-        }
-
         new T Value { get; set; }
         T IValue<T>.Value => Value;
-        bool IVariable.CanBeSetTo(IValue val, out Action<IVariable, IValue> setter) => DefaultCanBeSetTo(this, val, out setter);
 
-        static bool DefaultCanBeSetTo(IVariable<T> @this, IValue val, out Action<IVariable, IValue> setter)
+        bool IVariable.CanBeSetTo(IValue val) => Setter(this, val, true);
+
+        void IVariable.SetTo(IValue val)
         {
-            if (val is IValue<T>)
+            if (Setter(this, val, false) == false)
+                throw new InvalidOperationException($"Incompatible setter between recipient '{this}' and value '{val}'");
+        }
+
+
+        bool Setter(IVariable<T> recipient, IValue valueSource, bool test)
+        {
+            if (valueSource is IValue<T> sourceIsT)
             {
-                setter = DirectTypeSetter;
+                if (test == false)
+                    recipient.Value = sourceIsT.Value;
                 return true;
             }
 
-            if (val is INumber)
+            if (valueSource is not INumber number)
+                return false;
+
+            if (test)
             {
-                if (@this is IVariable<bool> || @this is IVariable<int> || @this is IVariable<float> || @this is IVariable<double>)
+                switch (Type.GetTypeCode(recipient.Value.GetType()))
                 {
-                    setter = NumberSetter;
-                    return true;
+                    case TypeCode.Boolean:
+                    case TypeCode.Byte:
+                    case TypeCode.Decimal:
+                    case TypeCode.Double:
+                    case TypeCode.Int16:
+                    case TypeCode.Int32:
+                    case TypeCode.Int64:
+                    case TypeCode.SByte:
+                    case TypeCode.Single:
+                    case TypeCode.UInt16:
+                    case TypeCode.UInt32:
+                    case TypeCode.UInt64:
+                        return true;
+                    case TypeCode.String:
+                    case TypeCode.Object:
+                    case TypeCode.Empty:
+                    case TypeCode.DBNull:
+                    case TypeCode.DateTime:
+                    case TypeCode.Char:
+                    default:
+                        return false;
                 }
             }
 
-            setter = null;
-            return false;
-        }
-
-        static void DirectType(IVariable arg1, IValue arg2)
-        {
-            ((IVariable<T>)arg1).Value = ((IValue<T>)arg2).Value;
-        }
-
-        static void Number(IVariable arg1, IValue arg2)
-        {
-            if (arg1 is not IVariable<bool> a4)
+            IConvertible convertible = number.GetNumber();
+            switch (recipient)
             {
-                if (arg1 is not IVariable<int> a3)
-                {
-                    if (arg1 is not IVariable<float> a2)
-                    {
-                        if (arg1 is not IVariable<double> a)
-                            throw new InvalidOperationException($"{arg1.GetType()} is not a valid type");
-                        a.Value = ((INumber)arg2).GetNumber();
-                    }
-                    else
-                        a2.Value = (float)((INumber)arg2).GetNumber();
-                }
-                else
-                    a3.Value = (int)((INumber)arg2).GetNumber();
+                case IVariable<bool> recipient2: recipient2.Value = convertible.ToBoolean(null); break;
+                case IVariable<Int16> recipient2: recipient2.Value = convertible.ToInt16(null); break;
+                case IVariable<Int32> recipient2: recipient2.Value = convertible.ToInt32(null); break;
+                case IVariable<Int64> recipient2: recipient2.Value = convertible.ToInt64(null); break;
+                case IVariable<UInt16> recipient2: recipient2.Value = convertible.ToUInt16(null); break;
+                case IVariable<UInt32> recipient2: recipient2.Value = convertible.ToUInt32(null); break;
+                case IVariable<UInt64> recipient2: recipient2.Value = convertible.ToUInt64(null); break;
+                case IVariable<float> recipient2: recipient2.Value = convertible.ToSingle(null); break;
+                case IVariable<double> recipient2: recipient2.Value = convertible.ToDouble(null); break;
+                case IVariable<decimal> recipient2: recipient2.Value = convertible.ToDecimal(null); break;
+                default: throw new NotImplementedException(recipient.GetType().ToString());
             }
-            else
-                a4.Value = ((INumber)arg2).GetNumber() > 0.0;
+
+            return true;
         }
     }
 }
