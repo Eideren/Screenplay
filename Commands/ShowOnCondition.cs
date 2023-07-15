@@ -1,17 +1,16 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using Screech;
 using Screenplay.Variables;
 using UnityEngine;
 
 namespace Screenplay.Commands
 {
-    [Serializable] public class ShowOnCondition : ICommand
+    [Serializable] public class ShowOnCondition : IShowOnCondition
     {
         [SerializeReference, SerializeReferenceButton]
         public IBool Condition;
 
+        public bool Show(Stage stage, Screech.Node line) => Condition.Value;
         public IEnumerable<(string name, IValidatable validatable)> GetSubValues()
         {
             yield return (nameof(Condition), Condition);
@@ -23,10 +22,6 @@ namespace Screenplay.Commands
                 throw new InvalidOperationException("Condition is null");
         }
 
-        public IEnumerable Run(Stage stage) => throw new InvalidOperationException($"This should have been converted into a {typeof(ShowWhen)}");
-
         public string GetInspectorString() => $"Show when {Condition?.GetInspectorString()}";
-
-        public bool Evaluate() => Condition.Value;
     }
 }

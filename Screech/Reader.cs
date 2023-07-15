@@ -13,10 +13,12 @@ namespace Screech
         readonly List<(Choice choice, FormattableString content)> _choices = new();
         readonly Stack<(NodeTree tree, int currentIndex)> _stack = new();
         public bool IsChoice;
+        object _context;
 
-        public Reader(NodeTree root)
+        public Reader(NodeTree root, object context)
         {
             _stack.Push((root, 0));
+            _context = context;
         }
 
         public FormattableString[] Current { get; private set; } = Array.Empty<FormattableString>();
@@ -54,7 +56,7 @@ namespace Screech
 
                 if (currentToken is Line k)
                 {
-                    if (ShouldShow(k.Content, out FormattableString filteredContent))
+                    if (ShouldShow(k, k.Content, out FormattableString filteredContent))
                     {
                         List<Node> children = k.Children;
                         if (children != null && children.Count > 0)
@@ -78,7 +80,7 @@ namespace Screech
                     for (int j = _choices.Count - 1; j >= 0; j--)
                     {
                         Choice choice = _choices[j].choice;
-                        if (ShouldShow(choice.Content, out FormattableString filteredContent2))
+                        if (ShouldShow(c, choice.Content, out FormattableString filteredContent2))
                             _choices[j] = (choice, filteredContent2);
                         else
                             _choices.RemoveAt(j);
@@ -132,16 +134,17 @@ namespace Screech
             IsChoice = false;
         }
 
-        bool ShouldShow(FormattableString fs, [MaybeNullWhen(false)] out FormattableString fsFiltered)
+        bool ShouldShow(Node node, FormattableString fs, [MaybeNullWhen(false)] out FormattableString fsFiltered)
         {
             bool hasDelegate = false;
+            bool show = true;
             int max = fs.ArgumentCount;
             for (int j = 0; j < max; j++)
             {
-                if (fs.GetArgument(j) is ShowWhen)
+                if (fs.GetArgument(j) is IShowWhen sw)
                 {
                     hasDelegate = true;
-                    break;
+                    show &= sw.Show(_context, node);
                 }
             }
 
@@ -151,38 +154,8 @@ namespace Screech
                 return true;
             }
 
-            bool show = false;
-            object[] args = fs.GetArguments();
-            var toRemove = new List<(int, int)>();
-            foreach (Match match in Script.InterpString.Matches(fs.Format))
-            {
-                if (match.Length != 0)
-                {
-                    Group content = match.Groups["index"];
-                    if (args[int.Parse(content.Value)] is ShowWhen sw)
-                    {
-                        toRemove.Add((match.Index, match.Length));
-                        show |= sw();
-                    }
-                }
-            }
-
-            if (!show)
-            {
-                fsFiltered = null;
-                return false;
-            }
-
-            toRemove.Sort(((int s, int l) a, (int s, int l) b) => a.s.CompareTo(b.s));
-            StringBuilder sb = new(fs.Format);
-            for (int i = toRemove.Count - 1; i >= 0; i--)
-            {
-                (int s, int k) = toRemove[i];
-                sb.Remove(s, k);
-            }
-
-            fsFiltered = FormattableStringFactory.Create(sb.ToString(), args);
-            return true;
+            fsFiltered = show ? fs : null;
+            return show;
         }
     }
 }

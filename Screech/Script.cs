@@ -107,7 +107,7 @@ namespace Screech
                             valid = false;
                             for (int i = 0; i < j.Content.ArgumentCount; i++)
                             {
-                                if (j.Content.GetArgument(i) is ShowWhen)
+                                if (j.Content.GetArgument(i) is IShowWhen)
                                 {
                                     valid = true;
                                     break;
@@ -118,7 +118,7 @@ namespace Screech
                         if (valid)
                             stack.Push(tree);
                         else
-                            issues(new UnexpectedIndentation(lineOrNull, lineIndex, $"Expected a '{typeof(ShowWhen)}' on parent line"));
+                            issues(new UnexpectedIndentation(lineOrNull, lineIndex, $"Expected a '{typeof(IShowWhen)}' on parent line"));
                     }
                     else
                         issues(new UnexpectedIndentation(lineOrNull, lineIndex, "Indentation too deep or invalid parent line"));
@@ -179,16 +179,10 @@ namespace Screech
                     NodeTree nodeTree = stack.Peek();
                     (nodeTree.Children ?? (nodeTree.Children = new List<Node>())).Add(choice);
                 }
-                else if ((match = CloseChoice.Match(line)).Success)
+                else if (CloseChoice.IsMatch(line))
                 {
-                    string content3 = match.Groups["content"].Value;
-                    if (string.IsNullOrWhiteSpace(content3))
-                    {
-                        NodeTree nodeTree = stack.Peek();
-                        (nodeTree.Children ?? (nodeTree.Children = new List<Node>())).Add(new CloseChoice());
-                    }
-                    else
-                        issues(new TokenNonEmpty(lineOrNull, lineIndex, "Force close choice must not have any content on the same line"));
+                    NodeTree nodeTree = stack.Peek();
+                    (nodeTree.Children ?? (nodeTree.Children = new List<Node>())).Add(new CloseChoice());
                 }
                 else if ((match = Comment.Match(line)).Success)
                 {

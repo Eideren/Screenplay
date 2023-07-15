@@ -163,7 +163,7 @@ namespace Screenplay
             Reader reader;
             try
             {
-                reader = new Reader(Script.Parse(scenario.AsFormattedString(true, overrides), Debug.LogWarning));
+                reader = new Reader(Script.Parse(scenario.AsFormattedString(true, overrides), Debug.LogWarning), this);
                 foreach (IInterlocutor interlocutor in scenario.GetStaticInterlocutors(overrides))
                     Interlocutors.Add(interlocutor);
             }
