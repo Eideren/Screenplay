@@ -363,9 +363,8 @@ namespace Screenplay
                 go.AddComponent<CanvasRenderer>();
                 textFeed = go.AddComponent<TextMeshProUGUI>();
                 textFeed.transform.SetParent(background.transform, false);
-                textFeed.alignment = TextAlignmentOptions.TopLeft;
+                textFeed.alignment = TextAlignmentOptions.MidlineLeft; // Midline ensures multiline text doesn't jump when characters are revealed
                 textFeed.overflowMode = TextOverflowModes.ScrollRect;
-                textFeed.fontStyle = FontStyles.Bold | FontStyles.SmallCaps;
 
                 tr = (RectTransform)textFeed.transform;
                 tr.anchorMin = default;
@@ -487,8 +486,8 @@ namespace Screenplay
                     },
                     TitlecaseLetter or UppercaseLetter or LowercaseLetter => 0.1f,
                     ModifierLetter or OtherLetter => 0f,
-                    DecimalDigitNumber or LetterNumber or OtherNumber => 2f,
-                    MathSymbol or CurrencySymbol or OtherSymbol => 2f,
+                    DecimalDigitNumber or LetterNumber or OtherNumber => 1f,
+                    MathSymbol or CurrencySymbol or OtherSymbol => 1f,
                     ModifierSymbol => 0f,
                     Format or Control => 0f,
                     EnclosingMark or NonSpacingMark => 0f,
