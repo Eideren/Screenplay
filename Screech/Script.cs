@@ -20,7 +20,7 @@ namespace Screech
         public static readonly Regex GoTo = new(@"^[ \t\u3000]*->[ \t\u3000]*(?'content'[^\n]*)", RegexOption);
         public static readonly Regex Return = new(@"^[ \t\u3000]*<-[ \t\u3000]*(?'content'[^\n]*)", RegexOption);
         public static readonly Regex Choice = new(@"^[ \t\u3000]*>[ \t\u3000]*(?'content'[^\n]*)", RegexOption);
-        public static readonly Regex CloseChoice = new(@"^[ \t\u3000]*<([^-]|$)[ \t\u3000]*(?'content'[^\n]*)", RegexOption);
+        public static readonly Regex CloseChoice = new(@"^[ \t\u3000]*<[^-]?( \t\u3000)*$", RegexOption);
         public static readonly Regex Comment = new(@"^[ \t\u3000]*//[ \t\u3000]*(?'content'[^\n]*)", RegexOption);
         public static readonly Regex Line = new(@"^[ \t\u3000]*(?'content'[^\n]*)", RegexOption);
 
