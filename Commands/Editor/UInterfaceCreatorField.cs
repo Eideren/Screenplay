@@ -43,16 +43,18 @@ namespace Screenplay.Commands
 
             static void CreateDirectoriesToAsset(string assetPath)
             {
-                if (!AssetDatabase.IsValidFolder(Path.GetDirectoryName(assetPath)))
-                    RecursiveCreateDirectory(Path.GetDirectoryName(assetPath));
+                var dir = Path.GetDirectoryName(assetPath);
+                if (!AssetDatabase.IsValidFolder(dir))
+                    RecursiveCreateDirectory(dir);
             }
 
             static void RecursiveCreateDirectory(string directory)
             {
                 string parentDir = Path.GetDirectoryName(directory);
-                if (string.IsNullOrEmpty(parentDir) && !AssetDatabase.IsValidFolder(parentDir))
+                if (!AssetDatabase.IsValidFolder(parentDir))
                     RecursiveCreateDirectory(parentDir);
                 AssetDatabase.CreateFolder(parentDir, Path.GetFileName(directory));
+                AssetDatabase.Refresh();
             }
 
             void WindowTick(EditorWindow window)
