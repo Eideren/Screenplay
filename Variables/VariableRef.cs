@@ -22,7 +22,9 @@ namespace Screenplay.Variables
         }
 
         public bool CanBeSetTo(IValue val) => Variable.Reference.CanBeSetTo(val);
-
         public void SetTo(IValue val) => Variable.Reference.SetTo(val);
+
+        public bool CanParse(string str) => Variable.Reference.CanParse(str);
+        public void SetFromParsedString(string str) => Variable.Reference.SetFromParsedString(str);
     }
 }
