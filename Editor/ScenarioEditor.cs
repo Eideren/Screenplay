@@ -9,11 +9,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Screech;
+using Screenplay.Variables;
 using UnityEditor;
 using UnityEditor.AssetImporters;
-using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace Screenplay.Editor
 {
@@ -336,7 +335,10 @@ Some text {a command}rest of the text
             {
                 TestScenarioStub stub = CreateInstance<TestScenarioStub>();
                 stub.ScenarioRef = _scenario;
-                EditorApplication.isPlaying = true;
+                if(EditorApplication.isPlaying == false)
+                    EditorApplication.isPlaying = true;
+                else
+                    AssetVariableManagement.RollbackVariables?.Invoke();
                 stub.maxSize = Vector2.one;
                 stub.Show();
             }
