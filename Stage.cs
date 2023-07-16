@@ -384,6 +384,7 @@ namespace Screenplay
                 canvas = new GameObject("Temporary Canvas").AddComponent<Canvas>();
                 canvas.gameObject.AddComponent<GraphicRaycaster>();
                 canvas.gameObject.AddComponent<CanvasScaler>();
+                canvas.sortingOrder = (int)UISortingOrder.TextBox;
                 if (Object.FindObjectOfType<EventSystem>() is null)
                 {
                     EventSystem eventSystem = new GameObject("EventSystem").AddComponent<EventSystem>();
