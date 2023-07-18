@@ -90,6 +90,12 @@ namespace Screenplay
         /// </summary>
         public int CharacterIndex;
 
+        /// <summary>
+        /// Called every update while a line or choice is shown,
+        /// automatically cleared when after being shown
+        /// </summary>
+        public Action<Stage> OnTickForLine;
+
         readonly BindingOverride[] _overrides;
         readonly IEnumerator _readingEnum;
         readonly Coroutine _unityCoroutine;
@@ -220,7 +226,12 @@ namespace Screenplay
 
                 IEnumerable innerState = reader.IsChoice ? ChoiceState(strings, reader) : LineReadingState(strings[0]);
                 foreach (object item in innerState)
+                {
                     yield return item;
+                    OnTickForLine?.Invoke(this);
+                }
+
+                OnTickForLine = null;
             }
         }
 
