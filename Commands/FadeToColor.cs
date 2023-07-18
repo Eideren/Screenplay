@@ -20,6 +20,7 @@ namespace Screenplay.Commands
         {
             var fadeToColor = new GameObject(nameof(FadeToColor));
             var canvas = fadeToColor.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             fadeToColor.AddComponent<CanvasRenderer>();
             var image = fadeToColor.AddComponent<RawImage>();
             canvas.sortingOrder = (int)SortingOrder;
