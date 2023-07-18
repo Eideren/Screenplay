@@ -15,7 +15,7 @@ namespace Screenplay.Editor
             if (Scenario == null)
                 Scenario = ScriptableObject.CreateInstance<Scenario>();
             Scenario.Bindings = Bindings;
-            Scenario.Content = File.ReadAllText(ctx.assetPath);
+            Scenario.Content = File.ReadAllText(ctx.assetPath).Replace("\r", "");
             ctx.AddObjectToAsset("Scenario", Scenario);
             ctx.SetMainObject(Scenario);
         }

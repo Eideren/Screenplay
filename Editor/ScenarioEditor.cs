@@ -227,7 +227,7 @@ Some text {a command}rest of the text
             base.DiscardChanges();
             string dir = Path.GetDirectoryName(Application.dataPath);
             string path = Path.Combine(dir, AssetDatabase.GetAssetPath(target));
-            _scenario.Content = File.ReadAllText(path);
+            _scenario.Content = File.ReadAllText(path).Replace("\r", "");
         }
 
         static void ParsingValidationThread()
