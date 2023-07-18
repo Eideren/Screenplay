@@ -366,6 +366,16 @@ Some text {a command}rest of the text
                 _lastCursorY = editor.graphicalCursorPos.y;
             }
 
+            // Special handling for copying, the editor doesn't copy tags out of the box
+            if (GUI.GetNameOfFocusedControl() == _textEditorFocusName
+                && Event.current.type == EventType.KeyUp
+                && Event.current.modifiers is EventModifiers.Control or EventModifiers.Command
+                && Event.current.keyCode == KeyCode.C)
+            {
+                Event.current.Use();
+                EditorGUIUtility.systemCopyBuffer = editor.SelectedText;
+            }
+
             if (_forceRefocus.HasValue)
             {
                 EditorGUI.FocusTextInControl(_textEditorFocusName);
