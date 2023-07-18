@@ -25,7 +25,7 @@ namespace Screenplay.Commands
 
         public IEnumerable Run(Stage stage)
         {
-            stage.Component.StartCoroutine(Command.Run(stage).GetEnumerator());
+            stage.StartCoroutine(Command.Run(stage).GetEnumerator());
             yield break;
         }
     }

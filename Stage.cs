@@ -56,11 +56,6 @@ namespace Screenplay
 
         static readonly Dictionary<Scenario, Stage> RunningStages = new();
 
-
-        /// <summary>
-        /// The component provided to this object's constructor, most likely a <see cref="ScenarioInScene"/>
-        /// </summary>
-        public readonly MonoBehaviour Component;
         /// <summary>
         /// All interlocutors currently part of this <see cref="Scenario"/>
         /// </summary>
@@ -99,6 +94,7 @@ namespace Screenplay
         readonly BindingOverride[] _overrides;
         readonly IEnumerator _readingEnum;
         readonly Coroutine _unityCoroutine;
+        readonly StageCleanup _cleanup;
 
         Canvas _defaultCanvas;
         TextMeshProUGUI _defaultTextFeed;
@@ -121,19 +117,20 @@ namespace Screenplay
             #endif
         }
 
-        public Stage(ScenarioInScene component, object context = null) : this(component, component.Scenario, component.Overrides, context) { }
+        public Stage(ScenarioInScene component, object context = null) : this(component.gameObject, component.Scenario, component.Overrides, context) { }
 
-        Stage(MonoBehaviour component, Scenario file, BindingOverride[] overrides, object context)
+        Stage(GameObject gameObject, Scenario file, BindingOverride[] overrides, object context)
         {
             Context = context;
-            Component = component;
             Scenario = file;
             _overrides = overrides;
             RunningStages.Add(Scenario, this);
             _readingEnum = ReadingWrapper(file, overrides);
+            _cleanup = gameObject.AddComponent<StageCleanup>();
+            _cleanup.stage = this;
             try
             {
-                _unityCoroutine = Component.StartCoroutine(_readingEnum);
+                _unityCoroutine = _cleanup.StartCoroutine(_readingEnum);
                 OnOpen?.Invoke(this);
             }
             catch (Exception)
@@ -142,6 +139,8 @@ namespace Screenplay
                 throw;
             }
         }
+
+        public Coroutine StartCoroutine(IEnumerator ienum) => _cleanup.StartCoroutine(ienum);
 
         /// <summary>
         /// Forces this <see cref="Stage"/> to close,
@@ -157,11 +156,12 @@ namespace Screenplay
             IsClosed = false;
             RunningStages.Remove(Scenario);
             ((IDisposable)_readingEnum).Dispose();
-            if (_unityCoroutine != null && Component != null)
-                Component.StopCoroutine(_unityCoroutine);
+            if (_unityCoroutine != null && _cleanup != null)
+                _cleanup.StopCoroutine(_unityCoroutine);
             if (_defaultCanvas != null)
                 Object.Destroy(_defaultCanvas.gameObject);
             OnClose?.Invoke(this);
+            Object.Destroy(_cleanup);
         }
 
         IEnumerator ReadingWrapper(Scenario scenario, BindingOverride[] overrides)
@@ -305,7 +305,7 @@ namespace Screenplay
         /// <summary>
         /// Creates a new stage using this one's component and context as a basis, used by <see cref="Commands.SwapScenario"/>
         /// </summary>
-        public static Stage NewStageFrom(Stage stage, Scenario scenario, BindingOverride[] overrides = null) => new(stage.Component, scenario, overrides ?? stage._overrides, stage.Context);
+        public static Stage NewStageFrom(Stage stage, Scenario scenario, BindingOverride[] overrides = null) => new(stage._cleanup.gameObject, scenario, overrides ?? stage._overrides, stage.Context);
 
         /// <summary>
         /// Whether the given <paramref name="tree"/> is currently running, if so returns the <paramref name="stage"/> it runs through
@@ -576,6 +576,12 @@ namespace Screenplay
             }
 
             return false;
+        }
+
+        public class StageCleanup : MonoBehaviour
+        {
+            public Stage stage;
+            void OnDestroy() => stage.CloseAndFree();
         }
     }
 }

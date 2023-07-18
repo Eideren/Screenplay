@@ -30,7 +30,6 @@ namespace Screenplay.Commands
         public IEnumerable Run(Stage stage)
         {
             const float bg_color = 41f / 255f;
-            const float deco_color = 34f / 255f;
 
             var canvasGO = new GameObject(nameof(UserTextInput));
             var canvas = canvasGO.AddComponent<Canvas>();

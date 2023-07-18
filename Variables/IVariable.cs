@@ -118,7 +118,7 @@ namespace Screenplay.Variables
                     default: throw new NotImplementedException(GetType().ToString());
                 }
             }
-            catch (FormatException e)
+            catch (FormatException)
             {
                 return false;
             }

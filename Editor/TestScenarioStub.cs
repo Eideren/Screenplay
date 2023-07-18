@@ -16,6 +16,13 @@ namespace Screenplay.Editor
                 return;
             Close();
 
+            if (FindObjectOfType<ScenarioTesterComp>() is ScenarioTesterComp instance)
+            {
+                if(Stage.IsRunning(instance.Scenario, out var otherStage))
+                    otherStage.CloseAndFree();
+                Destroy(instance.gameObject);
+            }
+
             Scenario newScenario = CreateInstance<Scenario>();
             newScenario.Content = ScenarioRef.Content;
             newScenario.Bindings = ScenarioRef.Bindings.ToArray();
