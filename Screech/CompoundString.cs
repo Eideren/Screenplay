@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-using UnityEngine;
 
 namespace Screech
 {
@@ -102,13 +101,6 @@ namespace Screech
             }
 
             return FormattableStringFactory.Create(formattedString, args);
-        }
-
-        public static bool IsNullOrWhitespaceOrMarker(string str)
-        {
-            if (string.IsNullOrWhiteSpace(str))
-                return true;
-            return str.IndexOf(ContentMarker) != -1;
         }
 
         public struct Content

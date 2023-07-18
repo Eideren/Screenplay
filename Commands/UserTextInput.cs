@@ -62,13 +62,13 @@ namespace Screenplay.Commands
             textAreaRectTransform.anchorMin = Vector2.zero;
             textAreaRectTransform.anchorMax = Vector2.one;
             textAreaRectTransform.sizeDelta = Vector2.zero;
-            textAreaRectTransform.offsetMin = new Vector2(10, 6);
-            textAreaRectTransform.offsetMax = new Vector2(-10, -7);
+            textAreaRectTransform.offsetMin = new(10, 6);
+            textAreaRectTransform.offsetMax = new(-10, -7);
 
             // This nonsense is to work around a TextMeshPro issue where the caret is 3 times taller when there isn't any text
             RectMask2D rectMask = textArea.AddComponent<RectMask2D>();
             #if UNITY_2019_4_OR_NEWER && !UNITY_2019_4_1 && !UNITY_2019_4_2 && !UNITY_2019_4_3 && !UNITY_2019_4_4 && !UNITY_2019_4_5 && !UNITY_2019_4_6 && !UNITY_2019_4_7 && !UNITY_2019_4_8 && !UNITY_2019_4_9 && !UNITY_2019_4_10 && !UNITY_2019_4_11
-            rectMask.padding = new Vector4(-8, -5, -8, -5);
+            rectMask.padding = new(-8, -5, -8, -5);
             #endif
 
             var text = childText.AddComponent<TextMeshProUGUI>();

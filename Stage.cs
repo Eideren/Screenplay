@@ -233,15 +233,20 @@ namespace Screenplay
             int contentIndex = 0;
             bool typewriterActive;
             using IEnumerator<int> typewriter = Typewriter == null ? DefaultTypewriter(this, ActiveFeed) : Typewriter(this, ActiveFeed);
+
+            bool isFeedVisible = false;
             do
             {
                 typewriterActive = typewriter.MoveNext();
                 int nextChar = typewriterActive ? typewriter.Current : ActiveFeed.text.Length;
-                if (nextChar > 0 && CharacterIndex == 0 && CompoundString.IsNullOrWhitespaceOrMarker(ActiveFeed.text) == false)
-                    ActiveFeed.gameObject.SetActive(true); // Only show text box when at least one character will be visible
 
                 while (CharacterIndex < nextChar)
                 {
+                    if (isFeedVisible == false && ContainsVisibleCharacters(ActiveFeed.text.AsSpan()[..CharacterIndex])) // Only show text box when the first character is visible
+                    {
+                        isFeedVisible = true;
+                        ActiveFeed.gameObject.SetActive(true);
+                    }
                     ActiveFeed.maxVisibleCharacters = CharacterIndex;
                     if (ActiveFeed.text[CharacterIndex++] == CompoundString.ContentMarker)
                     {
@@ -482,7 +487,7 @@ namespace Screenplay
                     OtherPunctuation => c switch
                     {
                         '\'' or '\"' => 0f,
-                        ',' or ';' => 0.5f,
+                        ',' or ';' => 1f,
                         _ => 2f
                     },
                     TitlecaseLetter or UppercaseLetter or LowercaseLetter => 0.1f,
@@ -508,13 +513,58 @@ namespace Screenplay
                 }
             }
 
-            if (CompoundString.IsNullOrWhitespaceOrMarker(comp.text)) // Start next line right away for lines with only logic
+            if (ContainsVisibleCharacters(comp.text.AsSpan()) == false) // Start next line right away for lines with only logic
                 yield break;
 
             while (FastForward() == false) // Waiting for user input before starting next line
                 yield return comp.text.Length;
 
             static bool FastForward() => Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0);
+        }
+
+        public static bool ContainsVisibleCharacters(ReadOnlySpan<char> str)
+        {
+            foreach (char c in str)
+            {
+                switch (char.GetUnicodeCategory(c))
+                {
+                    case LineSeparator:
+                    case Format:
+                    case Control:
+                    case ParagraphSeparator:
+                    case PrivateUse:
+                    case SpaceSeparator:
+                    case SpacingCombiningMark:
+                    case Surrogate:
+                        continue;
+                    case ClosePunctuation:
+                    case ConnectorPunctuation:
+                    case CurrencySymbol:
+                    case DashPunctuation:
+                    case DecimalDigitNumber:
+                    case EnclosingMark:
+                    case FinalQuotePunctuation:
+                    case InitialQuotePunctuation:
+                    case LetterNumber:
+                    case LowercaseLetter:
+                    case MathSymbol:
+                    case ModifierLetter:
+                    case ModifierSymbol:
+                    case NonSpacingMark:
+                    case OpenPunctuation:
+                    case OtherLetter:
+                    case OtherNotAssigned:
+                    case OtherNumber:
+                    case OtherPunctuation:
+                    case OtherSymbol:
+                    case TitlecaseLetter:
+                    case UppercaseLetter:
+                    default:
+                        return true;
+                }
+            }
+
+            return false;
         }
     }
 }
