@@ -6,6 +6,7 @@ using Screech;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 using static System.Globalization.UnicodeCategory;
@@ -46,7 +47,7 @@ namespace Screenplay
 
         /// <summary>
         /// Provides control over character playback in the text field,
-        /// yielding a number will display characters up to that index,
+        /// yielding a number will display that amount of characters out of the total the text contains,
         /// yield break when the user fast forward the text or when you want to go to the next line of dialog
         /// </summary>
         /// <remarks>
@@ -85,6 +86,9 @@ namespace Screenplay
         /// </summary>
         public int CharacterIndex;
 
+        /// <summary> The scene where this <see cref="Stage"/> is currently running </summary>
+        public Scene Scene;
+
         /// <summary>
         /// Called every update while a line or choice is shown,
         /// automatically cleared when after being shown
@@ -121,6 +125,7 @@ namespace Screenplay
 
         Stage(GameObject gameObject, Scenario file, BindingOverride[] overrides, object context)
         {
+            Scene = gameObject.scene;
             Context = context;
             Scenario = file;
             _overrides = overrides;
@@ -251,22 +256,22 @@ namespace Screenplay
                 typewriterActive = typewriter.MoveNext();
                 int nextChar = typewriterActive ? typewriter.Current : ActiveFeed.text.Length;
 
-                while (CharacterIndex < nextChar)
+                for (;CharacterIndex < nextChar; CharacterIndex++)
                 {
                     if (isFeedVisible == false && ContainsVisibleCharacters(ActiveFeed.text.AsSpan()[..CharacterIndex])) // Only show text box when the first character is visible
                     {
                         isFeedVisible = true;
                         ActiveFeed.gameObject.SetActive(true);
                     }
-                    ActiveFeed.maxVisibleCharacters = CharacterIndex;
-                    if (ActiveFeed.text[CharacterIndex++] == CompoundString.ContentMarker)
+                    if (ActiveFeed.text[CharacterIndex] == CompoundString.ContentMarker)
                     {
                         foreach (object item in ((ICommand)compoundString.Contents[contentIndex++].Object).Run(this))
                             yield return item;
                     }
+                    ActiveFeed.maxVisibleCharacters = CountWithoutTags(ActiveFeed.text, CharacterIndex);
                 }
 
-                ActiveFeed.maxVisibleCharacters = nextChar;
+                ActiveFeed.maxVisibleCharacters = CountWithoutTags(ActiveFeed.text, CharacterIndex);
                 yield return null;
             } while (typewriterActive);
         }
@@ -576,6 +581,21 @@ namespace Screenplay
             }
 
             return false;
+        }
+
+        public static int CountWithoutTags(string str, int exclusive)
+        {
+            int total = 0;
+            for (int i = 0; i < exclusive; i++)
+            {
+                char c = str[i];
+                if (c == '<' && str.IndexOf('>', i) is int closing && closing != -1)
+                {
+                    closing = closing > exclusive ? exclusive : closing;
+                    total += (closing - i) + 1;
+                }
+            }
+            return exclusive-total;
         }
 
         public class StageCleanup : MonoBehaviour
