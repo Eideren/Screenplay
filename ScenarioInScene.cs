@@ -17,6 +17,11 @@ namespace Screenplay
         /// </summary>
         public BindingOverride[] Overrides = Array.Empty<BindingOverride>();
 
+        public void Start()
+        {
+            new Stage(this, Scenario);
+        }
+
         void OnValidate()
         {
             if (Scenario == null)
