@@ -95,6 +95,12 @@ namespace Screenplay
         /// </summary>
         public Action<Stage> OnTickForLine;
 
+        /// <summary>
+        /// Called every update while a line or choice is shown,
+        /// automatically cleared when after being shown
+        /// </summary>
+        public Action<Stage> OnDoneWithLine;
+
         readonly BindingOverride[] _overrides;
         readonly IEnumerator _readingEnum;
         readonly Coroutine _unityCoroutine;
@@ -236,6 +242,7 @@ namespace Screenplay
                     OnTickForLine?.Invoke(this);
                 }
 
+                OnDoneWithLine?.Invoke(this);
                 OnTickForLine = null;
             }
         }
