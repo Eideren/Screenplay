@@ -43,13 +43,18 @@ namespace Screenplay.Commands
 
             void OnCameraPreCull(Camera cam)
             {
-                Vector3 pos = cam.WorldToViewportPoint(Command.Transform.position);
+                Vector3 pos = cam.WorldToScreenPoint(Command.Transform.position);
                 if (Command.ClampToEdges)
                 {
+                    Vector2 screenSize = cam.pixelRect.size;
+                    Vector2 size = RectTransform.rect.size;
+                    Vector2 pivot = RectTransform.pivot;
+                    Vector2 min = pivot * size;
+                    Vector2 max = screenSize - (Vector2.one - pivot) * size;
                     for (int i = 0; i < 2; i++)
-                        pos[i] = Mathf.Clamp01(pos[i]);
+                        pos[i] = Mathf.Clamp(pos[i], min[i], max[i]);
                 }
-                RectTransform.position = cam.ViewportToScreenPoint(pos);
+                RectTransform.position = pos;
             }
         }
     }
