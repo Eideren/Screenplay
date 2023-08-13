@@ -39,6 +39,7 @@ namespace Screenplay.Commands
             var attach = rect.gameObject.AddComponent<AttachedToTransform>();
             attach.Command = this;
             attach.RectTransform = rect;
+            attach.InitialPosition = rect.position;
             stage.OnDoneWithLine += _ => Object.Destroy(attach);
             yield break;
         }
@@ -47,8 +48,15 @@ namespace Screenplay.Commands
         {
             public AttachToLabel Command;
             public RectTransform RectTransform;
+            public Vector3 InitialPosition;
+
             public void OnEnable() => Camera.onPreCull += OnCameraPreCull;
-            public void OnDisable() => Camera.onPreCull -= OnCameraPreCull;
+
+            public void OnDisable()
+            {
+                Camera.onPreCull -= OnCameraPreCull;
+                RectTransform.position = InitialPosition;
+            }
 
             void OnCameraPreCull(Camera cam)
             {
