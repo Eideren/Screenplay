@@ -6,23 +6,32 @@ using Object = UnityEngine.Object;
 
 namespace Screenplay.Commands
 {
-    public class AttachToTransform : ICommand
+    public class AttachToLabel : ICommand
     {
-        public Transform Transform;
-        public bool ClampToEdges;
+        public AttachLabel Label;
+        public bool KeepInsideTheScreen;
+        [Tooltip("Do not log an error when no Attach Points are set in the scene for this label")]
+        public bool FailSilently;
 
         public void ValidateSelf()
         {
-            if (Transform == null)
+            if (Label == null)
                 throw new NullReferenceException(nameof(Transform));
         }
 
         public IEnumerable<(string name, IValidatable validatable)> GetSubValues() => this.NoSubValues();
 
-        public string GetInspectorString() => $"Attach this line or choice to {(Transform == null ? "null" : Transform.name)}";
+        public string GetInspectorString() => $"Attach this line or choice to {(Label == null ? "null" : Label.name)}";
 
         public IEnumerable Run(Stage stage)
         {
+            if (Label.Transform is null)
+            {
+                if (FailSilently == false)
+                    Debug.LogError($"No {nameof(AttachPoint)} in scene bound to {Label}", Label);
+                yield break;
+            }
+
             var rect = stage.ActiveFeed.rectTransform;
             if (rect.parent.GetComponent<Canvas>() == null)
                 rect = (RectTransform)rect.parent;
@@ -36,15 +45,21 @@ namespace Screenplay.Commands
 
         class AttachedToTransform : MonoBehaviour
         {
-            public AttachToTransform Command;
+            public AttachToLabel Command;
             public RectTransform RectTransform;
             public void OnEnable() => Camera.onPreCull += OnCameraPreCull;
             public void OnDisable() => Camera.onPreCull -= OnCameraPreCull;
 
             void OnCameraPreCull(Camera cam)
             {
-                Vector3 pos = cam.WorldToScreenPoint(Command.Transform.position);
-                if (Command.ClampToEdges)
+                if (Command.Label.Transform is null)
+                {
+                    enabled = false;
+                    return;
+                }
+
+                Vector3 pos = cam.WorldToScreenPoint(Command.Label.Transform.position);
+                if (Command.KeepInsideTheScreen)
                 {
                     Vector2 screenSize = cam.pixelRect.size;
                     Vector2 size = RectTransform.rect.size;
