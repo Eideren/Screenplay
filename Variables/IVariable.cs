@@ -8,6 +8,12 @@ namespace Screenplay.Variables
         void SetTo(IValue val);
         bool CanParse(string str);
         void SetFromParsedString(string str);
+        void ReadWrite(IValueReadWriter readWriter);
+    }
+
+    public interface IValueReadWriter
+    {
+        public void ReadWriteValue<T>(ref T value);
     }
 
     public interface IVariable<T> : IVariable, IValue<T> where T : IComparable<T>

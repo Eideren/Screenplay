@@ -50,6 +50,8 @@ namespace Screenplay.Variables
         /// <summary> Same thing as setting <see cref="Value"/> </summary>
         public void SetValue(T newValue) => Value = newValue;
 
+        public void ReadWrite(IValueReadWriter readWriter) => readWriter.ReadWriteValue(ref Value);
+
         public override string ToString()
         {
             string cachedName = _cachedName;

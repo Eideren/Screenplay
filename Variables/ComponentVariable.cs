@@ -24,6 +24,8 @@ namespace Screenplay.Variables
             Value = newValue;
         }
 
+        public void ReadWrite(IValueReadWriter readWriter) => readWriter.ReadWriteValue(ref Value);
+
         public override string ToString() => string.IsNullOrEmpty(Name) ? base.ToString() : Name;
     }
 }

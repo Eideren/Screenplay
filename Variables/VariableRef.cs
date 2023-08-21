@@ -26,5 +26,6 @@ namespace Screenplay.Variables
 
         public bool CanParse(string str) => Variable.Reference.CanParse(str);
         public void SetFromParsedString(string str) => Variable.Reference.SetFromParsedString(str);
+        public void ReadWrite(IValueReadWriter readWriter) => Variable.Reference.ReadWrite(readWriter);
     }
 }
