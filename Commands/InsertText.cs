@@ -34,7 +34,7 @@ namespace Screenplay.Commands
             if (Continuous)
             {
                 Cache cache = new() { insertion = stage.CharacterIndex, previous = text };
-                stage.OnTickForLine += s => OnTickForLine(s, cache);
+                stage.OnTickForLine += () => OnTickForLine(stage, cache);
             }
 
             yield break;

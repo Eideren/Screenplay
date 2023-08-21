@@ -33,14 +33,14 @@ namespace Screenplay.Commands
             }
 
             var rect = stage.ActiveFeed.rectTransform;
-            if (rect.parent.GetComponent<Canvas>() == null)
+            while (rect.parent.GetComponent<Canvas>() == null)
                 rect = (RectTransform)rect.parent;
 
             var attach = rect.gameObject.AddComponent<AttachedToTransform>();
             attach.Command = this;
             attach.RectTransform = rect;
             attach.InitialPosition = rect.position;
-            stage.OnDoneWithLine += _ => Object.Destroy(attach);
+            stage.OnDoneWithLine += () => Object.Destroy(attach);
             yield break;
         }
 

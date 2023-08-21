@@ -19,7 +19,7 @@ namespace Screenplay
     /// </summary>
     public class Stage
     {
-        public static Action<Stage> OnOpen, OnClose, WhileOpen;
+        public static Action<Stage> OnOpen, OnClose;
 
         /// <summary>
         /// Runs right before a line is shown on screen, gives you the ability to do a
@@ -91,15 +91,19 @@ namespace Screenplay
 
         /// <summary>
         /// Called every update while a line or choice is shown,
-        /// automatically cleared when after being shown
+        /// automatically cleared after being shown
         /// </summary>
-        public Action<Stage> OnTickForLine;
+        public Action OnTickForLine;
 
         /// <summary>
-        /// Called every update while a line or choice is shown,
-        /// automatically cleared when after being shown
+        /// Called right before the current line or choice is swapped into a new line or choice
         /// </summary>
-        public Action<Stage> OnDoneWithLine;
+        public Action OnDoneWithLine;
+
+        /// <summary>
+        /// Called every frame while this stage is open
+        /// </summary>
+        public Action WhileOpen;
 
         readonly BindingOverride[] _overrides;
         readonly IEnumerator _readingEnum;
@@ -209,7 +213,7 @@ namespace Screenplay
                 Focus?.HasFocusTick(this);
                 try
                 {
-                    WhileOpen?.Invoke(this);
+                    WhileOpen?.Invoke();
                 }
                 catch (Exception e)
                 {
@@ -239,10 +243,10 @@ namespace Screenplay
                 foreach (object item in innerState)
                 {
                     yield return item;
-                    OnTickForLine?.Invoke(this);
+                    OnTickForLine?.Invoke();
                 }
 
-                OnDoneWithLine?.Invoke(this);
+                OnDoneWithLine?.Invoke();
                 OnTickForLine = null;
             }
         }
