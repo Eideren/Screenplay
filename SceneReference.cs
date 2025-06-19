@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -28,7 +29,7 @@ namespace Screenplay
                 message = "Scene must not be null";
                 return false;
             }
-            _path = UnityEditor.AssetDatabase.GetAssetPath(_sceneAsset);
+            _path = UnityEditor.AssetDatabase.GetAssetPath(asset);
             bool found = false;
             foreach (var scene in UnityEditor.EditorBuildSettings.scenes)
                 if (_path == scene.path)
@@ -42,7 +43,29 @@ namespace Screenplay
 
             return true;
         }
-    #endif
+
+        private bool SceneNotPartOfBuild()
+        {
+            if (_sceneAsset == null)
+                return false;
+
+            _path = UnityEditor.AssetDatabase.GetAssetPath(_sceneAsset);
+            foreach (var scene in UnityEditor.EditorBuildSettings.scenes)
+                if (_path == scene.path)
+                    return false;
+
+            return true;
+        }
+
+        [ShowIf(nameof(SceneNotPartOfBuild))]
+        [Button]
+        private void AddSceneToBuild()
+        {
+            UnityEditor.EditorBuildSettings.scenes = UnityEditor.EditorBuildSettings.scenes
+                .Append(new UnityEditor.EditorBuildSettingsScene(_path, true))
+                .ToArray();
+        }
+#endif
 
         public void OnBeforeSerialize()
         {
