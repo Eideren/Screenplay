@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -83,3 +84,4 @@ namespace Screenplay.Editor
         }
     }
 }
+#endif
