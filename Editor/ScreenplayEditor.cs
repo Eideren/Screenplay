@@ -18,7 +18,7 @@ namespace Screenplay.Editor
         private List<INodeValue> _previewChain = new();
         private System.Action? _disposeCallbacks;
         private Previewer? _previewer;
-        private bool _previewEnabled;
+        private bool _previewEnabled, _mapEnabled = true;
         private PreviewFlags _previewFlags = PreviewFlags.Loop | PreviewFlags.SelectedChain;
         private bool _hasFocus;
 
@@ -37,6 +37,7 @@ namespace Screenplay.Editor
         }
 
         protected override bool StickyEditorEnabled => false;
+        protected override Rect NodeMap => _mapEnabled ? base.NodeMap : default;
 
         protected override void Load()
         {
@@ -53,8 +54,15 @@ namespace Screenplay.Editor
                 GUILayout.FlexibleSpace();
 
                 var previousColor = GUI.backgroundColor;
+                if (_mapEnabled)
+                    GUI.backgroundColor *= new Color(0.75f, 0.75f, 1.0f, 1f);
+                else
+                    GUI.backgroundColor = previousColor;
+                _mapEnabled = GUILayout.Button("Map", EditorStyles.toolbarButton) ? !_mapEnabled : _mapEnabled;
                 if (_previewEnabled)
                     GUI.backgroundColor *= new Color(0.75f, 0.75f, 1.0f, 1f);
+                else
+                    GUI.backgroundColor = previousColor;
                 _previewEnabled = GUILayout.Button("Preview", EditorStyles.toolbarButton) ? !_previewEnabled : _previewEnabled;
                 GUI.backgroundColor = previousColor;
                 _previewFlags = (PreviewFlags)EditorGUILayout.EnumFlagsField(_previewFlags, EditorStyles.toolbarPopup);
