@@ -36,6 +36,8 @@ namespace Screenplay.Editor
             }
         }
 
+        protected override bool StickyEditorEnabled => false;
+
         protected override void Load()
         {
             base.Load();
