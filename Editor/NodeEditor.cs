@@ -19,7 +19,7 @@ namespace Screenplay.Editor
                 GUI.color = new Color(GUI.color.r * 0.25f, GUI.color.g, GUI.color.b * 0.25f, GUI.color.a);
 
             if (Value is Event e)
-                e.Name = GUILayout.TextField(e.Name, YNode.Editor.Resources.Styles.NodeHeader, GUILayout.Height(30));
+                DrawEditableTitle(ref e.Name);
             else
                 base.OnHeaderGUI();
             GUI.color = textColor;
