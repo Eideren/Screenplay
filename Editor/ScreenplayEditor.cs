@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using Screenplay.Component;
 using Source.Screenplay.Editor;
@@ -18,11 +19,15 @@ namespace Screenplay.Editor
         private List<INodeValue> _previewChain = new();
         private System.Action? _disposeCallbacks;
         private Previewer? _previewer;
-        private bool _previewEnabled, _mapEnabled = true;
+        private bool _previewEnabled, _mapEnabled = true, _quickjump = true;
         private PreviewFlags _previewFlags = PreviewFlags.Loop | PreviewFlags.SelectedChain;
         private bool _hasFocus;
+        private Vector2 _quickjumpScroll;
 
         public IReadOnlyList<INodeValue> PreviewChain => _previewChain;
+
+        protected override bool StickyEditorEnabled => false;
+        protected override Rect NodeMap => _mapEnabled ? base.NodeMap : default;
 
         protected override void OnGUI()
         {
@@ -36,9 +41,6 @@ namespace Screenplay.Editor
             }
         }
 
-        protected override bool StickyEditorEnabled => false;
-        protected override Rect NodeMap => _mapEnabled ? base.NodeMap : default;
-
         protected override void Load()
         {
             base.Load();
@@ -51,14 +53,22 @@ namespace Screenplay.Editor
 
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
+                var previousColor = GUI.backgroundColor;
+
+                if (_quickjump)
+                    GUI.backgroundColor *= new Color(0.75f, 0.75f, 1.0f, 1f);
+                else
+                    GUI.backgroundColor = previousColor;
+                _quickjump = GUILayout.Button("Quickjump table", EditorStyles.toolbarButton) ? !_quickjump : _quickjump;
+
                 GUILayout.FlexibleSpace();
 
-                var previousColor = GUI.backgroundColor;
                 if (_mapEnabled)
                     GUI.backgroundColor *= new Color(0.75f, 0.75f, 1.0f, 1f);
                 else
                     GUI.backgroundColor = previousColor;
                 _mapEnabled = GUILayout.Button("Map", EditorStyles.toolbarButton) ? !_mapEnabled : _mapEnabled;
+
                 if (_previewEnabled)
                     GUI.backgroundColor *= new Color(0.75f, 0.75f, 1.0f, 1f);
                 else
@@ -68,6 +78,36 @@ namespace Screenplay.Editor
                 _previewFlags = (PreviewFlags)EditorGUILayout.EnumFlagsField(_previewFlags, EditorStyles.toolbarPopup);
             }
             EditorGUILayout.EndHorizontal();
+
+            if (_quickjump)
+            {
+                var arr = ArrayPool<Event>.Shared.Rent(Graph.Nodes.Count);
+                var arrSpan = arr.AsSpan()[..0];
+                foreach (var node in Graph.Nodes)
+                {
+                    if (node is Event e)
+                    {
+                        arrSpan = arr.AsSpan()[..(arrSpan.Length + 1)];
+                        arrSpan[^1] = e;
+                    }
+                }
+                Array.Sort(arr, 0, arrSpan.Length, SortByXPos.Instance);
+
+                _quickjumpScroll = EditorGUILayout.BeginScrollView(_quickjumpScroll, GUILayout.Width(150));
+                EditorGUILayout.BeginVertical(GUILayout.MaxWidth(150));
+                foreach (var e in arrSpan)
+                {
+                    var r = GUILayoutUtility.GetRect(GUIContent.none, ButtonWithClipping);
+                    if (GUI.Button(r, e.Name, ButtonWithClipping))
+                    {
+                        Vector2 nodeDimension = NodesToEditor[e].CachedSize / 2;
+                        PanOffset = -e.Position - nodeDimension;
+                    }
+                }
+                EditorGUILayout.EndVertical();
+                ArrayPool<Event>.Shared.Return(arr);
+                EditorGUILayout.EndScrollView();
+            }
 
             foreach (var value in _previewChain)
                 TryGetEditorFromValue(value)!.InPreviewPath = false;
@@ -99,7 +139,7 @@ namespace Screenplay.Editor
 
         [ThreadStatic]
         private static HashSet<IAction>? _isNodeReachableVisitation;
-        void RecalculateReachable()
+        private void RecalculateReachable()
         {
             _isNodeReachableVisitation ??= new();
             _isNodeReachableVisitation.Clear();
@@ -129,7 +169,7 @@ namespace Screenplay.Editor
             }
         }
 
-        void TryPreview()
+        private void TryPreview()
         {
             var previousSelection = _previewChain.Count > 0 ? _previewChain[^1] : null;
             _previewChain.Clear();
@@ -170,7 +210,7 @@ namespace Screenplay.Editor
             }
         }
 
-        void OnSceneGUI(SceneView view)
+        private void OnSceneGUI(SceneView view)
         {
             bool rebuildPreview = false;
             foreach (var o in Selection.objects)
@@ -186,7 +226,7 @@ namespace Screenplay.Editor
             }
         }
 
-        NodeEditor? TryGetEditorFromValue(INodeValue value)
+        private NodeEditor? TryGetEditorFromValue(INodeValue value)
         {
             return NodesToEditor[value] as NodeEditor;
         }
@@ -254,8 +294,6 @@ namespace Screenplay.Editor
             return "";
         }
 
-
-
         public void Rollback()
         {
             _previewer?.Dispose();
@@ -274,6 +312,18 @@ namespace Screenplay.Editor
             [Tooltip("Play the preview even when a game is currently running")]
             InPlayMode =     0b1000,
         }
+
+        private class SortByXPos : IComparer<Event>
+        {
+            public static SortByXPos Instance = new SortByXPos();
+            public int Compare(Event x, Event y) => x.Position.x.CompareTo(y.Position.x);
+        }
+
+        private static GUIStyle? s_buttonWithClipping;
+        private static GUIStyle ButtonWithClipping => s_buttonWithClipping ??= new GUIStyle(EditorStyles.miniButton)
+        {
+            clipping = TextClipping.Ellipsis,
+        };
     }
 
     public static class EnumExtension
