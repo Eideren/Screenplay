@@ -1,8 +1,6 @@
-using YNode;
-
 namespace Screenplay.Nodes
 {
-    public interface INodeWithSceneGizmos : INodeValue
+    public interface INodeWithSceneGizmos : IScreenplayNodeValue
     {
         void DrawGizmos(ref bool rebuildPreview);
     }

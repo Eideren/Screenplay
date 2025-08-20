@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using Screenplay.Component;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -44,7 +46,11 @@ namespace Screenplay
         public static implicit operator GenericSceneObjectReference(SceneObjectReference<T> value)
         {
             return value._genericRef;
+        }
 
+        public async Awaitable<T> GetAsync(CancellationToken cancellationToken)
+        {
+            return (T)await _genericRef.GetAsync(cancellationToken);
         }
     }
 
@@ -85,6 +91,11 @@ namespace Screenplay
 
             obj = default;
             return false;
+        }
+
+        public Awaitable<Object> GetAsync(CancellationToken cancellationToken)
+        {
+            return ScreenplayReference.GetAsync(_objId, cancellationToken);
         }
 
 #if UNITY_EDITOR

@@ -5,7 +5,7 @@ using YNode;
 namespace Screenplay.Nodes
 {
     [Serializable]
-    public class Notes : INodeValue
+    public class Notes : IScreenplayNodeValue
     {
         [SerializeField, HideInInspector] private Vector2 _position;
 

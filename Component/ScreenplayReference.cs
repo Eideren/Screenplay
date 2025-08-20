@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Threading;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -9,6 +9,7 @@ namespace Screenplay.Component
     [ExecuteAlways]
     public class ScreenplayReference : MonoBehaviour, ISerializationCallbackReceiver
     {
+        private static readonly Dictionary<guid, AwaitableCompletionSource<Object>> s_completionSources = new();
         private static readonly Dictionary<guid, Object> s_idToRef = new();
         private static readonly Dictionary<Object, guid> s_refToId = new();
 
@@ -32,7 +33,21 @@ namespace Screenplay.Component
                     {
                         s_idToRef[Guid] = Reference;
                         s_refToId[Reference] = Guid;
+                        if (s_completionSources.TryGetValue(Guid, out var acs))
+                            acs.SetResult(this);
                     }
+                }
+            }
+        }
+
+        private void Awake()
+        {
+            lock (s_idToRef)
+            {
+                if (s_idToRef.TryGetValue(Guid, out var existingRef) && ReferenceEquals(existingRef, Reference))
+                {
+                    if (s_completionSources.TryGetValue(Guid, out var acs))
+                        acs.SetResult(Reference);
                 }
             }
         }
@@ -45,6 +60,11 @@ namespace Screenplay.Component
                 {
                     s_idToRef.Remove(Guid);
                     s_refToId.Remove(Reference);
+                    if (s_completionSources.TryGetValue(Guid, out var acs))
+                    {
+                        acs.TrySetCanceled();
+                        s_completionSources.Remove(Guid);
+                    }
                 }
             }
         }
@@ -81,6 +101,21 @@ namespace Screenplay.Component
 
         public static bool TryGetRef(guid guid, out Object obj) => s_idToRef.TryGetValue(guid, out obj) && obj != null; // obj may be destroyed
         public static bool TryGetId(Object obj, out guid guid) => s_refToId.TryGetValue(obj, out guid);
+
+        public static async Awaitable<Object> GetAsync(guid guid, CancellationToken cancellationToken)
+        {
+            if (TryGetRef(guid, out var output))
+            {
+                return output;
+            }
+            else
+            {
+                if (s_completionSources.TryGetValue(guid, out var acs) == false)
+                    s_completionSources[guid] = acs = new AwaitableCompletionSource<Object>();
+
+                return await acs.Awaitable.AwaitWithCancellation(cancellationToken);
+            }
+        }
 
         public static guid GetOrCreate(GameObject obj)
         {

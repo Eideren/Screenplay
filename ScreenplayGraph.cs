@@ -38,6 +38,8 @@ namespace Screenplay
                 {
                     if (value is Event e && e.Action is not null && (e.Repeatable || _visitedEvents.Contains(e) == false))
                         events.Add(e);
+                    if (value is ICustomEntry customEntry)
+                        ObserveExceptions(customEntry.Run(context.Visited, cancellation));
                 }
 
                 do
@@ -115,6 +117,19 @@ namespace Screenplay
             {
                 foreach (var (_, trigger) in triggers)
                     trigger.Dispose();
+            }
+        }
+
+        static async void ObserveExceptions(Awaitable awaitable)
+        {
+            try
+            {
+                await awaitable;
+            }
+            catch (Exception e)
+            {
+                if (e is not OperationCanceledException)
+                    Debug.LogException(e);
             }
         }
 

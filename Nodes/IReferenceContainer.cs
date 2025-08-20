@@ -1,12 +1,11 @@
 using System.Collections.Generic;
-using YNode;
 
 namespace Screenplay.Nodes
 {
     /// <summary>
     /// This node contains cross-scene references
     /// </summary>
-    public interface IReferenceContainer : INodeValue
+    public interface IReferenceContainer : IScreenplayNodeValue
     {
         /// <summary>
         /// Appends this node's cross-scene references to the list.

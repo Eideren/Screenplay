@@ -5,7 +5,7 @@ namespace Screenplay.Nodes
     /// <summary>
     /// A node that can be executed in the editor as a preview
     /// </summary>
-    public interface IPreviewable : INodeValue
+    public interface IPreviewable : IScreenplayNodeValue
     {
         /// <summary>
         /// Called when a preview containing this node is created, implementer use the <paramref name="previewer"/> provided
