@@ -6,6 +6,6 @@ namespace Screenplay.Nodes
 {
     public interface ICustomEntry : IScreenplayNodeValue
     {
-        Awaitable Run(HashSet<IPrerequisite> prerequisites, CancellationToken cancellation);
+        void Run(HashSet<IPrerequisite> prerequisites, CancellationToken cancellation);
     }
 }
