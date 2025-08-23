@@ -13,7 +13,7 @@ namespace Screenplay.Editor
         {
             var thisScreenplay = (ScreenplayGraph)Graph;
             var textColor = GUI.color;
-            if (Value is IAction thisAction && Reachable == false)
+            if (Value is IExecutable thisAction && Reachable == false)
                 GUI.color = new Color(GUI.color.r, GUI.color.g * 0.25f, GUI.color.b * 0.25f, GUI.color.a);
             if (Value is IPrerequisite req && thisScreenplay.Visited(req))
                 GUI.color = new Color(GUI.color.r * 0.25f, GUI.color.g, GUI.color.b * 0.25f, GUI.color.a);

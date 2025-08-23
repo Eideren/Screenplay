@@ -20,7 +20,7 @@ namespace Screenplay
         private HashSet<Event> _visitedEvents = new();
 
         // Only serialized for editor reloading purposes
-        [SerializeField, HideInInspector] private IAction? _action;
+        [SerializeField, HideInInspector] private Event? _event;
         [SerializeField, HideInInspector, SerializeReference] private List<IPrerequisite> __visitedSerializationProxy = new ();
         [SerializeField, HideInInspector, SerializeReference] private List<Event> __visitedEventsSerializationProxy = new ();
 
@@ -39,12 +39,12 @@ namespace Screenplay
                     if (value is Event e && e.Action is not null && (e.Repeatable || _visitedEvents.Contains(e) == false))
                         events.Add(e);
                     if (value is ICustomEntry customEntry)
-                        customEntry.Run(context.Visited, cancellation);
+                        customEntry.Run(context.Visiting, cancellation);
                 }
 
                 do
                 {
-                    if (_action is null) // Check non-triggerable
+                    if (_event is null) // Check non-triggerable
                     {
                         foreach (var e in events)
                         {
@@ -52,19 +52,23 @@ namespace Screenplay
                                 continue;
                             if (e.Prerequisite?.TestPrerequisite(_visited) == false)
                                 continue;
+                            if (e.Action is null)
+                                continue;
 
                             _visitedEvents.Add(e);
                             if (e.Repeatable == false)
                                 events.Remove(e);
-                            _action = e.Action;
+                            _event = e;
                             break;
                         }
                     }
 
-                    if (_action is null) // Check triggerable
+                    if (_event is null) // Check triggerable
                     {
                         foreach (var e in events)
                         {
+                            if (e.Action is null)
+                                continue;
                             if (e.TriggerSource is null)
                                 continue;
 
@@ -80,13 +84,13 @@ namespace Screenplay
 
                             System.Action callback = () =>
                             {
-                                if (_action is not null)
+                                if (_event is not null)
                                     return; // Another trigger already queued one
 
                                 _visitedEvents.Add(e);
                                 if (e.Repeatable == false)
                                     events.Remove(e);
-                                _action = e.Action;
+                                _event = e;
                             };
 
                             if (e.TriggerSource.TryCreateTrigger(callback, out var trigger) == false)
@@ -97,7 +101,7 @@ namespace Screenplay
                         }
                     }
 
-                    if (_action is null)
+                    if (_event is null)
                     {
                         await Awaitable.NextFrameAsync(cancellation);
                         continue;
@@ -107,29 +111,15 @@ namespace Screenplay
                         trigger.Dispose();
                     triggers.Clear();
 
-                    _visited.Add(_action);
-                    var currentAction = _action;
-                    _action = null;
-                    _action = await currentAction.Execute(context, cancellation);
+                    var currentEvent = _event;
+                    _event = null;
+                    await currentEvent.Action.Execute(context, cancellation);
                 } while (true);
             }
             finally
             {
                 foreach (var (_, trigger) in triggers)
                     trigger.Dispose();
-            }
-        }
-
-        static async void ObserveExceptions(Awaitable awaitable)
-        {
-            try
-            {
-                await awaitable;
-            }
-            catch (Exception e)
-            {
-                if (e is not OperationCanceledException)
-                    Debug.LogException(e);
             }
         }
 
@@ -150,8 +140,8 @@ namespace Screenplay
         }
 
         [ThreadStatic]
-        private static HashSet<IAction>? _isNodeReachableVisitation;
-        public bool IsNodeReachable(IAction thisAction, List<INodeValue>? path = null)
+        private static HashSet<IExecutable>? _isNodeReachableVisitation;
+        public bool IsNodeReachable(IExecutable thisExecutable, List<INodeValue>? path = null)
         {
             _isNodeReachableVisitation ??= new();
             _isNodeReachableVisitation.Clear();
@@ -160,12 +150,12 @@ namespace Screenplay
                 if (node is Event e && e.Action is not null)
                 {
                     path?.Add(e);
-                    if (FindLeafAInBranchB(thisAction, e.Action, path))
+                    if (FindLeafAInBranchB(thisExecutable, e.Action, path))
                         return true;
                     path?.RemoveAt(path.Count-1);
                 }
 
-                static bool FindLeafAInBranchB(IAction target, IAction branch, List<INodeValue>? path)
+                static bool FindLeafAInBranchB(IExecutable target, IExecutable branch, List<INodeValue>? path)
                 {
                     if (_isNodeReachableVisitation!.Add(branch) == false)
                         return false;
@@ -177,7 +167,7 @@ namespace Screenplay
                     }
 
                     path?.Add(branch);
-                    foreach (IAction otherActions in branch.Followup())
+                    foreach (IExecutable otherActions in branch.Followup())
                     {
                         if (FindLeafAInBranchB(target, otherActions, path))
                             return true;
@@ -233,7 +223,7 @@ namespace Screenplay
                 {
                     if (screenplay.DebugRetainProgressInEditor)
                         continue;
-                    screenplay._action = null;
+                    screenplay._event = null;
                     screenplay.__visitedSerializationProxy.Clear();
                     screenplay.__visitedEventsSerializationProxy.Clear();
                     screenplay._visited.Clear();
@@ -250,7 +240,7 @@ namespace Screenplay
 
             public ScreenplayGraph Source { get; } = Source;
 
-            public HashSet<IPrerequisite> Visited => Source._visited;
+            public HashSet<IPrerequisite> Visiting => Source._visited;
 
             public void RunAsynchronously(object key, Func<CancellationToken, Awaitable> runner)
             {

@@ -7,16 +7,16 @@ using UnityEngine;
 
 namespace Screenplay.Nodes
 {
-    public class Flag : Action
+    public class Flag : ExecutableLinear
     {
         [HideLabel]
         public string Description = "Description";
 
         public override void CollectReferences(List<GenericSceneObjectReference> references){ }
 
-        public override async Awaitable<IAction?> Execute(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
         {
-            return Next;
+
         }
 
         public override void FastForward(IContext context) { }

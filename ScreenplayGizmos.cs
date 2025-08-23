@@ -16,7 +16,7 @@ namespace Screenplay
         private static List<GenericSceneObjectReference> s_workingList = new();
         private static List<Vector3> s_lineForPathList = new();
         private static List<Event> s_events = new();
-        private static List<IAction> s_stack = new();
+        private static List<IExecutable> s_stack = new();
 
         public static void Draw(ScreenplayGraph screenplay)
         {
@@ -96,15 +96,15 @@ namespace Screenplay
                 }
             }
 
-            static void RecursivePathBuilder(IAction action, Vector3? root, bool label)
+            static void RecursivePathBuilder(IExecutable executable, Vector3? root, bool label)
             {
-                s_stack.Add(action);
+                s_stack.Add(executable);
                 try
                 {
                     bool hasFollowup = false;
-                    if (s_visited.Add(action))
+                    if (s_visited.Add(executable))
                     {
-                        foreach (var next in action.Followup())
+                        foreach (var next in executable.Followup())
                         {
                             hasFollowup = true;
                             RecursivePathBuilder(next, root, label);

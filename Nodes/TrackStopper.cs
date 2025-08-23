@@ -8,22 +8,21 @@ using YNode;
 
 namespace Screenplay.Nodes
 {
-    public class TrackStopper : Action
+    public class TrackStopper : ExecutableLinear
     {
         [Required, Input, SerializeReference] public TrackBackgroundPlayer? BackgroundPlayer;
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) { }
 
-        public override async Awaitable<IAction?> Execute(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
         {
             if (BackgroundPlayer is null)
             {
                 Debug.LogWarning($"Unassigned {nameof(BackgroundPlayer)}, skipping this {nameof(TrackStopper)}");
-                return Next;
+                return;
             }
 
             context.StopAsynchronous(BackgroundPlayer);
-            return Next;
         }
 
         public override void FastForward(IContext context)

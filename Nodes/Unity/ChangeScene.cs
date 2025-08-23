@@ -6,18 +6,17 @@ using UnityEngine.SceneManagement;
 
 namespace Screenplay.Nodes.Unity
 {
-    public class ChangeScene : Action
+    public class ChangeScene : ExecutableLinear
     {
         [Required, HideLabel, HorizontalGroup] public SceneReference Scene;
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) { }
 
-        public override async Awaitable<IAction?> Execute(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
         {
             var a = SceneManager.LoadSceneAsync(Scene.Path, LoadSceneMode.Single);
             a!.allowSceneActivation = true;
             await a;
-            return Next;
         }
 
         public override void FastForward(IContext context)

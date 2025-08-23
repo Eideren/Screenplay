@@ -5,22 +5,22 @@ using UnityEngine;
 
 namespace Screenplay.Nodes
 {
-    public class PlayAnimation : Action
+    public class PlayAnimation : ExecutableLinear
     {
         [Required] public SceneObjectReference<GameObject> Target;
         [Required] public AnimationClip? Clip = null;
 
-        public override async Awaitable<IAction?> Execute(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
         {
             if (Target.TryGet(out var go, out var failure) == false)
             {
                 Debug.LogWarning($"Failed to {nameof(PlayAnimation)}, {nameof(Target)}: {failure}", context.Source);
-                return Next;
+                return;
             }
             if (Clip == null)
             {
                 Debug.LogWarning($"Failed to {nameof(PlayAnimation)} on '{go}', {nameof(Clip)} is null", context.Source);
-                return Next;
+                return;
             }
 
             using var sampler = new AnimationSampler(Clip, go);
@@ -32,8 +32,6 @@ namespace Screenplay.Nodes
                 sampler.SampleAt(t);
                 await Awaitable.NextFrameAsync(cancellation);
             } while (t < Clip.length);
-
-            return Next;
         }
 
         public override void FastForward(IContext context)

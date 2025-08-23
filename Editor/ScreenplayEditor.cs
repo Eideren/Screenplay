@@ -9,7 +9,6 @@ using UnityEngine;
 using YNode;
 using YNode.Editor;
 using Screenplay.Nodes;
-using Action = Screenplay.Nodes.Action;
 using Event = Screenplay.Nodes.Event;
 
 namespace Screenplay.Editor
@@ -138,7 +137,7 @@ namespace Screenplay.Editor
         }
 
         [ThreadStatic]
-        private static HashSet<IAction>? _isNodeReachableVisitation;
+        private static HashSet<IExecutable>? _isNodeReachableVisitation;
         private void RecalculateReachable()
         {
             _isNodeReachableVisitation ??= new();
@@ -156,7 +155,7 @@ namespace Screenplay.Editor
                     TraverseTree(e.Action);
             }
 
-            void TraverseTree(IAction branch)
+            void TraverseTree(IExecutable branch)
             {
                 if (_isNodeReachableVisitation!.Add(branch) == false)
                     return;
@@ -164,7 +163,7 @@ namespace Screenplay.Editor
                 if (TryGetEditorFromValue(branch) is {} editor)
                     editor.Reachable = true;
 
-                foreach (IAction otherActions in branch.Followup())
+                foreach (IExecutable otherActions in branch.Followup())
                     TraverseTree(otherActions);
             }
         }
@@ -179,7 +178,7 @@ namespace Screenplay.Editor
             {
                 if (Selection.activeObject is YNode.Editor.NodeEditor selectedNode && selectedNode.Graph == Graph && selectedNode.Value is IPreviewable selectedPreviewable)
                 {
-                    if (_previewFlags.Contains(PreviewFlags.SelectedChain) && selectedPreviewable is IAction selectedAction)
+                    if (_previewFlags.Contains(PreviewFlags.SelectedChain) && selectedPreviewable is IExecutable selectedAction)
                     {
                         Graph.IsNodeReachable(selectedAction, _previewChain);
                     }
@@ -285,7 +284,7 @@ namespace Screenplay.Editor
             if (typeof(ScreenplayNode).IsAssignableFrom(type) || type == typeof(Notes))
             {
                 var str = base.GetNodeMenuName(type);
-                string comparison = typeof(Action).Namespace!.Replace('.', '/') + "/";
+                string comparison = typeof(ExecutableLinear).Namespace!.Replace('.', '/') + "/";
                 if (str.StartsWith(comparison))
                     return str[comparison.Length..];
                 return str;

@@ -10,20 +10,20 @@ using YNode;
 namespace Screenplay.Nodes
 {
     [Serializable]
-    public class Branch : ScreenplayNode, IAction
+    public class Branch : ScreenplayNode, IExecutable
     {
         [Output, SerializeReference, Tooltip("What would run when Prerequisite is true")]
-        public IAction? True;
+        public IExecutable? True;
 
         [Output, SerializeReference, Tooltip("What would run when Prerequisite is false")]
-        public IAction? False;
+        public IExecutable? False;
 
         [Input(Stroke = NoodleStroke.Dashed), Required, SerializeReference, LabelWidth(20), HorizontalGroup(width:90), Tooltip("Select which action should be taken next")]
         public IPrerequisite Prerequisite = null!;
 
         public bool TestPrerequisite(HashSet<IPrerequisite> visited) => visited.Contains(this);
 
-        public IEnumerable<IAction> Followup()
+        public IEnumerable<IExecutable> Followup()
         {
             if (True != null)
                 yield return True;
@@ -31,12 +31,12 @@ namespace Screenplay.Nodes
                 yield return False;
         }
 
-        public async Awaitable<IAction?> Execute(IContext context, CancellationToken cancellation)
+        public Awaitable InnerExecution(IContext context, CancellationToken cancellation)
         {
-            if (Prerequisite.TestPrerequisite(context.Visited))
-                return True;
+            if (Prerequisite.TestPrerequisite(context.Visiting))
+                return True.Execute(context, cancellation);
             else
-                return False;
+                return False.Execute(context, cancellation);
         }
 
         public void FastForward(IContext context) { }

@@ -12,7 +12,7 @@ namespace Screenplay.Nodes
         public string Name = "My Unnamed Event";
 
         [Output, SerializeReference, Tooltip("What would be running when this event starts"), Required]
-        public IAction? Action;
+        public IExecutable? Action;
         [Tooltip("Can this event ever run again after having been completed")]
         public bool Repeatable;
         [Input(Stroke = NoodleStroke.Dashed), SerializeReference, Tooltip("Which nodes need to be visited for this event to become executable")]

@@ -19,7 +19,7 @@ namespace Screenplay
             static async Awaitable AwaitableOfTWrapper(CancellationToken cancellation, Func<CancellationToken, Awaitable<T>> signal) => await signal(cancellation);
         }
 
-        void PlaySafeAction(IAction action)
+        void PlaySafeAction(IExecutable executable)
         {
             PlayCustomSignal(PreviewPlay);
 
@@ -27,7 +27,7 @@ namespace Screenplay
             {
                 do
                 {
-                    await action.Execute(this, cancellation);
+                    await executable.InnerExecution(this, cancellation);
 
                     if (Loop)
                     {

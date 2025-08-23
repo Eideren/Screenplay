@@ -13,8 +13,8 @@ namespace Screenplay
     {
         ScreenplayGraph Source { get; }
 
-        /// <summary> Nodes visited </summary>
-        HashSet<IPrerequisite> Visited { get; }
+        /// <summary> Nodes that have been visited or are currently running </summary>
+        HashSet<IPrerequisite> Visiting { get; }
 
         /// <summary>
         /// Creates the dialog component if it doesn't exist yet and return it

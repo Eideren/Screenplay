@@ -36,7 +36,7 @@ namespace Source.Screenplay.Editor
             return _dialogUI;
         }
 
-        public HashSet<IPrerequisite> Visited { get; } = new();
+        public HashSet<IPrerequisite> Visiting { get; } = new();
 
         public Previewer(bool loopPreview, UIBase? dialogUIComponentPrefab, ScreenplayGraph sourceParam)
         {

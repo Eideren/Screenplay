@@ -7,18 +7,17 @@ using UnityEngine;
 
 namespace Screenplay.Nodes.Unity
 {
-    public class SetActive : Action
+    public class SetActive : ExecutableLinear
     {
         [Required, HideLabel, HorizontalGroup] public SceneObjectReference<GameObject> Target;
         [HideLabel, HorizontalGroup(width:16)] public bool Active = true;
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) => references.Add(Target);
 
-        public override async Awaitable<IAction?> Execute(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
         {
             if (Target.TryGet(out var target, out _))
                 target.SetActive(Active);
-            return Next;
         }
 
         public override void FastForward(IContext context)

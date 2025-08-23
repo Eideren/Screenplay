@@ -11,17 +11,15 @@ namespace Screenplay.Nodes
 
         private Awaitable AsyncRunner(CancellationToken cancellation) => Track!.RangePlayer(GetTimeSpan(Track), cancellation, Loop);
 
-        public override async Awaitable<IAction?> Execute(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
         {
             if (Track == null)
             {
                 Debug.LogWarning($"Unassigned {nameof(Track)}, skipping this {nameof(TrackBackgroundPlayer)}");
-                return Next;
+                return;
             }
 
             context.RunAsynchronously(this, AsyncRunner);
-
-            return Next;
         }
 
         public override void FastForward(IContext context)

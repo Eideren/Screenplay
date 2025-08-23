@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Screenplay.Nodes
 {
-    public class Dialog : Action, ILocalizableNode
+    public class Dialog : ExecutableLinear, ILocalizableNode
     {
         [HideLabel]
         public Interlocutor? Interlocutor;
@@ -35,7 +35,7 @@ namespace Screenplay.Nodes
 
         public override void FastForward(IContext context) { }
 
-        public override Awaitable<IAction?> Execute(IContext context, CancellationToken cancellation) => RunDialog(context, cancellation, false);
+        protected override Awaitable LinearExecution(IContext context, CancellationToken cancellation) => RunDialog(context, cancellation, false);
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)
         {
@@ -52,12 +52,12 @@ namespace Screenplay.Nodes
             }
         }
 
-        private async Awaitable<IAction?> RunDialog(IContext context, CancellationToken cancellation, bool previewMode)
+        private async Awaitable RunDialog(IContext context, CancellationToken cancellation, bool previewMode)
         {
             if (context.GetDialogUI() is {} ui == false)
             {
                 Debug.LogWarning($"{nameof(ScreenplayGraph.DialogUIPrefab)} has not been set, no interface to present this {nameof(Dialog)} on");
-                return Next;
+                return;
             }
 
             ui.StartDialogPresentation();
@@ -109,8 +109,6 @@ namespace Screenplay.Nodes
                 }
             }
             ui.EndDialogPresentation();
-
-            return Next;
         }
 
         private void Chatter(ref int last, int current, string text, Interlocutor interlocutor, Component.UIBase ui)

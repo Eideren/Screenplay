@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Screenplay.Nodes
 {
-    public class Move : Action, INodeWithSceneGizmos
+    public class Move : ExecutableLinear, INodeWithSceneGizmos
     {
         [HideLabel] public SceneObjectReference<GameObject> Target;
         [HideLabel] public Vector3 Destination;
@@ -15,17 +15,16 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) => references.Add(Target);
 
-        public override async Awaitable<IAction?> Execute(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
         {
             if (Target.TryGet(out var go, out var failure) == false)
             {
                 Debug.LogWarning($"Failed to {nameof(Move)}, {nameof(Target)}: {failure}", context.Source);
-                return Next;
+                return;
             }
 
             go.transform.position = Destination;
             go.transform.rotation = Rotation;
-            return Next;
         }
 
         public override void FastForward(IContext context)

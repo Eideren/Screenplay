@@ -10,7 +10,7 @@ using YNode;
 namespace Screenplay.Nodes
 {
     [NodeTint(60, 60, 60)]
-    public class Choice : ScreenplayNode, IAction, ILocalizableNode
+    public class Choice : ScreenplayNode, IExecutable, ILocalizableNode
     {
         [ListDrawerSettings(ShowFoldout = false), LabelText(" ")]
         public ChoiceInstance[] Choices =
@@ -27,7 +27,7 @@ namespace Screenplay.Nodes
 
         public bool TestPrerequisite(HashSet<IPrerequisite> visited) => visited.Contains(this);
 
-        public IEnumerable<IAction> Followup()
+        public IEnumerable<IExecutable> Followup()
         {
             foreach (var instance in Choices)
             {
@@ -38,9 +38,9 @@ namespace Screenplay.Nodes
 
         public void FastForward(IContext context) { }
 
-        public async Awaitable<IAction?> Execute(IContext context, CancellationToken cancellation)
+        public async Awaitable InnerExecution(IContext context, CancellationToken cancellation)
         {
-            var choicesThin = Choices.Select(x => new Data(x.Prerequisite?.TestPrerequisite(context.Visited) ?? true, x.Text.Content)).ToArray();
+            var choicesThin = Choices.Select(x => new Data(x.Prerequisite?.TestPrerequisite(context.Visiting) ?? true, x.Text.Content)).ToArray();
             if (context.GetDialogUI() is {} ui == false)
             {
                 Debug.LogWarning($"{nameof(ScreenplayGraph.DialogUIPrefab)} has not been set, no interface to present this {nameof(Choice)} on");
@@ -49,16 +49,18 @@ namespace Screenplay.Nodes
                     if (choicesThin[i].Enabled == false)
                         continue;
 
-                    return Choices[i].Action;
+                    await Choices[i].Action.Execute(context, cancellation);
+                    return;
                 }
 
-                return null;
+                return;
             }
 
             var choice = await ui.ChoicePresentation(choicesThin, cancellation);
 
             int index = Array.IndexOf(choicesThin, choice);
-            return Choices[index].Action;
+            await Choices[index].Action.Execute(context, cancellation);
+            return;
         }
 
         public void SetupPreview(IPreviewer previewer, bool fastForwarded)
@@ -84,7 +86,7 @@ namespace Screenplay.Nodes
             public IPrerequisite? Prerequisite;
 
             [Output, SerializeReference, LabelWidth(10), HorizontalGroup, Tooltip("What will be executed when this choice is selected")]
-            public IAction? Action;
+            public IExecutable? Action;
 
             [HideLabel, InlineProperty]
             public LocalizableText Text;

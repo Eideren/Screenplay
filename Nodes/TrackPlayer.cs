@@ -6,24 +6,22 @@ using YNode;
 
 namespace Screenplay.Nodes
 {
-    public class TrackPlayer : Action
+    public class TrackPlayer : ExecutableLinear
     {
         [SerializeReference, Input, Required] public Track? Track;
         [SerializeField, HideInInspector] public int From = -1, To = -1;
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) => Track?.CollectReferences(references);
 
-        public override async Awaitable<IAction?> Execute(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
         {
             if (Track == null)
             {
                 Debug.LogWarning($"Unassigned {nameof(Track)}, skipping this {nameof(TrackPlayer)}");
-                return Next;
+                return;
             }
 
             await Track.RangePlayer(GetTimeSpan(Track), cancellation, false);
-
-            return Next;
         }
 
         public override void FastForward(IContext context)
