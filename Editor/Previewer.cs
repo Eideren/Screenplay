@@ -81,9 +81,14 @@ namespace Screenplay.Editor
 
         ~Previewer()
         {
-            if (_rollbacksRegistered.Count > 0 || _asynchronousRunner.Count > 0)
+            if (_rollbacksRegistered.Count > 0)
             {
                 Debug.LogError("A previewer was not correctly disposed, your scene likely has changes introduced from a preview that cannot be rolled back");
+            }
+
+            if (_running != 0)
+            {
+                Debug.LogError("A previewer did not finish before dispose, your scene likely has changes introduced from a preview that cannot be rolled back");
             }
         }
 
