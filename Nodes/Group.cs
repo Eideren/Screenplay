@@ -6,7 +6,7 @@ using YNode;
 namespace Screenplay.Nodes
 {
     [Serializable]
-    public class Group : ScreenplayNode
+    public class Group : AbstractScreenplayNode
     {
         public string Description = "My Group Description";
 

@@ -5,14 +5,14 @@ namespace Screenplay.Nodes
     /// <summary>
     /// A node that can be executed in the editor as a preview
     /// </summary>
-    public interface IPreviewable : IScreenplayNodeValue
+    public interface IPreviewable : IScreenplayNode
     {
         /// <summary>
         /// Called when a preview containing this node is created, implementer use the <paramref name="previewer"/> provided
         /// to enqueue their custom preview logic and rollback mechanism to deal with any side effects that preview incurs on the scene.
         /// </summary>
         /// <param name="previewer">The container to run previews and ensure scene changes can be rolled back</param>
-        /// <param name="fastForwarded">Whether the node should be played or fast forwarded, see <see cref="IExecutable.FastForward"/></param>
+        /// <param name="fastForwarded">Whether the node should be played or fast forwarded, see <see cref="IExecutable{T}.FastForward"/></param>
          void SetupPreview(IPreviewer previewer, bool fastForwarded);
     }
 }

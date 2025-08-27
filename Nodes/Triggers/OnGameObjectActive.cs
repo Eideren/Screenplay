@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Screenplay.Nodes.Triggers
 {
     [Serializable]
-    public class OnGameObjectActive : ScreenplayNode, ITriggerSetup
+    public class OnGameObjectActive : AbstractScreenplayNode, ITriggerSetup
     {
         [Required] public SceneObjectReference<GameObject> Target;
 

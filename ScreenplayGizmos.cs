@@ -16,7 +16,7 @@ namespace Screenplay
         private static List<GenericSceneObjectReference> s_workingList = new();
         private static List<Vector3> s_lineForPathList = new();
         private static List<Event> s_events = new();
-        private static List<IExecutable> s_stack = new();
+        private static List<IScreenplayNode> s_stack = new();
 
         public static void Draw(ScreenplayGraph screenplay)
         {
@@ -27,7 +27,7 @@ namespace Screenplay
 
             foreach (var node in screenplay.Nodes)
             {
-                if (node is IReferenceContainer refContainer)
+                if (node is IScreenplayNode refContainer)
                 {
                     refContainer.CollectReferences(s_workingList);
                     if (s_workingList.Count > 0)
@@ -96,7 +96,7 @@ namespace Screenplay
                 }
             }
 
-            static void RecursivePathBuilder(IExecutable executable, Vector3? root, bool label)
+            static void RecursivePathBuilder(IBranch executable, Vector3? root, bool label)
             {
                 s_stack.Add(executable);
                 try
@@ -107,7 +107,8 @@ namespace Screenplay
                         foreach (var next in executable.Followup())
                         {
                             hasFollowup = true;
-                            RecursivePathBuilder(next, root, label);
+                            if (next != null)
+                                RecursivePathBuilder(next, root, label);
                         }
                     }
 

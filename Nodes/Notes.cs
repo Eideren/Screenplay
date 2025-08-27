@@ -1,11 +1,11 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
-using YNode;
 
 namespace Screenplay.Nodes
 {
     [Serializable]
-    public class Notes : IScreenplayNodeValue
+    public class Notes : IScreenplayNode
     {
         [SerializeField, HideInInspector] private Vector2 _position;
 
@@ -20,5 +20,7 @@ namespace Screenplay.Nodes
             get => _position;
             set => _position = value;
         }
+
+        public void CollectReferences(List<GenericSceneObjectReference> references) { }
     }
 }

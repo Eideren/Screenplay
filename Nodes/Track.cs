@@ -9,7 +9,7 @@ using YNode;
 namespace Screenplay.Nodes
 {
     [Serializable, NodeWidth(800), NodeTint(0.25f, 0.25f, 0.25f)]
-    public class Track : ScreenplayNode, IPreviewable, INodeWithSceneGizmos
+    public class Track : AbstractScreenplayNode, IPreviewable, INodeWithSceneGizmos
     {
         [SerializeReference, InlineProperty]
         public ITrackItem?[] Items = Array.Empty<ITrackItem?>();
@@ -65,7 +65,7 @@ namespace Screenplay.Nodes
             foreach (var trackItem in Items)
                 trackItem?.AppendRollbackMechanism(previewer);
 
-            previewer.PlayCustomSignal(Preview);
+            previewer.AddCustomPreview(Preview);
             return;
 
             async Awaitable Preview(CancellationToken cancellation)

@@ -6,12 +6,12 @@ using YNode;
 namespace Screenplay.Nodes.Logic
 {
     [NodeWidth(100)]
-    public class Or : ScreenplayNode, IPrerequisite
+    public class Or : AbstractScreenplayNode, IPrerequisite
     {
         [Input(Stroke = NoodleStroke.Dashed), SerializeReference, Required]
         public IPrerequisite A = null!, B = null!;
 
-        public bool TestPrerequisite(HashSet<IPrerequisite> visited) => A.TestPrerequisite(visited) || B.TestPrerequisite(visited);
+        public bool TestPrerequisite(IEventContext context) => A.TestPrerequisite(context) || B.TestPrerequisite(context);
 
         public override void CollectReferences(List<GenericSceneObjectReference> references)
         {

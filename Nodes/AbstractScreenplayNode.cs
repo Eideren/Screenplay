@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Screenplay.Nodes
 {
     [Serializable]
-    public abstract class ScreenplayNode : IReferenceContainer
+    public abstract class AbstractScreenplayNode : IScreenplayNode
     {
         [SerializeField, HideInInspector] private Vector2 _position;
 

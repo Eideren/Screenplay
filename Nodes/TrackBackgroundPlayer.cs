@@ -11,7 +11,7 @@ namespace Screenplay.Nodes
 
         private Awaitable AsyncRunner(CancellationToken cancellation) => Track!.RangePlayer(GetTimeSpan(Track), cancellation, Loop);
 
-        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IEventContext context, CancellationToken cancellation)
         {
             if (Track == null)
             {
@@ -19,10 +19,11 @@ namespace Screenplay.Nodes
                 return;
             }
 
-            context.RunAsynchronously(this, AsyncRunner);
+            Debug.LogError("Not implemented");
+            //context.RunAsynchronously(this, AsyncRunner);
         }
 
-        public override void FastForward(IContext context)
+        public override void FastForward(IEventContext context, CancellationToken cancellationToken)
         {
             if (Track == null)
             {
@@ -30,7 +31,8 @@ namespace Screenplay.Nodes
                 return;
             }
 
-            context.RunAsynchronously(this, AsyncRunner);
+            Debug.LogError("Not implemented");
+            //context.RunAsynchronously(this, AsyncRunner);
         }
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)
@@ -41,7 +43,8 @@ namespace Screenplay.Nodes
             foreach (var trackItem in Track.Items)
                 trackItem?.AppendRollbackMechanism(previewer);
 
-            previewer.RunAsynchronously(this, AsyncRunner);
+            Debug.LogError("Not implemented");
+            //previewer.RunAsynchronously(this, AsyncRunner);
         }
     }
 }

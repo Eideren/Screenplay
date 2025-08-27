@@ -14,7 +14,7 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) { }
 
-        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IEventContext context, CancellationToken cancellation)
         {
             if (BackgroundPlayer is null)
             {
@@ -22,10 +22,11 @@ namespace Screenplay.Nodes
                 return;
             }
 
-            context.StopAsynchronous(BackgroundPlayer);
+            Debug.LogError("Not implemented");
+            //context.StopAsynchronous(BackgroundPlayer);
         }
 
-        public override void FastForward(IContext context)
+        public override void FastForward(IEventContext context, CancellationToken cancellationToken)
         {
             if (BackgroundPlayer is null)
             {
@@ -33,7 +34,8 @@ namespace Screenplay.Nodes
                 return;
             }
 
-            context.StopAsynchronous(BackgroundPlayer);
+            Debug.LogError("Not implemented");
+            //context.StopAsynchronous(BackgroundPlayer);
         }
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)
@@ -41,7 +43,8 @@ namespace Screenplay.Nodes
             if (BackgroundPlayer is null)
                 return;
 
-            previewer.StopAsynchronous(BackgroundPlayer);
+            Debug.LogError("Not implemented");
+            //previewer.StopAsynchronous(BackgroundPlayer);
         }
     }
 }

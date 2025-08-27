@@ -15,7 +15,7 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) => references.Add(Target);
 
-        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IEventContext context, CancellationToken cancellation)
         {
             if (Target.TryGet(out var go, out var failure) == false)
             {
@@ -27,7 +27,7 @@ namespace Screenplay.Nodes
             go.transform.rotation = Rotation;
         }
 
-        public override void FastForward(IContext context)
+        public override void FastForward(IEventContext context, CancellationToken cancellationToken)
         {
             if (Target.TryGet(out var go, out var failure) == false)
             {

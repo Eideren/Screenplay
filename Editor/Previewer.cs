@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using Screenplay;
 using Screenplay.Component;
 using UnityEditor;
 using UnityEngine;
@@ -10,16 +8,21 @@ using Screenplay.Nodes;
 using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
 
-namespace Source.Screenplay.Editor
+namespace Screenplay.Editor
 {
     public class Previewer : IPreviewer, IDisposable
     {
-        private Dictionary<object, CancellationTokenSource> _asynchronousRunner = new();
-        private Stack<System.Action> _rollbacksRegistered = new();
+        private CancellationTokenSource _cancellationTokenSource = new();
+        private int _running;
+        private List<Func<CancellationToken, Awaitable>> _asynchronousRunner = new();
+        private Stack<Action> _rollbacksRegistered = new();
         private bool _loopPreview;
         private UIBase? _dialogUIComponentPrefab, _dialogUI;
 
         public ScreenplayGraph Source { get; }
+
+        public List<IScreenplayNode> Path { get; }
+
         public bool Loop => _loopPreview;
 
         public UIBase? GetDialogUI()
@@ -36,28 +39,29 @@ namespace Source.Screenplay.Editor
             return _dialogUI;
         }
 
-        public HashSet<IPrerequisite> Visiting { get; } = new();
-
-        public Previewer(bool loopPreview, UIBase? dialogUIComponentPrefab, ScreenplayGraph sourceParam)
+        public Previewer(bool loopPreview, UIBase? dialogUIComponentPrefab, List<IScreenplayNode> path, ScreenplayGraph sourceParam)
         {
             _loopPreview = loopPreview;
             _dialogUIComponentPrefab = dialogUIComponentPrefab;
             EditorApplication.update += Update;
             Source = sourceParam;
             UnityEditor.Editor.finishedDefaultHeaderGUI += OnInspectorDrawHeaderGUI;
+            Path = path;
         }
 
         public void Dispose()
         {
             UnityEditor.Editor.finishedDefaultHeaderGUI -= OnInspectorDrawHeaderGUI;
 
-            foreach (var (_, cancellation) in _asynchronousRunner.ToArray())
+            try
             {
-                cancellation.Cancel();
-                cancellation.Dispose();
+                _cancellationTokenSource.Cancel();
+                _cancellationTokenSource.Dispose();
             }
-
-            _asynchronousRunner.Clear();
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
 
             while (_rollbacksRegistered.TryPop(out var action))
             {
@@ -85,7 +89,7 @@ namespace Source.Screenplay.Editor
 
         private void OnInspectorDrawHeaderGUI(UnityEditor.Editor obj)
         {
-            if (obj.target is GameObject or Component)
+            if (obj.target is GameObject or UnityEngine.Component)
             {
                 var prevColor = GUI.color;
                 GUI.color = Color.yellow * new Color(1,1,1,0.1f);
@@ -99,24 +103,26 @@ namespace Source.Screenplay.Editor
         {
             if (_asynchronousRunner.Count > 0)
             {
-                //SceneView.RepaintAll();
-                EditorApplication.QueuePlayerLoopUpdate();
+                if (_loopPreview && _running == 0)
+                {
+                    foreach (var func in _asynchronousRunner)
+                        RunAndMonitorExit(func);
+                }
+
+                if (_running > 0)
+                {
+                    //SceneView.RepaintAll();
+                    EditorApplication.QueuePlayerLoopUpdate();
+                }
             }
         }
 
-        public void RunAsynchronously(object key, Func<CancellationToken, Awaitable> runner)
-        {
-            StopAsynchronous(key);
-            var source = new CancellationTokenSource();
-            _ = RunAndDiscard(key, source.Token, runner);
-            _asynchronousRunner.Add(key, source);
-        }
-
-        async Awaitable RunAndDiscard(object key, CancellationToken cancellation, Func<CancellationToken, Awaitable> runner)
+        private async void RunAndMonitorExit(Func<CancellationToken, Awaitable> runner)
         {
             try
             {
-                await runner(cancellation);
+                _running++;
+                await runner(_cancellationTokenSource.Token);
             }
             catch (Exception e)
             {
@@ -125,20 +131,8 @@ namespace Source.Screenplay.Editor
             }
             finally
             {
-                _asynchronousRunner.Remove(key);
+                _running--;
             }
-        }
-
-        public bool StopAsynchronous(object key)
-        {
-            if (_asynchronousRunner.Remove(key, out var cts))
-            {
-                cts.Cancel();
-                cts.Dispose();
-                return true;
-            }
-
-            return false;
         }
 
         public void RegisterRollback(System.Action rollback)
@@ -152,9 +146,20 @@ namespace Source.Screenplay.Editor
             _rollbacksRegistered.Push(() => { animState.Rollback(); });
         }
 
-        public void PlayCustomSignal(Func<CancellationToken, Awaitable> signal)
+        public void RegisterRollback(Animator animator, int hash, int layer)
         {
-            RunAsynchronously(new object(), signal);
+            var animState = new AnimationRollback(animator, hash, layer);
+            _rollbacksRegistered.Push(() => { animState.Rollback(); });
         }
+
+        public void AddCustomPreview(Func<CancellationToken, Awaitable> signal)
+        {
+            RunAndMonitorExit(signal);
+            _asynchronousRunner.Add(signal);
+        }
+
+        public bool Visited(IPrerequisite executable) => false;
+
+        public void Visiting(IBranch? executable) { }
     }
 }

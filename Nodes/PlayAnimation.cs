@@ -10,7 +10,7 @@ namespace Screenplay.Nodes
         [Required] public SceneObjectReference<GameObject> Target;
         [Required] public AnimationClip? Clip = null;
 
-        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IEventContext context, CancellationToken cancellation)
         {
             if (Target.TryGet(out var go, out var failure) == false)
             {
@@ -34,7 +34,7 @@ namespace Screenplay.Nodes
             } while (t < Clip.length);
         }
 
-        public override void FastForward(IContext context)
+        public override void FastForward(IEventContext context, CancellationToken cancellationToken)
         {
             if (Target.TryGet(out var go, out var failure) == false)
             {
@@ -58,7 +58,7 @@ namespace Screenplay.Nodes
 
             previewer.RegisterRollback(Clip, go);
             if (fastForwarded)
-                FastForward(previewer);
+                FastForward(previewer, CancellationToken.None);
             else
                 previewer.PlaySafeAction(this);
         }

@@ -8,7 +8,7 @@ using YNode;
 namespace Screenplay.Nodes.Triggers
 {
     [Serializable]
-    public class MultiTrigger : ScreenplayNode, ITriggerSetup
+    public class MultiTrigger : AbstractScreenplayNode, ITriggerSetup
     {
         [SerializeReference, Input, ListDrawerSettings(AlwaysAddDefaultValue = true, ShowFoldout = false)]
         public ITriggerSetup?[] Sources = Array.Empty<ITriggerSetup?>();

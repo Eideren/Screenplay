@@ -48,6 +48,11 @@ namespace Screenplay
             return value._genericRef;
         }
 
+        public T GetNowOrThrow()
+        {
+            return _genericRef.TryGet(out var r, out var result) ? (T)r : throw new InvalidOperationException($"Could not get {ScenePath} {typeof(T)}: {result}");
+        }
+
         public async Awaitable<T> GetAsync(CancellationToken cancellationToken)
         {
             return (T)await _genericRef.GetAsync(cancellationToken);

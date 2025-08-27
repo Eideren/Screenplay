@@ -33,14 +33,14 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) { }
 
-        public override void FastForward(IContext context) { }
+        public override void FastForward(IEventContext context, CancellationToken cancellationToken) { }
 
-        protected override Awaitable LinearExecution(IContext context, CancellationToken cancellation) => RunDialog(context, cancellation, false);
+        protected override Awaitable LinearExecution(IEventContext context, CancellationToken cancellation) => RunDialog(context, cancellation, false);
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)
         {
             if (fastForwarded == false)
-                previewer.PlayCustomSignal(cs => RunDialog(previewer, cs, true));
+                previewer.AddCustomPreview(cs => RunDialog(previewer, cs, true));
 
             if (previewer.GetDialogUI() is {} ui && Lines().LastOrDefault() is {} lastLine)
             {
@@ -52,7 +52,7 @@ namespace Screenplay.Nodes
             }
         }
 
-        private async Awaitable RunDialog(IContext context, CancellationToken cancellation, bool previewMode)
+        private async Awaitable RunDialog(IEventContext context, CancellationToken cancellation, bool previewMode)
         {
             if (context.GetDialogUI() is {} ui == false)
             {

@@ -14,13 +14,12 @@ namespace Screenplay.Nodes.Unity
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) => references.Add(Target);
 
-        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IEventContext context, CancellationToken cancellation)
         {
-            if (Target.TryGet(out var target, out _))
-                target.SetActive(Active);
+            FastForward(context, cancellation);
         }
 
-        public override void FastForward(IContext context)
+        public override void FastForward(IEventContext context, CancellationToken cancellationToken)
         {
             if (Target.TryGet(out var target, out _))
                 target.SetActive(Active);
@@ -33,7 +32,7 @@ namespace Screenplay.Nodes.Unity
                 bool currentValue = target.activeSelf;
                 previewer.RegisterRollback(() => target.SetActive(currentValue));
                 if (fastForwarded)
-                    FastForward(previewer);
+                    FastForward(previewer, CancellationToken.None);
                 else
                     previewer.PlaySafeAction(this);
             }

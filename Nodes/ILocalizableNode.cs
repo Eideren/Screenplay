@@ -6,7 +6,7 @@ namespace Screenplay.Nodes
     /// <summary>
     /// A node that contain localizable data
     /// </summary>
-    public interface ILocalizableNode : IScreenplayNodeValue
+    public interface ILocalizableNode : IScreenplayNode
     {
         /// <summary>
         /// Return all localizable text instance

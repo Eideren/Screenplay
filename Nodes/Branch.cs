@@ -10,20 +10,18 @@ using YNode;
 namespace Screenplay.Nodes
 {
     [Serializable]
-    public class Branch : ScreenplayNode, IExecutable
+    public class Branch : AbstractScreenplayNode, IExecutable<IEventContext>, IPrerequisiteVisitedSelf
     {
         [Output, SerializeReference, Tooltip("What would run when Prerequisite is true")]
-        public IExecutable? True;
+        public IExe<IEventContext>? True;
 
         [Output, SerializeReference, Tooltip("What would run when Prerequisite is false")]
-        public IExecutable? False;
+        public IExe<IEventContext>? False;
 
         [Input(Stroke = NoodleStroke.Dashed), Required, SerializeReference, LabelWidth(20), HorizontalGroup(width:90), Tooltip("Select which action should be taken next")]
         public IPrerequisite Prerequisite = null!;
 
-        public bool TestPrerequisite(HashSet<IPrerequisite> visited) => visited.Contains(this);
-
-        public IEnumerable<IExecutable> Followup()
+        public IEnumerable<IExe<IEventContext>> Followup()
         {
             if (True != null)
                 yield return True;
@@ -31,15 +29,15 @@ namespace Screenplay.Nodes
                 yield return False;
         }
 
-        public Awaitable InnerExecution(IContext context, CancellationToken cancellation)
+        public Awaitable InnerExecution(IEventContext context, CancellationToken cancellation)
         {
-            if (Prerequisite.TestPrerequisite(context.Visiting))
+            if (Prerequisite.TestPrerequisite(context))
                 return True.Execute(context, cancellation);
             else
                 return False.Execute(context, cancellation);
         }
 
-        public void FastForward(IContext context) { }
+        public void FastForward(IEventContext context, CancellationToken cancellationToken) { }
 
         public void SetupPreview(IPreviewer previewer, bool fastForwarded)
         {

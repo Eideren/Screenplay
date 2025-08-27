@@ -1,27 +1,30 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Screenplay.Nodes;
 using UnityEngine;
 
 namespace Screenplay
 {
-    public interface IPreviewer : IContext
+    public interface IPreviewer : IEventContext
     {
+        List<IScreenplayNode> Path { get; }
         bool Loop { get; }
         void RegisterRollback(System.Action rollback);
         void RegisterRollback(AnimationClip clip, GameObject go);
-        void PlayCustomSignal(Func<CancellationToken, Awaitable> signal);
+        void RegisterRollback(Animator animator, int hash, int layer);
+        void AddCustomPreview(Func<CancellationToken, Awaitable> signal);
 
         void PlayCustomSignal<T>(Func<CancellationToken, Awaitable<T>> signal)
         {
-            PlayCustomSignal(cts => AwaitableOfTWrapper(cts, signal));
+            AddCustomPreview(cts => AwaitableOfTWrapper(cts, signal));
 
             static async Awaitable AwaitableOfTWrapper(CancellationToken cancellation, Func<CancellationToken, Awaitable<T>> signal) => await signal(cancellation);
         }
 
-        void PlaySafeAction(IExecutable executable)
+        void PlaySafeAction(IExe<IEventContext> executable)
         {
-            PlayCustomSignal(PreviewPlay);
+            AddCustomPreview(PreviewPlay);
 
             async Awaitable PreviewPlay(CancellationToken cancellation)
             {

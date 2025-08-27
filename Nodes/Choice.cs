@@ -10,7 +10,7 @@ using YNode;
 namespace Screenplay.Nodes
 {
     [NodeTint(60, 60, 60)]
-    public class Choice : ScreenplayNode, IExecutable, ILocalizableNode
+    public class Choice : AbstractScreenplayNode, IExecutable<IEventContext>, ILocalizableNode, IPrerequisiteVisitedSelf
     {
         [ListDrawerSettings(ShowFoldout = false), LabelText(" ")]
         public ChoiceInstance[] Choices =
@@ -25,9 +25,7 @@ namespace Screenplay.Nodes
             }
         };
 
-        public bool TestPrerequisite(HashSet<IPrerequisite> visited) => visited.Contains(this);
-
-        public IEnumerable<IExecutable> Followup()
+        public IEnumerable<IExe<IEventContext>> Followup()
         {
             foreach (var instance in Choices)
             {
@@ -36,11 +34,11 @@ namespace Screenplay.Nodes
             }
         }
 
-        public void FastForward(IContext context) { }
+        public void FastForward(IEventContext context, CancellationToken cancellationToken) { }
 
-        public async Awaitable InnerExecution(IContext context, CancellationToken cancellation)
+        public async Awaitable InnerExecution(IEventContext context, CancellationToken cancellation)
         {
-            var choicesThin = Choices.Select(x => new Data(x.Prerequisite?.TestPrerequisite(context.Visiting) ?? true, x.Text.Content)).ToArray();
+            var choicesThin = Choices.Select(x => new Data(x.Prerequisite?.TestPrerequisite(context) ?? true, x.Text.Content)).ToArray();
             if (context.GetDialogUI() is {} ui == false)
             {
                 Debug.LogWarning($"{nameof(ScreenplayGraph.DialogUIPrefab)} has not been set, no interface to present this {nameof(Choice)} on");
@@ -86,7 +84,7 @@ namespace Screenplay.Nodes
             public IPrerequisite? Prerequisite;
 
             [Output, SerializeReference, LabelWidth(10), HorizontalGroup, Tooltip("What will be executed when this choice is selected")]
-            public IExecutable? Action;
+            public IExe<IEventContext>? Action;
 
             [HideLabel, InlineProperty]
             public LocalizableText Text;

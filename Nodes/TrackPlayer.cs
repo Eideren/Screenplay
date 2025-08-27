@@ -13,7 +13,7 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) => Track?.CollectReferences(references);
 
-        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IEventContext context, CancellationToken cancellation)
         {
             if (Track == null)
             {
@@ -24,7 +24,7 @@ namespace Screenplay.Nodes
             await Track.RangePlayer(GetTimeSpan(Track), cancellation, false);
         }
 
-        public override void FastForward(IContext context)
+        public override void FastForward(IEventContext context, CancellationToken cancellationToken)
         {
             if (Track == null)
             {
@@ -50,7 +50,7 @@ namespace Screenplay.Nodes
                 trackItem?.AppendRollbackMechanism(previewer);
 
             if (fastForwarded)
-                FastForward(previewer);
+                FastForward(previewer, CancellationToken.None);
             else
                 previewer.PlaySafeAction(this);
         }

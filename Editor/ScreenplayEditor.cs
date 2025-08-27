@@ -2,7 +2,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using Screenplay.Component;
-using Source.Screenplay.Editor;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -15,7 +14,9 @@ namespace Screenplay.Editor
 {
     public class ScreenplayEditor : CustomGraphWindow<ScreenplayGraph>
     {
-        private List<INodeValue> _previewChain = new();
+        private List<IScreenplayNode> _previewChain = new();
+        private List<IScreenplayNode> _rootToPreview = new();
+        private HashSet<IScreenplayNode> _reachable = new();
         private System.Action? _disposeCallbacks;
         private Previewer? _previewer;
         private bool _previewEnabled, _mapEnabled = true, _quickjump = true;
@@ -23,7 +24,8 @@ namespace Screenplay.Editor
         private bool _hasFocus;
         private Vector2 _quickjumpScroll;
 
-        public IReadOnlyList<INodeValue> PreviewChain => _previewChain;
+        public bool InPreviewChain(IScreenplayNode node) => _previewChain.Contains(node);
+        public bool IsReachable(IScreenplayNode node) => _reachable.Contains(node);
 
         protected override bool StickyEditorEnabled => false;
         protected override Rect NodeMap => _mapEnabled ? base.NodeMap : default;
@@ -108,9 +110,6 @@ namespace Screenplay.Editor
                 EditorGUILayout.EndScrollView();
             }
 
-            foreach (var value in _previewChain)
-                TryGetEditorFromValue(value)!.InPreviewPath = false;
-
             TryPreview();
 
             var dispatcher = FindFirstObjectByType<ScreenplayDispatcher>();
@@ -137,17 +136,12 @@ namespace Screenplay.Editor
         }
 
         [ThreadStatic]
-        private static HashSet<IExecutable>? _isNodeReachableVisitation;
+        private static HashSet<IScreenplayNode>? _isNodeReachableVisitation;
         private void RecalculateReachable()
         {
             _isNodeReachableVisitation ??= new();
             _isNodeReachableVisitation.Clear();
-            foreach (var node in Graph.Nodes)
-            {
-                if (TryGetEditorFromValue(node) is {} editor)
-                    editor.Reachable = false;
-            }
-
+            _reachable.Clear();
 
             foreach (var node in Graph.Nodes)
             {
@@ -155,15 +149,17 @@ namespace Screenplay.Editor
                     TraverseTree(e.Action);
             }
 
-            void TraverseTree(IExecutable branch)
+            void TraverseTree(IBranch? branch)
             {
+                if (branch is null)
+                    return;
+
                 if (_isNodeReachableVisitation!.Add(branch) == false)
                     return;
 
-                if (TryGetEditorFromValue(branch) is {} editor)
-                    editor.Reachable = true;
+                _reachable.Add(branch);
 
-                foreach (IExecutable otherActions in branch.Followup())
+                foreach (var otherActions in branch.Followup())
                     TraverseTree(otherActions);
             }
         }
@@ -176,21 +172,17 @@ namespace Screenplay.Editor
                 && (_previewFlags.Contains(PreviewFlags.Unfocused) || _hasFocus)
                 && (_previewFlags.Contains(PreviewFlags.InPlayMode) || EditorApplication.isPlaying == false))
             {
-                if (Selection.activeObject is YNode.Editor.NodeEditor selectedNode && selectedNode.Graph == Graph && selectedNode.Value is IPreviewable selectedPreviewable)
+                if (Selection.activeObject is NodeEditor selectedNode && selectedNode.Graph == Graph && selectedNode.Value is IPreviewable selectedPreviewable)
                 {
-                    if (_previewFlags.Contains(PreviewFlags.SelectedChain) && selectedPreviewable is IExecutable selectedAction)
-                    {
-                        Graph.IsNodeReachable(selectedAction, _previewChain);
-                    }
+                    _rootToPreview.Clear();
+                    if (selectedPreviewable is IBranch selectedAction)
+                        Graph.IsNodeReachable(selectedAction, _rootToPreview);
+                    if (_previewFlags.Contains(PreviewFlags.SelectedChain) && selectedPreviewable is IBranch)
+                        _previewChain.AddRange(_rootToPreview);
                     else
-                    {
                         _previewChain.Add(selectedPreviewable);
-                    }
                 }
             }
-
-            foreach (var value in _previewChain)
-                TryGetEditorFromValue(value)!.InPreviewPath = true;
 
             var currentSelection = _previewChain.Count > 0 ? _previewChain[^1] : null;
             if (currentSelection is null)
@@ -200,7 +192,7 @@ namespace Screenplay.Editor
             else if (_previewer is null || previousSelection != currentSelection) // Selection changed
             {
                 Rollback();
-                _previewer = new Previewer(_previewFlags.Contains(PreviewFlags.Loop), Graph.DialogUIPrefab, Graph);
+                _previewer = new Previewer(_previewFlags.Contains(PreviewFlags.Loop), Graph.DialogUIPrefab, _rootToPreview, Graph);
                 for (int i = 0; i < _previewChain.Count; i++)
                 {
                     if (_previewChain[i] is IPreviewable previewable)
@@ -225,9 +217,9 @@ namespace Screenplay.Editor
             }
         }
 
-        private NodeEditor? TryGetEditorFromValue(INodeValue value)
+        private ScreenplayNodeEditor? TryGetEditorFromValue(INodeValue value)
         {
-            return NodesToEditor[value] as NodeEditor;
+            return NodesToEditor[value] as ScreenplayNodeEditor;
         }
 
         protected override void OnEnable()
@@ -281,7 +273,7 @@ namespace Screenplay.Editor
         public override string GetNodeMenuName(System.Type type)
         {
             // ReSharper disable once RedundantNameQualifier
-            if (typeof(ScreenplayNode).IsAssignableFrom(type) || type == typeof(Notes))
+            if (typeof(AbstractScreenplayNode).IsAssignableFrom(type) || type == typeof(Notes))
             {
                 var str = base.GetNodeMenuName(type);
                 string comparison = typeof(ExecutableLinear).Namespace!.Replace('.', '/') + "/";

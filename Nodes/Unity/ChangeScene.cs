@@ -12,14 +12,14 @@ namespace Screenplay.Nodes.Unity
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) { }
 
-        protected override async Awaitable LinearExecution(IContext context, CancellationToken cancellation)
+        protected override async Awaitable LinearExecution(IEventContext context, CancellationToken cancellation)
         {
             var a = SceneManager.LoadSceneAsync(Scene.Path, LoadSceneMode.Single);
             a!.allowSceneActivation = true;
             await a;
         }
 
-        public override void FastForward(IContext context)
+        public override void FastForward(IEventContext context, CancellationToken cancellationToken)
         {
             SceneManager.LoadScene(Scene.Path, LoadSceneMode.Single);
         }

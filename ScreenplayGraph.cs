@@ -16,12 +16,14 @@ namespace Screenplay
         [Required]
         public Component.UIBase? DialogUIPrefab;
         public bool DebugRetainProgressInEditor;
-        private HashSet<IPrerequisite> _visited = new();
+        private HashSet<IPrerequisite> _visiting = new();
+        private Queue<IScreenplayNode?> _orderedVisitation = new();
         private HashSet<Event> _visitedEvents = new();
 
         // Only serialized for editor reloading purposes
         [SerializeField, HideInInspector] private Event? _event;
         [SerializeField, HideInInspector, SerializeReference] private List<IPrerequisite> __visitedSerializationProxy = new ();
+        [SerializeField, HideInInspector, SerializeReference] private List<IScreenplayNode?> __orderedVisitationSerializationProxy = new ();
         [SerializeField, HideInInspector, SerializeReference] private List<Event> __visitedEventsSerializationProxy = new ();
 
         /// <summary>
@@ -39,7 +41,7 @@ namespace Screenplay
                     if (value is Event e && e.Action is not null && (e.Repeatable || _visitedEvents.Contains(e) == false))
                         events.Add(e);
                     if (value is ICustomEntry customEntry)
-                        customEntry.Run(context.Visiting, cancellation);
+                        customEntry.Run(this, context, cancellation);
                 }
 
                 do
@@ -50,7 +52,7 @@ namespace Screenplay
                         {
                             if (e.TriggerSource is not null)
                                 continue;
-                            if (e.Prerequisite?.TestPrerequisite(_visited) == false)
+                            if (e.Prerequisite?.TestPrerequisite(context) == false)
                                 continue;
                             if (e.Action is null)
                                 continue;
@@ -72,7 +74,7 @@ namespace Screenplay
                             if (e.TriggerSource is null)
                                 continue;
 
-                            if (e.Prerequisite?.TestPrerequisite(_visited) == false)
+                            if (e.Prerequisite?.TestPrerequisite(context) == false)
                             {
                                 if (triggers.TryGetValue(e, out var outdatedTrigger))
                                     outdatedTrigger.Dispose();
@@ -123,7 +125,7 @@ namespace Screenplay
             }
         }
 
-        public bool Visited(IPrerequisite node) => _visited.Contains(node);
+        public bool Visited(IPrerequisite node) => _visiting.Contains(node);
 
         public IEnumerable<LocalizableText> GetLocalizableText()
         {
@@ -140,22 +142,25 @@ namespace Screenplay
         }
 
         [ThreadStatic]
-        private static HashSet<IExecutable>? _isNodeReachableVisitation;
-        public bool IsNodeReachable(IExecutable thisExecutable, List<INodeValue>? path = null)
+        private static HashSet<IBranch>? _isNodeReachableVisitation;
+        public bool IsNodeReachable(IBranch thisExecutable, List<IScreenplayNode>? path = null)
         {
             _isNodeReachableVisitation ??= new();
             _isNodeReachableVisitation.Clear();
             foreach (var node in Nodes)
             {
-                if (node is Event e && e.Action is not null)
+                if (node is IBranch b && node is Event or ICustomEntry)
                 {
-                    path?.Add(e);
-                    if (FindLeafAInBranchB(thisExecutable, e.Action, path))
-                        return true;
+                    path?.Add(b);
+                    foreach (var branch in b.Followup())
+                    {
+                        if (branch is not null && FindLeafAInBranchB(thisExecutable, branch, path))
+                            return true;
+                    }
                     path?.RemoveAt(path.Count-1);
                 }
 
-                static bool FindLeafAInBranchB(IExecutable target, IExecutable branch, List<INodeValue>? path)
+                static bool FindLeafAInBranchB(IBranch target, IBranch branch, List<IScreenplayNode>? path)
                 {
                     if (_isNodeReachableVisitation!.Add(branch) == false)
                         return false;
@@ -167,8 +172,10 @@ namespace Screenplay
                     }
 
                     path?.Add(branch);
-                    foreach (IExecutable otherActions in branch.Followup())
+                    foreach (var otherActions in branch.Followup())
                     {
+                        if (otherActions is null)
+                            continue;
                         if (FindLeafAInBranchB(target, otherActions, path))
                             return true;
                     }
@@ -185,7 +192,9 @@ namespace Screenplay
         {
             __visitedEventsSerializationProxy.Clear();
             __visitedSerializationProxy.Clear();
-            __visitedSerializationProxy.AddRange(_visited);
+            __orderedVisitationSerializationProxy.Clear();
+            __orderedVisitationSerializationProxy.AddRange(_orderedVisitation);
+            __visitedSerializationProxy.AddRange(_visiting);
             __visitedEventsSerializationProxy.AddRange(_visitedEvents);
 
             var guids = new Dictionary<Guid, LocalizableText>();
@@ -203,8 +212,10 @@ namespace Screenplay
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
             // This is to retain progress when reloading in play mode
+            foreach (var screenplayNodeValue in __orderedVisitationSerializationProxy)
+                _orderedVisitation.Enqueue(screenplayNodeValue);
             foreach (var prerequisite in __visitedSerializationProxy)
-                _visited.Add(prerequisite);
+                _visiting.Add(prerequisite);
             foreach (var e in __visitedEventsSerializationProxy)
                 _visitedEvents.Add(e);
         }
@@ -224,23 +235,34 @@ namespace Screenplay
                     if (screenplay.DebugRetainProgressInEditor)
                         continue;
                     screenplay._event = null;
+                    screenplay.__orderedVisitationSerializationProxy.Clear();
                     screenplay.__visitedSerializationProxy.Clear();
                     screenplay.__visitedEventsSerializationProxy.Clear();
-                    screenplay._visited.Clear();
+                    screenplay._visiting.Clear();
                     screenplay._visitedEvents.Clear();
                 }
             };
         }
 #endif
 
-        private record DefaultContext(ScreenplayGraph Source) : IContext, IDisposable
+        private record DefaultContext(ScreenplayGraph Source) : IEventContext, IDisposable
         {
             private Dictionary<object, CancellationTokenSource> _asynchronousRunner = new();
             private Component.UIBase? _dialogUI;
 
             public ScreenplayGraph Source { get; } = Source;
 
-            public HashSet<IPrerequisite> Visiting => Source._visited;
+            public Queue<IScreenplayNode?> OrderedVisitation => Source._orderedVisitation;
+
+
+            public void Visiting(IBranch? executable)
+            {
+                OrderedVisitation.Enqueue(executable);
+                if (executable is IPrerequisite prerequisite)
+                    Source._visiting.Add(prerequisite);
+            }
+
+            public bool Visited(IPrerequisite executable) => Source._visiting.Contains(executable);
 
             public void RunAsynchronously(object key, Func<CancellationToken, Awaitable> runner)
             {

@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Screenplay.Nodes.Triggers
 {
     [Serializable]
-    public class TriggerZone : ScreenplayNode, ITriggerSetup
+    public class TriggerZone : AbstractScreenplayNode, ITriggerSetup
     {
         [Required, ValidateInput(nameof(IsTrigger))] public SceneObjectReference<Collider> Target;
         public LayerMask LayerMask = ~0;
