@@ -47,6 +47,7 @@ namespace Screenplay.Editor
             Source = sourceParam;
             UnityEditor.Editor.finishedDefaultHeaderGUI += OnInspectorDrawHeaderGUI;
             Path = path;
+            EditorApplication.QueuePlayerLoopUpdate();
         }
 
         public void Dispose()
@@ -154,6 +155,18 @@ namespace Screenplay.Editor
         public void RegisterRollback(Animator animator, int hash, int layer)
         {
             var animState = new AnimationRollback(animator, hash, layer);
+            _rollbacksRegistered.Push(() => { animState.Rollback(); });
+        }
+
+        public void RegisterBoneOnlyRollback(Animator animator)
+        {
+            var animState = new AnimationRollback(animator);
+            _rollbacksRegistered.Push(() => { animState.Rollback(); });
+        }
+
+        public void RegisterRollback(Animator animator, AnimationClip clip)
+        {
+            var animState = new AnimationRollback(animator.gameObject, clip);
             _rollbacksRegistered.Push(() => { animState.Rollback(); });
         }
 

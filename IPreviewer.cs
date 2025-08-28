@@ -12,7 +12,9 @@ namespace Screenplay
         bool Loop { get; }
         void RegisterRollback(System.Action rollback);
         void RegisterRollback(AnimationClip clip, GameObject go);
+        void RegisterBoneOnlyRollback(Animator animator);
         void RegisterRollback(Animator animator, int hash, int layer);
+        void RegisterRollback(Animator animator, AnimationClip clip);
         void AddCustomPreview(Func<CancellationToken, Awaitable> signal);
 
         void PlayCustomSignal<T>(Func<CancellationToken, Awaitable<T>> signal)

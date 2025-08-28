@@ -26,6 +26,24 @@ namespace Screenplay
             _data = GetObjectState(animator, hash, layerIndex);
         }
 
+        public AnimationRollback(Animator animator)
+        {
+            for (HumanBodyBones i = 0; i < HumanBodyBones.LastBone; i++)
+            {
+                var transform = animator.GetBoneTransform(i);
+                if (transform)
+                {
+                    var localT = transform.localPosition;
+                    var localQ = transform.localRotation;
+                    _data += () =>
+                    {
+                        transform.localPosition = localT;
+                        transform.localRotation = localQ;
+                    };
+                }
+            }
+        }
+
         public void Rollback()
         {
             _data?.Invoke();
