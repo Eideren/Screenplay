@@ -106,7 +106,7 @@ namespace Screenplay
 
                     if (_event is null)
                     {
-                        await UniTask.NextFrame(cancellation);
+                        await UniTask.NextFrame(cancellation, cancelImmediately:true);
                         continue;
                     }
 

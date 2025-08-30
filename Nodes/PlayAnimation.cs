@@ -31,7 +31,7 @@ namespace Screenplay.Nodes
                 t += Time.deltaTime;
                 t = t > Clip.length ? Clip.length : t;
                 sampler.SampleAt(t);
-                await UniTask.NextFrame(cancellation);
+                await UniTask.NextFrame(cancellation, cancelImmediately:true);
             } while (t < Clip.length);
         }
 

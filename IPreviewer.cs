@@ -35,7 +35,7 @@ namespace Screenplay
 
                 if (Loop)
                 {
-                    await UniTask.WaitForSeconds(1f, cancellationToken: cancellation);
+                    await UniTask.WaitForSeconds(1f, cancellationToken: cancellation, cancelImmediately:true);
                 }
             }
         }

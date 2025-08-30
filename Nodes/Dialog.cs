@@ -83,11 +83,11 @@ namespace Screenplay.Nodes
                     {
                         if (ui.FastForwardRequested)
                         {
-                            await UniTask.NextFrame(cancellation);
+                            await UniTask.NextFrame(cancellation, cancelImmediately:true);
                             goto BREAK_TYPEWRITING;
                         }
 
-                        await UniTask.NextFrame(cancellation);
+                        await UniTask.NextFrame(cancellation, cancelImmediately:true);
                     }
                 }
 
@@ -102,11 +102,11 @@ namespace Screenplay.Nodes
                 {
                     if (ui.FastForwardRequested)
                     {
-                        await UniTask.NextFrame(cancellation);
+                        await UniTask.NextFrame(cancellation, cancelImmediately:true);
                         break;
                     }
 
-                    await UniTask.NextFrame(cancellation);
+                    await UniTask.NextFrame(cancellation, cancelImmediately:true);
                 }
             }
             ui.EndDialogPresentation();

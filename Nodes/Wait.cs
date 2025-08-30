@@ -12,7 +12,7 @@ namespace Screenplay.Nodes
 
         protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
         {
-            await UniTask.WaitForSeconds(Duration, cancellationToken:cancellation);
+            await UniTask.WaitForSeconds(Duration, cancellationToken:cancellation, cancelImmediately:true);
         }
 
         public override void FastForward(IEventContext context, CancellationToken cancellationToken) { }

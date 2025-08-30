@@ -51,7 +51,7 @@ namespace Screenplay.Nodes
                 }
 
                 previousT = t;
-                await UniTask.NextFrame(cancellation);
+                await UniTask.NextFrame(cancellation, cancelImmediately:true);
             } while (loop || t < timespan.end);
         }
 
@@ -87,7 +87,7 @@ namespace Screenplay.Nodes
                     }
 
                     previousT = DebugPlayHead;
-                    await UniTask.NextFrame(cancellation);
+                    await UniTask.NextFrame(cancellation, cancelImmediately:true);
                     if (DebugScrub != PreviewMode.Scrub && previewer.Loop && DebugPlayHead >= timespan.end)
                         DebugPlayHead -= timespan.end;
 
