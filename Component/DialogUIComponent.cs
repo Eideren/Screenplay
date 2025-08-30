@@ -38,7 +38,7 @@ namespace Screenplay.Component
             OnChoicePresented?.Invoke();
             var uniTaskSource = new UniTaskCompletionSource<Choice.Data>();
 
-            cancellation.Register(() => uniTaskSource.TrySetCanceled()); // Cannot unregister from the token so we're stuck with TrySetCanceled
+            await using var _ = cancellation.RegisterWithoutCaptureExecutionContext(() => uniTaskSource.TrySetCanceled());
 
             var choiceGameObjects = new List<GameObject>();
             foreach (var choice in choices)
