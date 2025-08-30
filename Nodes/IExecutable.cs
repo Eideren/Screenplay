@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Screenplay.Nodes
@@ -22,13 +23,13 @@ namespace Screenplay.Nodes
         /// <summary>
         /// Run the core logic of this action, use <see cref="IExecutableExtensions.Execute{T}"/> instead !
         /// </summary>
-        Awaitable InnerExecution(TContext context, CancellationToken cancellation);
+        UniTask InnerExecution(TContext context, CancellationToken cancellation);
 
         /// <summary>
         /// Fast-forward this branch's execution until we reach the end of <paramref name="data"/>,
         /// <paramref name="playbackStart"/> will be assigned to the node when data ran out, the node which we should resume from.
         /// </summary>
-        void FastForwardEval(TContext context, FastForwardData data, CancellationToken cancellation, out Awaitable? playbackStart);
+        void FastForwardEval(TContext context, FastForwardData data, CancellationToken cancellation, out UniTask? playbackStart);
     }
 
     public interface IExecutable<TContext> : IExe<TContext> where TContext : IExecutableContext<TContext>
@@ -46,7 +47,7 @@ namespace Screenplay.Nodes
         void FastForward(TContext context, CancellationToken cancellation);
 
         /// <inheritdoc/>
-        void IExe<TContext>.FastForwardEval(TContext context, FastForwardData data, CancellationToken cancellation, out Awaitable? playbackStart)
+        void IExe<TContext>.FastForwardEval(TContext context, FastForwardData data, CancellationToken cancellation, out UniTask? playbackStart)
         {
             if (data.TryPopMatch(Followup(), out var found))
             {
@@ -68,7 +69,7 @@ namespace Screenplay.Nodes
         /// <summary>
         /// Execute the given node and notify the context for visitation
         /// </summary>
-        public static async Awaitable Execute<TContext>(this IExe<TContext>? action, TContext context, CancellationToken cancellation)
+        public static async UniTask Execute<TContext>(this IExe<TContext>? action, TContext context, CancellationToken cancellation)
             where TContext : IExecutableContext<TContext>
         {
             context.Visiting(action);

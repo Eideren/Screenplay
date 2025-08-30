@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using YNode;
@@ -14,13 +15,13 @@ namespace Screenplay.Nodes
         [Output, SerializeReference, HideLabel, Tooltip("What would run right after this is done running")]
         public IExe<IEventContext>? Next;
 
-        public async Awaitable InnerExecution(IEventContext context, CancellationToken cancellation)
+        public async UniTask InnerExecution(IEventContext context, CancellationToken cancellation)
         {
             await LinearExecution(context, cancellation);
             await Next.Execute(context, cancellation);
         }
 
-        protected abstract Awaitable LinearExecution(IEventContext context, CancellationToken cancellation);
+        protected abstract UniTask LinearExecution(IEventContext context, CancellationToken cancellation);
 
         public abstract void FastForward(IEventContext context, CancellationToken cancellationToken);
 

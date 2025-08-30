@@ -1,21 +1,22 @@
 using System;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Screenplay
 {
-    public static class AwaitableExtensions
+    public static class UniTaskExtensions
     {
-        public static async Awaitable AwaitWithCancellation(this Awaitable awaitable, CancellationToken token)
+        public static async UniTask AwaitWithCancellation(this UniTask uniTask, CancellationToken token)
         {
-            var completionSource = new AwaitableCompletionSource();
+            var completionSource = new UniTaskCompletionSource();
             var registered = token.Register(() => completionSource.TrySetCanceled());
 
-            awaitable.GetAwaiter().OnCompleted(() =>
+            uniTask.GetAwaiter().OnCompleted(() =>
             {
                 try
                 {
-                    awaitable.GetAwaiter().GetResult();
+                    uniTask.GetAwaiter().GetResult();
                     completionSource.TrySetResult();
                 }
                 catch(Exception e)
@@ -24,31 +25,8 @@ namespace Screenplay
                 }
             });
 
-            await completionSource.Awaitable;
+            await completionSource.Task;
             await registered.DisposeAsync();
-        }
-
-        public static async Awaitable<T> AwaitWithCancellation<T>(this Awaitable<T> awaitable, CancellationToken token)
-        {
-            var completionSource = new AwaitableCompletionSource<T>();
-            var registered = token.Register(() => completionSource.TrySetCanceled());
-
-            awaitable.GetAwaiter().OnCompleted(() =>
-            {
-                try
-                {
-                    var r = awaitable.GetAwaiter().GetResult();
-                    completionSource.TrySetResult(r);
-                }
-                catch(Exception e)
-                {
-                    completionSource.TrySetException(e);
-                }
-            });
-
-            var v = await completionSource.Awaitable;
-            await registered.DisposeAsync();
-            return v;
         }
     }
 }

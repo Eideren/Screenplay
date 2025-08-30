@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using Screenplay.Component;
 using UnityEditor;
 using UnityEngine;
@@ -14,7 +15,7 @@ namespace Screenplay.Editor
     {
         private CancellationTokenSource _cancellationTokenSource = new();
         private int _running;
-        private List<Func<CancellationToken, Awaitable>> _asynchronousRunner = new();
+        private List<Func<CancellationToken, UniTask>> _asynchronousRunner = new();
         private Stack<Action> _rollbacksRegistered = new();
         private bool _loopPreview;
         private UIBase? _dialogUIComponentPrefab, _dialogUI;
@@ -123,7 +124,7 @@ namespace Screenplay.Editor
             }
         }
 
-        private async void RunAndMonitorExit(Func<CancellationToken, Awaitable> runner)
+        private async void RunAndMonitorExit(Func<CancellationToken, UniTask> runner)
         {
             try
             {
@@ -170,7 +171,7 @@ namespace Screenplay.Editor
             _rollbacksRegistered.Push(() => { animState.Rollback(); });
         }
 
-        public void AddCustomPreview(Func<CancellationToken, Awaitable> signal)
+        public void AddCustomPreview(Func<CancellationToken, UniTask> signal)
         {
             RunAndMonitorExit(signal);
             _asynchronousRunner.Add(signal);

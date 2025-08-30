@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -35,7 +36,7 @@ namespace Screenplay.Nodes
 
         public override void FastForward(IEventContext context, CancellationToken cancellationToken) { }
 
-        protected override Awaitable LinearExecution(IEventContext context, CancellationToken cancellation) => RunDialog(context, cancellation, false);
+        protected override UniTask LinearExecution(IEventContext context, CancellationToken cancellation) => RunDialog(context, cancellation, false);
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)
         {
@@ -52,7 +53,7 @@ namespace Screenplay.Nodes
             }
         }
 
-        private async Awaitable RunDialog(IEventContext context, CancellationToken cancellation, bool previewMode)
+        private async UniTask RunDialog(IEventContext context, CancellationToken cancellation, bool previewMode)
         {
             if (context.GetDialogUI() is {} ui == false)
             {
@@ -82,11 +83,11 @@ namespace Screenplay.Nodes
                     {
                         if (ui.FastForwardRequested)
                         {
-                            await Awaitable.NextFrameAsync(cancellation);
+                            await UniTask.NextFrame(cancellation);
                             goto BREAK_TYPEWRITING;
                         }
 
-                        await Awaitable.NextFrameAsync(cancellation);
+                        await UniTask.NextFrame(cancellation);
                     }
                 }
 
@@ -101,11 +102,11 @@ namespace Screenplay.Nodes
                 {
                     if (ui.FastForwardRequested)
                     {
-                        await Awaitable.NextFrameAsync(cancellation);
+                        await UniTask.NextFrame(cancellation);
                         break;
                     }
 
-                    await Awaitable.NextFrameAsync(cancellation);
+                    await UniTask.NextFrame(cancellation);
                 }
             }
             ui.EndDialogPresentation();

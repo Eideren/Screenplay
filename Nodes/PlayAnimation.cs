@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -10,7 +11,7 @@ namespace Screenplay.Nodes
         [Required] public SceneObjectReference<GameObject> Target;
         [Required] public AnimationClip? Clip = null;
 
-        protected override async Awaitable LinearExecution(IEventContext context, CancellationToken cancellation)
+        protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
         {
             if (Target.TryGet(out var go, out var failure) == false)
             {
@@ -30,7 +31,7 @@ namespace Screenplay.Nodes
                 t += Time.deltaTime;
                 t = t > Clip.length ? Clip.length : t;
                 sampler.SampleAt(t);
-                await Awaitable.NextFrameAsync(cancellation);
+                await UniTask.NextFrame(cancellation);
             } while (t < Clip.length);
         }
 

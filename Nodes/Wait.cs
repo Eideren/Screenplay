@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
-using UnityEngine;
+using Cysharp.Threading.Tasks;
 
 namespace Screenplay.Nodes
 {
@@ -10,9 +10,9 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) { }
 
-        protected override async Awaitable LinearExecution(IEventContext context, CancellationToken cancellation)
+        protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
         {
-            await Awaitable.WaitForSecondsAsync(Duration, cancellation);
+            await UniTask.WaitForSeconds(Duration, cancellationToken:cancellation);
         }
 
         public override void FastForward(IEventContext context, CancellationToken cancellationToken) { }

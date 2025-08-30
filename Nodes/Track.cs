@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using Screenplay.Nodes.TrackItems;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -32,7 +33,7 @@ namespace Screenplay.Nodes
             return duration;
         }
 
-        public async Awaitable RangePlayer((float start, float end) timespan, CancellationToken cancellation, bool loop)
+        public async UniTask RangePlayer((float start, float end) timespan, CancellationToken cancellation, bool loop)
         {
             using var samplers = GetDisposableSamplers();
             float t = timespan.start;
@@ -50,7 +51,7 @@ namespace Screenplay.Nodes
                 }
 
                 previousT = t;
-                await Awaitable.NextFrameAsync(cancellation);
+                await UniTask.NextFrame(cancellation);
             } while (loop || t < timespan.end);
         }
 
@@ -68,7 +69,7 @@ namespace Screenplay.Nodes
             previewer.AddCustomPreview(Preview);
             return;
 
-            async Awaitable Preview(CancellationToken cancellation)
+            async UniTask Preview(CancellationToken cancellation)
             {
                 var timespan = (start:0f, end:Duration());
                 using var samplers = GetDisposableSamplers();
@@ -86,7 +87,7 @@ namespace Screenplay.Nodes
                     }
 
                     previousT = DebugPlayHead;
-                    await Awaitable.NextFrameAsync(cancellation);
+                    await UniTask.NextFrame(cancellation);
                     if (DebugScrub != PreviewMode.Scrub && previewer.Loop && DebugPlayHead >= timespan.end)
                         DebugPlayHead -= timespan.end;
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -36,7 +37,7 @@ namespace Screenplay.Nodes
 
         public void FastForward(IEventContext context, CancellationToken cancellationToken) { }
 
-        public async Awaitable InnerExecution(IEventContext context, CancellationToken cancellation)
+        public async UniTask InnerExecution(IEventContext context, CancellationToken cancellation)
         {
             var choicesThin = Choices.Select(x => new Data(x.Prerequisite?.TestPrerequisite(context) ?? true, x.Text.Content)).ToArray();
             if (context.GetDialogUI() is {} ui == false)

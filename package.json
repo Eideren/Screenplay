@@ -8,6 +8,10 @@
     "name": "Eideren",
     "url": "https://github.com/Eideren"
   },
+  "dependencies":
+  {
+    "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask"
+  },
   "keywords": [
     "Story",
     "Narrative",

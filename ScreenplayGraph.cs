@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using YNode;
 using Screenplay.Nodes;
@@ -27,9 +28,9 @@ namespace Screenplay
         [SerializeField, HideInInspector, SerializeReference] private List<Event> __visitedEventsSerializationProxy = new ();
 
         /// <summary>
-        /// You must dispose of this Awaitable when reloading a running game.
+        /// You must dispose of this UniTask when reloading a running game.
         /// </summary>
-        public async Awaitable StartExecution(CancellationToken cancellation)
+        public async UniTask StartExecution(CancellationToken cancellation)
         {
             using var context = new DefaultContext(this);
             var events = new List<Event>();
@@ -105,7 +106,7 @@ namespace Screenplay
 
                     if (_event is null)
                     {
-                        await Awaitable.NextFrameAsync(cancellation);
+                        await UniTask.NextFrame(cancellation);
                         continue;
                     }
 
@@ -264,7 +265,7 @@ namespace Screenplay
 
             public bool Visited(IPrerequisite executable) => Source._visiting.Contains(executable);
 
-            public void RunAsynchronously(object key, Func<CancellationToken, Awaitable> runner)
+            public void RunAsynchronously(object key, Func<CancellationToken, UniTask> runner)
             {
                 StopAsynchronous(key);
                 var source = new CancellationTokenSource();
@@ -272,7 +273,7 @@ namespace Screenplay
                 _asynchronousRunner.Add(key, source);
             }
 
-            async Awaitable RunAndDiscard(object key, CancellationToken cancellation, Func<CancellationToken, Awaitable> runner)
+            async UniTask RunAndDiscard(object key, CancellationToken cancellation, Func<CancellationToken, UniTask> runner)
             {
                 try
                 {

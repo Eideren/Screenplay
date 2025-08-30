@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using Screenplay.Component;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -53,7 +54,7 @@ namespace Screenplay
             return _genericRef.TryGet(out var r, out var result) ? (T)r : throw new InvalidOperationException($"Could not get {ScenePath} {typeof(T)}: {result}");
         }
 
-        public async Awaitable<T> GetAsync(CancellationToken cancellationToken)
+        public async UniTask<T> GetAsync(CancellationToken cancellationToken)
         {
             return (T)await _genericRef.GetAsync(cancellationToken);
         }
@@ -98,7 +99,7 @@ namespace Screenplay
             return false;
         }
 
-        public Awaitable<Object> GetAsync(CancellationToken cancellationToken)
+        public UniTask<Object> GetAsync(CancellationToken cancellationToken)
         {
             return ScreenplayReference.GetAsync(_objId, cancellationToken);
         }

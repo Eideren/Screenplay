@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.Events;
@@ -31,13 +32,13 @@ namespace Screenplay.Component
         public override void StartDialogPresentation() => OnStart?.Invoke();
         public override void EndDialogPresentation() => OnEnd?.Invoke();
 
-        public override async Awaitable<Choice.Data> ChoicePresentation(Choice.Data[] choices, CancellationToken cancellation)
+        public override async UniTask<Choice.Data> ChoicePresentation(Choice.Data[] choices, CancellationToken cancellation)
         {
             DialogChoiceTemplate.gameObject.SetActive(false);
             OnChoicePresented?.Invoke();
-            var awaitableSource = new AwaitableCompletionSource<Choice.Data>();
+            var uniTaskSource = new UniTaskCompletionSource<Choice.Data>();
 
-            cancellation.Register(() => awaitableSource.TrySetCanceled()); // Cannot unregister from the token so we're stuck with TrySetCanceled
+            cancellation.Register(() => uniTaskSource.TrySetCanceled()); // Cannot unregister from the token so we're stuck with TrySetCanceled
 
             var choiceGameObjects = new List<GameObject>();
             foreach (var choice in choices)
@@ -50,12 +51,12 @@ namespace Screenplay.Component
                 uiChoice.gameObject.SetActive(true);
                 uiChoice.Label.text = choice.Text;
                 uiChoice.Button.interactable = choice.Enabled;
-                uiChoice.Button.onClick.AddListener(() => awaitableSource.TrySetResult(choice));
+                uiChoice.Button.onClick.AddListener(() => uniTaskSource.TrySetResult(choice));
             }
 
             try
             {
-                return await awaitableSource.Awaitable;
+                return await uniTaskSource.Task;
             }
             finally
             {

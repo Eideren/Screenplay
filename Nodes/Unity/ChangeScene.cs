@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -12,7 +13,7 @@ namespace Screenplay.Nodes.Unity
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) { }
 
-        protected override async Awaitable LinearExecution(IEventContext context, CancellationToken cancellation)
+        protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
         {
             var a = SceneManager.LoadSceneAsync(Scene.Path, LoadSceneMode.Single);
             a!.allowSceneActivation = true;

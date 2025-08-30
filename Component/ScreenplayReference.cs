@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -9,7 +10,7 @@ namespace Screenplay.Component
     [ExecuteAlways]
     public class ScreenplayReference : MonoBehaviour, ISerializationCallbackReceiver
     {
-        private static readonly Dictionary<guid, AwaitableCompletionSource<Object>> s_completionSources = new();
+        private static readonly Dictionary<guid, UniTaskCompletionSource<Object>> s_completionSources = new();
         private static readonly Dictionary<guid, Object> s_idToRef = new();
         private static readonly Dictionary<Object, guid> s_refToId = new();
 
@@ -34,7 +35,7 @@ namespace Screenplay.Component
                         s_idToRef[Guid] = Reference;
                         s_refToId[Reference] = Guid;
                         if (s_completionSources.TryGetValue(Guid, out var acs))
-                            acs.SetResult(this);
+                            acs.TrySetResult(this);
                     }
                 }
             }
@@ -47,7 +48,7 @@ namespace Screenplay.Component
                 if (s_idToRef.TryGetValue(Guid, out var existingRef) && ReferenceEquals(existingRef, Reference))
                 {
                     if (s_completionSources.TryGetValue(Guid, out var acs))
-                        acs.SetResult(Reference);
+                        acs.TrySetResult(Reference);
                 }
             }
         }
@@ -102,7 +103,7 @@ namespace Screenplay.Component
         public static bool TryGetRef(guid guid, out Object obj) => s_idToRef.TryGetValue(guid, out obj) && obj != null; // obj may be destroyed
         public static bool TryGetId(Object obj, out guid guid) => s_refToId.TryGetValue(obj, out guid);
 
-        public static async Awaitable<Object> GetAsync(guid guid, CancellationToken cancellationToken)
+        public static async UniTask<Object> GetAsync(guid guid, CancellationToken cancellationToken)
         {
             if (TryGetRef(guid, out var output))
             {
@@ -111,9 +112,9 @@ namespace Screenplay.Component
             else
             {
                 if (s_completionSources.TryGetValue(guid, out var acs) == false)
-                    s_completionSources[guid] = acs = new AwaitableCompletionSource<Object>();
+                    s_completionSources[guid] = acs = new UniTaskCompletionSource<Object>();
 
-                return await acs.Awaitable.AwaitWithCancellation(cancellationToken);
+                return await acs.Task.AttachExternalCancellation(cancellationToken);
             }
         }
 

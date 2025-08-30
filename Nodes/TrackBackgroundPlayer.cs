@@ -1,4 +1,5 @@
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 // Async method lacks 'await' operators and will run synchronously - done on purpose
 #pragma warning disable CS1998
@@ -9,9 +10,9 @@ namespace Screenplay.Nodes
     {
         public bool Loop;
 
-        private Awaitable AsyncRunner(CancellationToken cancellation) => Track!.RangePlayer(GetTimeSpan(Track), cancellation, Loop);
+        private UniTask AsyncRunner(CancellationToken cancellation) => Track!.RangePlayer(GetTimeSpan(Track), cancellation, Loop);
 
-        protected override async Awaitable LinearExecution(IEventContext context, CancellationToken cancellation)
+        protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
         {
             if (Track == null)
             {

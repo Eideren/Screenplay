@@ -1,4 +1,5 @@
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -11,7 +12,7 @@ namespace Screenplay.Component
         [Required] public ScreenplayGraph Screenplay = null!;
 
         // ReSharper disable once Unity.IncorrectMethodSignature
-        private async Awaitable OnEnable()
+        private async UniTask OnEnable()
         {
             if (transform.parent != null)
                 transform.parent = null;
