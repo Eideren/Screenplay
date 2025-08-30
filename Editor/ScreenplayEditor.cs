@@ -9,6 +9,7 @@ using YNode;
 using YNode.Editor;
 using Screenplay.Nodes;
 using Event = Screenplay.Nodes.Event;
+using Random = Unity.Mathematics.Random;
 
 namespace Screenplay.Editor
 {
@@ -23,6 +24,8 @@ namespace Screenplay.Editor
         private PreviewFlags _previewFlags = PreviewFlags.Loop | PreviewFlags.SelectedChain;
         private bool _hasFocus;
         private Vector2 _quickjumpScroll;
+        private uint _fixedSeed;
+        private Random _random = new Random(1);
 
         public bool InPreviewChain(IScreenplayNode node) => _previewChain.Contains(node);
         public bool IsReachable(IScreenplayNode node) => _reachable.Contains(node);
@@ -61,6 +64,8 @@ namespace Screenplay.Editor
                 else
                     GUI.backgroundColor = previousColor;
                 _quickjump = GUILayout.Button("Quickjump table", EditorStyles.toolbarButton) ? !_quickjump : _quickjump;
+
+                _fixedSeed = (uint)EditorGUILayout.IntField(new GUIContent("Seed:"), (int)_fixedSeed);
 
                 GUILayout.FlexibleSpace();
 
@@ -192,7 +197,7 @@ namespace Screenplay.Editor
             else if (_previewer is null || previousSelection != currentSelection) // Selection changed
             {
                 Rollback();
-                _previewer = new Previewer(_previewFlags.Contains(PreviewFlags.Loop), Graph.DialogUIPrefab, _rootToPreview, Graph);
+                _previewer = new Previewer(_previewFlags.Contains(PreviewFlags.Loop), _fixedSeed == 0 ? _random.NextUInt(1, uint.MaxValue) : _fixedSeed, Graph.DialogUIPrefab, _rootToPreview, Graph);
                 for (int i = 0; i < _previewChain.Count; i++)
                 {
                     if (_previewChain[i] is IPreviewable previewable)

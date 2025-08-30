@@ -14,6 +14,9 @@ namespace Screenplay
         /// </summary>
         Component.UIBase? GetDialogUI();
 
+        /// <summary> Return a new random seed to be used during the execution of the Screenplay </summary>
+        uint NextSeed();
+
         void Visiting(IBranch? exe);
 
         void IExecutableContext<IEventContext>.Visiting(IExe<IEventContext>? executable) => Visiting(executable);

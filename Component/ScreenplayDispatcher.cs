@@ -10,6 +10,7 @@ namespace Screenplay.Component
         private CancellationTokenSource? _existing;
 
         [Required] public ScreenplayGraph Screenplay = null!;
+        public uint Seed = 0;
 
         // ReSharper disable once Unity.IncorrectMethodSignature
         private async UniTask OnEnable()
@@ -19,7 +20,7 @@ namespace Screenplay.Component
 
             DontDestroyOnLoad(gameObject);
             _existing = new CancellationTokenSource();
-            await Screenplay.StartExecution(_existing.Token);
+            await Screenplay.StartExecution(_existing.Token, Seed == 0 ? (uint)System.Diagnostics.Stopwatch.GetTimestamp() : Seed);
         }
 
         private void OnDisable()

@@ -19,6 +19,7 @@ namespace Screenplay.Editor
         private Stack<Action> _rollbacksRegistered = new();
         private bool _loopPreview;
         private UIBase? _dialogUIComponentPrefab, _dialogUI;
+        private Unity.Mathematics.Random _random;
 
         public ScreenplayGraph Source { get; }
 
@@ -40,7 +41,7 @@ namespace Screenplay.Editor
             return _dialogUI;
         }
 
-        public Previewer(bool loopPreview, UIBase? dialogUIComponentPrefab, List<IScreenplayNode> path, ScreenplayGraph sourceParam)
+        public Previewer(bool loopPreview, uint seed, UIBase? dialogUIComponentPrefab, List<IScreenplayNode> path, ScreenplayGraph sourceParam)
         {
             _loopPreview = loopPreview;
             _dialogUIComponentPrefab = dialogUIComponentPrefab;
@@ -49,6 +50,7 @@ namespace Screenplay.Editor
             UnityEditor.Editor.finishedDefaultHeaderGUI += OnInspectorDrawHeaderGUI;
             Path = path;
             EditorApplication.QueuePlayerLoopUpdate();
+            _random = new(seed);
         }
 
         public void Dispose()
@@ -180,5 +182,7 @@ namespace Screenplay.Editor
         public bool Visited(IPrerequisite executable) => false;
 
         public void Visiting(IBranch? executable) { }
+
+        public uint NextSeed() => _random.NextUInt(1, uint.MaxValue);
     }
 }

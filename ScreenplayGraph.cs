@@ -8,6 +8,7 @@ using Screenplay.Nodes;
 using Screenplay.Nodes.Triggers;
 using Sirenix.OdinInspector;
 using Event = Screenplay.Nodes.Event;
+using Random = Unity.Mathematics.Random;
 
 namespace Screenplay
 {
@@ -30,9 +31,9 @@ namespace Screenplay
         /// <summary>
         /// You must dispose of this UniTask when reloading a running game.
         /// </summary>
-        public async UniTask StartExecution(CancellationToken cancellation)
+        public async UniTask StartExecution(CancellationToken cancellation, uint seed)
         {
-            using var context = new DefaultContext(this);
+            using var context = new DefaultContext(this, seed);
             var events = new List<Event>();
             var triggers = new Dictionary<Event, ITrigger>();
             try
@@ -246,78 +247,39 @@ namespace Screenplay
         }
 #endif
 
-        private record DefaultContext(ScreenplayGraph Source) : IEventContext, IDisposable
+        private record DefaultContext : IEventContext, IDisposable
         {
-            private Dictionary<object, CancellationTokenSource> _asynchronousRunner = new();
             private Component.UIBase? _dialogUI;
+            private Random _random;
 
-            public ScreenplayGraph Source { get; } = Source;
+            public ScreenplayGraph Source { get; }
 
-            public Queue<IScreenplayNode?> OrderedVisitation => Source._orderedVisitation;
-
-
-            public void Visiting(IBranch? executable)
+            public DefaultContext(ScreenplayGraph Source, uint seed)
             {
-                OrderedVisitation.Enqueue(executable);
-                if (executable is IPrerequisite prerequisite)
-                    Source._visiting.Add(prerequisite);
-            }
-
-            public bool Visited(IPrerequisite executable) => Source._visiting.Contains(executable);
-
-            public void RunAsynchronously(object key, Func<CancellationToken, UniTask> runner)
-            {
-                StopAsynchronous(key);
-                var source = new CancellationTokenSource();
-                _ = RunAndDiscard(key, source.Token, runner);
-                _asynchronousRunner.Add(key, source);
-            }
-
-            async UniTask RunAndDiscard(object key, CancellationToken cancellation, Func<CancellationToken, UniTask> runner)
-            {
-                try
-                {
-                    await runner(cancellation);
-                }
-                catch (Exception e)
-                {
-                    if (e is not OperationCanceledException)
-                        Debug.LogException(e);
-                }
-                finally
-                {
-                    _asynchronousRunner.Remove(key);
-                }
-            }
-
-            public bool StopAsynchronous(object key)
-            {
-                if (_asynchronousRunner.Remove(key, out var cts))
-                {
-                    cts.Cancel();
-                    cts.Dispose();
-                    return true;
-                }
-
-                return false;
-            }
-
-            public Component.UIBase? GetDialogUI()
-            {
-                return _dialogUI != null ? _dialogUI : _dialogUI = Instantiate(Source.DialogUIPrefab);
+                this.Source = Source;
+                _random = new Random(seed);
             }
 
             public void Dispose()
             {
-                foreach (var (_, runner) in _asynchronousRunner)
-                {
-                    runner.Cancel();
-                    runner.Dispose();
-                }
-                _asynchronousRunner.Clear();
-
                 if (_dialogUI != null)
                     Destroy(_dialogUI.gameObject);
+            }
+
+            public void Visiting(IBranch? executable)
+            {
+                Source._orderedVisitation.Enqueue(executable);
+                if (executable is IPrerequisite prerequisite)
+                    Source._visiting.Add(prerequisite);
+            }
+
+            public uint NextSeed() => _random.NextUInt(1, uint.MaxValue);
+
+            public bool Visited(IPrerequisite executable) => Source._visiting.Contains(executable);
+
+            public Component.UIBase? GetDialogUI()
+            {
+                return _dialogUI != null ? _dialogUI : _dialogUI = Instantiate(Source.DialogUIPrefab);
             }
         }
     }
