@@ -8,8 +8,10 @@ using UnityEditor;
 
 namespace Screenplay.Editor
 {
-    public class NotesEditor : CustomNodeEditor<Notes>
+    public class NotesEditor : NodeEditor, ICustomNodeEditor<Notes>
     {
+        public new Notes Value => (Notes)base.Value;
+
         private static Dictionary<int, GUIStyle> s_bodyStyleBackingField = new();
 
         private GUIStyle BodyStyle

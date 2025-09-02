@@ -5,8 +5,10 @@ using Event = Screenplay.Nodes.Event;
 
 namespace Screenplay.Editor
 {
-    public class ScreenplayNodeEditor : CustomNodeEditor<AbstractScreenplayNode>
+    public class ScreenplayNodeEditor : NodeEditor, ICustomNodeEditor<AbstractScreenplayNode>
     {
+        public new AbstractScreenplayNode Value => (AbstractScreenplayNode)base.Value;
+
         public override void OnHeaderGUI()
         {
             var thisScreenplay = (ScreenplayGraph)Graph;

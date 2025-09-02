@@ -7,8 +7,10 @@ using Event = UnityEngine.Event;
 
 namespace Screenplay.Editor
 {
-    public class GroupEditor : CustomNodeEditor<Group>
+    public class GroupEditor : NodeEditor, ICustomNodeEditor<Group>
     {
+        public new Group Value => (Group)base.Value;
+
         private const int EdgeWidth = 14;
 
         private static GUIStyle BodyStyle

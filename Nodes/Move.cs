@@ -3,8 +3,6 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
-// Async method lacks 'await' operators and will run synchronously - done on purpose
-#pragma warning disable CS1998
 
 namespace Screenplay.Nodes
 {
@@ -16,16 +14,17 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) => references.Add(Target);
 
-        protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
+        protected override UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
         {
             if (Target.TryGet(out var go, out var failure) == false)
             {
                 Debug.LogWarning($"Failed to {nameof(Move)}, {nameof(Target)}: {failure}", context.Source);
-                return;
+                return UniTask.CompletedTask;
             }
 
             go.transform.position = Destination;
             go.transform.rotation = Rotation;
+            return UniTask.CompletedTask;
         }
 
         public override void FastForward(IEventContext context, CancellationToken cancellationToken)
