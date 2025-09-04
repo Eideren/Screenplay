@@ -29,6 +29,7 @@ namespace Screenplay.Nodes.Barriers
             private IEventContext _entryContext;
             private CancellationToken _initialTokenSource;
             private Signal<BarrierEnd> _continuationSignal;
+            private Signal<IBarrierPart> _nextWavefrontSignal;
             private long _disposed;
 
             public Group(IEventContext context, CancellationToken initialTokenSource, Barrier entryPoint, out UniTask<BarrierEnd> completion)
@@ -36,6 +37,7 @@ namespace Screenplay.Nodes.Barriers
                 _owningThreadId = Thread.CurrentThread.ManagedThreadId;
                 _entryContext = context;
                 _initialTokenSource = initialTokenSource;
+                _nextWavefrontSignal = new Signal<IBarrierPart>();
                 _continuationSignal = new Signal<BarrierEnd>();
 
                 for (IBarrierPart? part = entryPoint; part != null; part = part.NextBarrier)
@@ -72,17 +74,19 @@ namespace Screenplay.Nodes.Barriers
                     Debug.Assert(_loopDestination.Count == 0);
                 }
 
+                _nextWavefrontSignal.CancelWaitingSignals();
+                _nextWavefrontSignal.Dispose();
                 _continuationSignal.CancelWaitingSignals();
                 _continuationSignal.Dispose();
             }
 
-            public static void NotifyReceivedGroup(CancellationToken tokenId, IBarrierPart receiver)
+            public static UniTask NotifyReceivedGroup(CancellationToken tokenId, IBarrierPart receiver)
             {
                 Group group;
                 lock (s_branchToGroup)
                     group = s_branchToGroup[tokenId]; // No TryGet, it would be an error for this dictionary to not have this id
 
-                group.NotifReceivedGroup(tokenId, receiver);
+                return group.NotifReceivedGroup(tokenId, receiver);
             }
 
             private void AddLoops(IBarrierPart part)
@@ -178,12 +182,16 @@ namespace Screenplay.Nodes.Barriers
                 finally
                 {
                     lock (_runningLinears)
-                        _runningLinears.Remove(cts);
+                    {
+                        if (_runningLinears.Contains(cts)) // This may occur if the connection for this linear does not reach a barrier
+                            NotifReceivedGroup(cts.Token, _continuation!);
+                    }
+
                     cts.Dispose();
                 }
             }
 
-            private void NotifReceivedGroup(CancellationToken tokenId, IBarrierPart receiver)
+            private UniTask NotifReceivedGroup(CancellationToken tokenId, IBarrierPart receiver)
             {
                 if (_owningThreadId != Thread.CurrentThread.ManagedThreadId)
                     throw new Exception("Object accessed from a different thread than its constructor's, this is not allowed");
@@ -193,7 +201,7 @@ namespace Screenplay.Nodes.Barriers
                 lock (_runningLinears)
                 {
                     if (Interlocked.Read(ref _disposed) != 0)
-                        return;
+                        return UniTask.CompletedTask;
 
                     for (int i = _runningLinears.Count - 1; i >= 0; i--)
                     {
@@ -215,7 +223,7 @@ namespace Screenplay.Nodes.Barriers
                         foreach (var tuple in _loopDestination)
                         {
                             if (tuple.tokenSource.Token == tokenId)
-                                return; // This is most likely a loop, we can just return and the loop should go again
+                                return UniTask.CompletedTask; // This is most likely a loop, we can just return and the loop should go again
                         }
                     }
 
@@ -227,12 +235,14 @@ namespace Screenplay.Nodes.Barriers
                     _continuation = receiver;
 
                 if (lastOne == false)
-                    return; // Still waiting on another linear to come in ...
+                    return _nextWavefrontSignal.NewTask(tokenId, true); // Still waiting on another linear to come in ...
+
+                _nextWavefrontSignal.Send(_continuation);
 
                 if (_continuation is BarrierEnd barrierEnd)
                 {
                     _continuationSignal.Send(barrierEnd);
-                    return;
+                    return UniTask.CompletedTask;
                 }
 
                 int indexOfThisBarrier = _barrierChain.IndexOf(_continuation);
@@ -256,6 +266,7 @@ namespace Screenplay.Nodes.Barriers
                 _previousBarrierIndex = indexOfThisBarrier;
 
                 AddLinears(_continuation);
+                return UniTask.CompletedTask;
             }
         }
     }

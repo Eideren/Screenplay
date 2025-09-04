@@ -34,10 +34,9 @@ namespace Screenplay.Nodes.Barriers
             yield break;
         }
 
-        public UniTask InnerExecution(T context, CancellationToken cancellation)
+        public virtual UniTask InnerExecution(T context, CancellationToken cancellation)
         {
-            IBarrierPart.Group.NotifyReceivedGroup(cancellation, Parent);
-            return UniTask.CompletedTask;
+            return IBarrierPart.Group.NotifyReceivedGroup(cancellation, Parent);
         }
 
         public void FastForwardEval(T context, FastForwardData data, CancellationToken cancellation, out UniTask? playbackStart)
