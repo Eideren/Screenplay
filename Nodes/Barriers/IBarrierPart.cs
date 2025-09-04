@@ -14,8 +14,6 @@ namespace Screenplay.Nodes.Barriers
         IPort[] InheritedPorts { get; }
         IBarrierPart? NextBarrier { get; set; }
         IEnumerable<IOutput> AllTracks();
-
-#warning hookup this method, must run whenever the amount of output changes, or whenever a different barrier is connected
         void UpdatePorts(IBarrierPart parent);
 
         public class Group : IDisposable
