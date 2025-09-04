@@ -183,8 +183,6 @@ public sealed class Signal<T> : IDisposable
         {
             get
             {
-                if (nextNode is null)
-                    throw new NullReferenceException();
                 return ref nextNode!;
             }
         }
