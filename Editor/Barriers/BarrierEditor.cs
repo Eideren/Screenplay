@@ -131,13 +131,13 @@ namespace Screenplay.Nodes.Editor.Barriers
                 var set = new HashSet<INodeValue>();
                 AppendNodesAfterThisBarrier(barrier, set);
                 Editors = set.Select(x => window.NodesToEditor[x]).ToArray();
-                DragOffset = new Vector2[Editors.Length + window._selectedReroutes.Count];
+                DragOffset = new Vector2[Editors.Length + window.SelectedReroutes.Count];
 
                 for (int i = 0; i < Editors.Length; i++)
                     DragOffset[i] = Editors[i].Value.Position - p;
 
-                for (int i = 0; i < window._selectedReroutes.Count; i++)
-                    DragOffset[Editors.Length + i] = window._selectedReroutes[i].GetPoint() - p;
+                for (int i = 0; i < window.SelectedReroutes.Count; i++)
+                    DragOffset[Editors.Length + i] = window.SelectedReroutes[i].GetPoint() - p;
             }
 
             public override void InputPreDraw(UnityEngine.Event e)
@@ -181,7 +181,7 @@ namespace Screenplay.Nodes.Editor.Barriers
                         }
 
                         // Move selected reroutes with offset
-                        for (int i = 0; i < Window._selectedReroutes.Count; i++)
+                        for (int i = 0; i < Window.SelectedReroutes.Count; i++)
                         {
                             Vector2 pos = mousePos + DragOffset[Editors.Length + i];
                             if (gridSnap)
@@ -190,7 +190,7 @@ namespace Screenplay.Nodes.Editor.Barriers
                                 pos.y = Mathf.Round(pos.y / 16) * 16;
                             }
 
-                            Window._selectedReroutes[i].SetPoint(pos);
+                            Window.SelectedReroutes[i].SetPoint(pos);
                         }
 
                         Window.Repaint();
