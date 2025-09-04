@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Screenplay.Nodes.Barriers;
 using Sirenix.Utilities.Editor;
 using UnityEditor;
@@ -38,7 +39,21 @@ namespace Screenplay.Nodes.Editor.Barriers
                 }
             }
 
-            EditorGUI.DrawRect(Window.GridToWindowRect(_rect), new Color(0, 0, 0, 0.25f));
+            var backgroundRect = Window.GridToWindowRect(_rect);
+            bool cursorHover = backgroundRect.Contains(UnityEngine.Event.current.mousePosition) && Window.CurrentActivity is null
+                                                                                                && Window.HoveredNode is null
+                                                                                                && Window.HoveredPort is null;
+            if (UnityEngine.Event.current.type == EventType.MouseDown
+                && UnityEngine.Event.current.button == 0
+                && cursorHover)
+            {
+                Window.CurrentActivity = new DragBarriersActivity(Window, UnityEngine.Event.current.mousePosition, Value);
+            }
+
+            if (cursorHover)
+                EditorGUIUtility.AddCursorRect(backgroundRect, MouseCursor.Pan);
+
+            EditorGUI.DrawRect(backgroundRect, new Color(0, 0, 0, cursorHover ? 0.27f : 0.25f));
 
             for (IBarrierPart? part = Value; part != null; part = part.NextBarrier)
             {
@@ -50,7 +65,7 @@ namespace Screenplay.Nodes.Editor.Barriers
                     part.NextBarrier.Position = new Vector2(part.Position.x + Barrier.Width, part.Position.y);
 
                 var midpoint = (part.Position + new Vector2(Barrier.Width, 0) + part.NextBarrier.Position) * 0.5f;
-                var rect = Window.GridToWindowRect(new Rect(midpoint - Vector2.right * ButtonSize.x * 0.5f, ButtonSize));
+                var rect = Window.GridToWindowRect(new Rect(midpoint - Vector2.right * (ButtonSize.x * 0.5f), ButtonSize));
                 if (GUI.Button(rect, EditorIcons.Plus.ActiveGUIContent))
                 {
                     InsertNewBarrierAfter(Window, part);
@@ -102,6 +117,107 @@ namespace Screenplay.Nodes.Editor.Barriers
 
             value.NextBarrier = newBarrier;
             value.NextBarrier.UpdatePorts(value);
+        }
+
+        public class DragBarriersActivity : NodeActivity
+        {
+            public readonly Vector2[] DragOffset;
+            public readonly NodeEditor[] Editors;
+
+            public DragBarriersActivity(GraphWindow window, Vector2 mousePosition, Barrier barrier) : base(window)
+            {
+                var p = window.WindowToGridPosition(mousePosition);
+
+                var set = new HashSet<INodeValue>();
+                AppendNodesAfterThisBarrier(barrier, set);
+                Editors = set.Select(x => window.NodesToEditor[x]).ToArray();
+                DragOffset = new Vector2[Editors.Length + window._selectedReroutes.Count];
+
+                for (int i = 0; i < Editors.Length; i++)
+                    DragOffset[i] = Editors[i].Value.Position - p;
+
+                for (int i = 0; i < window._selectedReroutes.Count; i++)
+                    DragOffset[Editors.Length + i] = window._selectedReroutes[i].GetPoint() - p;
+            }
+
+            public override void InputPreDraw(UnityEngine.Event e)
+            {
+                EditorGUIUtility.AddCursorRect(new Rect(default, Window.position.size), MouseCursor.Pan);
+                switch (e.type)
+                {
+                    case EventType.MouseDrag when e.button == 0:
+
+                        // Holding ctrl inverts grid snap
+                        bool gridSnap = Preferences.GetSettings().GridSnap;
+                        if (e.control)
+                            gridSnap = !gridSnap;
+
+                        Vector2 mousePos = Window.WindowToGridPosition(e.mousePosition);
+                        // Move selected nodes with offset
+                        for (int i = 0; i < Editors.Length; i++)
+                        {
+                            NodeEditor node = Editors[i];
+                            Undo.RecordObject(node, "Moved Node");
+                            Vector2 initial = node.Value.Position;
+                            node.Value.Position = mousePos + DragOffset[i];
+                            if (gridSnap)
+                            {
+                                node.Value.Position = new(
+                                    (Mathf.Round((node.Value.Position.x + 8) / 16) * 16) - 8,
+                                    (Mathf.Round((node.Value.Position.y + 8) / 16) * 16) - 8);
+                            }
+
+                            // Offset portConnectionPoints instantly if a node is dragged so they aren't delayed by a frame.
+                            Vector2 offset = node.Value.Position - initial;
+                            if (offset.sqrMagnitude > 0)
+                            {
+                                foreach (var (_, port) in node.Ports)
+                                {
+                                    Rect rect = port.CachedRect;
+                                    rect.position += offset;
+                                    port.CachedRect = rect;
+                                }
+                            }
+                        }
+
+                        // Move selected reroutes with offset
+                        for (int i = 0; i < Window._selectedReroutes.Count; i++)
+                        {
+                            Vector2 pos = mousePos + DragOffset[Editors.Length + i];
+                            if (gridSnap)
+                            {
+                                pos.x = Mathf.Round(pos.x / 16) * 16;
+                                pos.y = Mathf.Round(pos.y / 16) * 16;
+                            }
+
+                            Window._selectedReroutes[i].SetPoint(pos);
+                        }
+
+                        Window.Repaint();
+                        e.Use();
+                        GUI.changed = true;
+                        break;
+                }
+            }
+
+            public override void PreNodeDraw()
+            {
+            }
+
+            public override void PostNodeDraw()
+            {
+            }
+
+            public override void InputPostDraw(UnityEngine.Event e)
+            {
+                switch (e.type)
+                {
+                    case EventType.MouseUp when e.button == 0:
+                        Window.CurrentActivity = null;
+                        e.Use();
+                        break;
+                }
+            }
         }
     }
 }
