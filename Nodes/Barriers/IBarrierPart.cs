@@ -170,10 +170,7 @@ namespace Screenplay.Nodes.Barriers
                     if (loopOutput.LoopsWithin is not null)
                         throw new NullReferenceException(nameof(loopOutput.LoopsWithin));
 
-                    do
-                    {
-                        await loopOutput.Execute(_entryContext, cts.Token);
-                    } while (cts.Token.IsCancellationRequested == false);
+                    await loopOutput.Execute(_entryContext, cts.Token);
                 }
                 catch (OperationCanceledException) { }
                 catch (Exception e)
