@@ -37,7 +37,7 @@ namespace Screenplay.Nodes.Barriers
             Array.Resize(ref InheritedPorts, parentTracks.Length);
             for (int i = 0; i < InheritedPorts.Length; i++)
             {
-                parentTracks[i].ValidatePortType(ref InheritedPorts[i]);
+                InheritedPorts[i] = parentTracks[i].ValidatePortType(InheritedPorts[i]);
                 InheritedPorts[i].Parent = this;
             }
         }

@@ -49,13 +49,13 @@ namespace Screenplay.Nodes.Barriers
             Array.Resize(ref InheritedPorts, parentTracks.Length);
             for (int i = 0; i < InheritedPorts.Length; i++)
             {
-                parentTracks[i].ValidatePortType(ref InheritedPorts[i]);
+                InheritedPorts[i] = parentTracks[i].ValidatePortType(InheritedPorts[i]);
                 InheritedPorts[i].Parent = this;
             }
 
             Array.Resize(ref InheritedTracks, parentTracks.Length);
             for (int i = 0; i < InheritedPorts.Length; i++)
-                parentTracks[i].ValidateMatchingOutput(ref InheritedTracks[i]);
+                InheritedTracks[i] = parentTracks[i].ValidateMatchingOutput(InheritedTracks[i]);
 
             NextBarrier?.UpdatePorts(this);
         }
@@ -71,6 +71,14 @@ namespace Screenplay.Nodes.Barriers
         private void EndDrawListElement(int index)
         {
             GUILayout.Space(Barrier.SpaceBetweenElements);
+        }
+
+        [Button(SdfIconType.Plus, Name = " ", DirtyOnClick = true)]
+        public void AddTrack()
+        {
+            Array.Resize(ref AdditionalTracks, AdditionalTracks.Length+1);
+            AdditionalTracks[^1] = new EventOutput();
+            NextBarrier?.UpdatePorts(this);
         }
     }
 }

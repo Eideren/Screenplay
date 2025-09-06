@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Screenplay.Nodes.Barriers;
-using Sirenix.Utilities.Editor;
-using UnityEditor;
 using UnityEngine;
 using YNode;
 using YNode.Editor;
@@ -21,16 +19,10 @@ namespace Screenplay.Nodes.Editor.Barriers
         {
             IBarrierPart.InNodeEditor = true;
 
-            EditorGUI.BeginChangeCheck();
             base.OnBodyGUI();
-            if (EditorGUI.EndChangeCheck())
-                Value.NextBarrier?.UpdatePorts(Value);
+            Value.NextBarrier?.UpdatePorts(Value);
 
             IBarrierPart.InNodeEditor = false;
-
-            var r = new Rect(0, 0, GetWidth(), 20);
-            GUI.Box(r, EditorIcons.HamburgerMenu.ActiveGUIContent);
-            AddCursorRectFromBody(r, MouseCursor.Pan);
 
             if (UnityEngine.Event.current.type == EventType.Repaint)
             {

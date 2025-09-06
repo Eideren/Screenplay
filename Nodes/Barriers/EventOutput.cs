@@ -22,16 +22,14 @@ namespace Screenplay.Nodes.Barriers
 
         public void CollectReferences(List<GenericSceneObjectReference> references) { }
 
-        public void ValidatePortType(ref IPort? port)
+        public IPort ValidatePortType(IPort? port)
         {
-            if (port is not Port<IEventContext>)
-                port = new Port<IEventContext>();
+            return port is not Port<IEventContext> ? new Port<IEventContext>() : port;
         }
 
-        public void ValidateMatchingOutput(ref IOutput? output)
+        public IOutput ValidateMatchingOutput(IOutput? output)
         {
-            if (output is not EventOutput)
-                output = new EventOutput();
+            return output is not EventOutput ? new EventOutput() : output;
         }
     }
 }

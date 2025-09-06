@@ -15,11 +15,23 @@ namespace Screenplay.Nodes
         public const int Width = NodeWidthAttribute.Default;
         public const int SpaceBetweenElements = 100;
 
-        [SerializeReference, HideIf("@Screenplay.Nodes.Barriers.IBarrierPart.InNodeEditor")]
+        [SerializeReference, HideIf("@IBarrierPart.InNodeEditor")]
         public IBarrierPart NextBarrier = null!;
 
-        [SerializeReference, Required, ListDrawerSettings(ShowFoldout = false, ShowItemCount = false, HideAddButton = true, OnEndListElementGUI = nameof(EndDrawListElement)), OnCollectionChanged(nameof(UpdatePorts))]
+        [SerializeReference, Required, ListDrawerSettings(ShowFoldout = false, ShowItemCount = false, HideAddButton = true, OnEndListElementGUI = nameof(EndDrawListElement))]
         public IOutput[] Tracks = { new EventOutput() };
+
+        public IPort[] InheritedPorts => Array.Empty<IPort>();
+
+        IBarrierPart? IBarrierPart.NextBarrier
+        {
+            get => NextBarrier;
+            set => NextBarrier = value ?? throw new NullReferenceException();
+        }
+
+        void IBarrierPart.UpdatePorts(IBarrierPart parent) => NextBarrier.UpdatePorts(this);
+
+        public IEnumerable<IOutput> AllTracks() => Tracks;
 
         public override void CollectReferences(List<GenericSceneObjectReference> references)
         {
@@ -30,7 +42,7 @@ namespace Screenplay.Nodes
         public IEnumerable<IBranch?> Followup()
         {
             foreach (var output in Tracks)
-                yield return output?.Branch;
+                yield return output.Branch;
         }
 
         public void SetupPreview(IPreviewer previewer, bool fastForwarded)
@@ -55,23 +67,6 @@ namespace Screenplay.Nodes
             throw new NotImplementedException();
         }
 
-        public IPort[] InheritedPorts => Array.Empty<IPort>();
-
-        IBarrierPart? IBarrierPart.NextBarrier
-        {
-            get => NextBarrier;
-            set => NextBarrier = value ?? throw new NullReferenceException();
-        }
-
-        public IEnumerable<IOutput> AllTracks() => Tracks;
-
-        public void UpdatePorts()
-        {
-            NextBarrier.UpdatePorts(this);
-        }
-
-        void IBarrierPart.UpdatePorts(IBarrierPart parent) => UpdatePorts();
-
         public BarrierEnd? End()
         {
             for (IBarrierPart? part = this; part != null; part = part.NextBarrier)
@@ -86,6 +81,14 @@ namespace Screenplay.Nodes
         private void EndDrawListElement(int index)
         {
             GUILayout.Space(SpaceBetweenElements);
+        }
+
+        [Button(SdfIconType.Plus, Name = " ", DirtyOnClick = true)]
+        public void AddTrack()
+        {
+            Array.Resize(ref Tracks, Tracks.Length+1);
+            Tracks[^1] = new EventOutput();
+            NextBarrier.UpdatePorts(this);
         }
     }
 }

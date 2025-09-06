@@ -40,9 +40,16 @@ namespace Screenplay.Nodes.Editor.Barriers
             }
 
             var backgroundRect = Window.GridToWindowRect(_rect);
-            bool cursorHover = backgroundRect.Contains(UnityEngine.Event.current.mousePosition) && Window.CurrentActivity is null
-                                                                                                && Window.HoveredNode is null
-                                                                                                && Window.HoveredPort is null;
+            var grabbableBackgroundRect = backgroundRect;
+            grabbableBackgroundRect.height = 20;
+            grabbableBackgroundRect.y -= grabbableBackgroundRect.height;
+            bool cursorHover = grabbableBackgroundRect.Contains(UnityEngine.Event.current.mousePosition) && Window.CurrentActivity is null
+                                                                                                         && Window.HoveredNode is null
+                                                                                                         && Window.HoveredPort is null;
+            if (cursorHover || Window.CurrentActivity is DragBarriersActivity dbg && dbg.Barrier == Value)
+                EditorGUI.DrawRect(grabbableBackgroundRect, new Color(0, 0, 0, 0.25f));
+
+            GUI.Box(grabbableBackgroundRect, EditorIcons.HamburgerMenu.ActiveGUIContent);
             if (UnityEngine.Event.current.type == EventType.MouseDown
                 && UnityEngine.Event.current.button == 0
                 && cursorHover)
@@ -50,10 +57,9 @@ namespace Screenplay.Nodes.Editor.Barriers
                 Window.CurrentActivity = new DragBarriersActivity(Window, UnityEngine.Event.current.mousePosition, Value);
             }
 
-            if (cursorHover)
-                EditorGUIUtility.AddCursorRect(backgroundRect, MouseCursor.Pan);
+            EditorGUIUtility.AddCursorRect(grabbableBackgroundRect, MouseCursor.Pan);
 
-            EditorGUI.DrawRect(backgroundRect, new Color(0, 0, 0, cursorHover ? 0.27f : 0.25f));
+            EditorGUI.DrawRect(backgroundRect, new Color(0, 0, 0, 0.25f));
 
             for (IBarrierPart? part = Value; part != null; part = part.NextBarrier)
             {
@@ -70,19 +76,6 @@ namespace Screenplay.Nodes.Editor.Barriers
                 {
                     InsertNewBarrierAfter(Window, part);
                 }
-            }
-        }
-
-        public override void OnBodyGUI()
-        {
-            base.OnBodyGUI();
-
-            if (GUILayout.Button(EditorIcons.Plus.ActiveGUIContent))
-            {
-                GUI.changed = true;
-                Array.Resize(ref Value.Tracks, Value.Tracks.Length+1);
-                Value.Tracks[^1] = new EventOutput();
-                Value.UpdatePorts();
             }
         }
 
@@ -123,9 +116,11 @@ namespace Screenplay.Nodes.Editor.Barriers
         {
             public readonly Vector2[] DragOffset;
             public readonly NodeEditor[] Editors;
+            public readonly Barrier Barrier;
 
             public DragBarriersActivity(GraphWindow window, Vector2 mousePosition, Barrier barrier) : base(window)
             {
+                Barrier = barrier;
                 var p = window.WindowToGridPosition(mousePosition);
 
                 var set = new HashSet<INodeValue>();
