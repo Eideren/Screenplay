@@ -29,7 +29,7 @@ namespace Screenplay.Nodes.Editor.Barriers
 
             if (UnityEngine.Event.current.type == EventType.Repaint)
                 if (Array.IndexOf(Value.Parent.InheritedPorts, Value) == -1)
-                    Window.RemoveNode(this);
+                    Window.RemoveNode(this, false);
         }
     }
 }

@@ -44,7 +44,7 @@ namespace Screenplay.Nodes.Editor.Barriers
             foreach (var port in Value.InheritedPorts)
             {
                 if (Window.NodesToEditor.TryGetValue(port, out var editor))
-                    Window.RemoveNode(editor);
+                    Window.RemoveNode(editor, false);
             }
         }
 

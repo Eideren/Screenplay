@@ -21,7 +21,7 @@ namespace Screenplay.Nodes.Editor.Barriers
         {
             if (Value.NextBarrier == null!)
             {
-                var node = (BarrierEnd)Window.CreateNode(typeof(BarrierEnd), Value.Position + Vector2.right * (100 + CachedSize.x)).Value;
+                var node = (BarrierEnd)Window.CreateNode(typeof(BarrierEnd), Value.Position + Vector2.right * (100 + CachedSize.x), false).Value;
                 Value.NextBarrier = node;
                 Value.NextBarrier.UpdatePorts(Value);
             }
@@ -88,13 +88,13 @@ namespace Screenplay.Nodes.Editor.Barriers
                 list.Add(part);
 
             for (int i = list.Count - 1; i >= 0; i--)
-                Window.RemoveNode(Window.NodesToEditor[list[i]]);
+                Window.RemoveNode(Window.NodesToEditor[list[i]], true);
         }
 
         private static void InsertNewBarrierAfter(GraphWindow window, IBarrierPart value)
         {
             var cachedSize = window.NodesToEditor[value].CachedSize;
-            var newBarrier = (BarrierIntermediate)window.CreateNode(typeof(BarrierIntermediate), value.Position + Vector2.right * (100 + cachedSize.x)).Value;
+            var newBarrier = (BarrierIntermediate)window.CreateNode(typeof(BarrierIntermediate), value.Position + Vector2.right * (100 + cachedSize.x), true).Value;
             if (value.NextBarrier is { } previousBarrier)
             {
                 var delta = previousBarrier.Position - value.Position;

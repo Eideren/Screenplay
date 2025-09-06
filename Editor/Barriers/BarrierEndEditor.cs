@@ -26,7 +26,7 @@ namespace Screenplay.Nodes.Editor.Barriers
             for (int i = Graph.Nodes.Count - 1; i >= 0; i--)
             {
                 if (Graph.Nodes[i] is Barrier barrier && barrier.End() == Value)
-                    Window.RemoveNode(Window.NodesToEditor[barrier]);
+                    Window.RemoveNode(Window.NodesToEditor[barrier], true);
             }
         }
     }

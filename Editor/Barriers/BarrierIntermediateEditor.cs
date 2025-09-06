@@ -21,7 +21,7 @@ namespace Screenplay.Nodes.Editor.Barriers
             }
 
             if (Value.NextBarrier is not null)
-                Window.ReplaceConnection(this, Window.NodesToEditor[Value.NextBarrier]);
+                Window.ReplaceConnection(this, Window.NodesToEditor[Value.NextBarrier], true);
         }
     }
 }
