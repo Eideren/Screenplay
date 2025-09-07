@@ -13,6 +13,7 @@ namespace Screenplay.Editor
 {
     public class Previewer : IPreviewer, IDisposable
     {
+        private float _delayBetweenLoops = 1f;
         private CancellationTokenSource _cancellationTokenSource = new();
         private int _running;
         private List<Func<CancellationToken, UniTask>> _asynchronousRunner = new();
@@ -114,8 +115,7 @@ namespace Screenplay.Editor
             {
                 if (_loopPreview && _running == 0)
                 {
-                    foreach (var func in _asynchronousRunner)
-                        RunAndMonitorExit(func);
+                    RestartWithDelay(_delayBetweenLoops).ToObservable();
                 }
 
                 if (_running > 0)
@@ -123,6 +123,21 @@ namespace Screenplay.Editor
                     //SceneView.RepaintAll();
                     EditorApplication.QueuePlayerLoopUpdate();
                 }
+            }
+        }
+
+        private async UniTask RestartWithDelay(float delay)
+        {
+            try
+            {
+                _running++;
+                await UniTask.WaitForSeconds(delay, cancellationToken:_cancellationTokenSource.Token, cancelImmediately: true);
+                foreach (var func in _asynchronousRunner)
+                    RunAndMonitorExit(func);
+            }
+            finally
+            {
+                _running--;
             }
         }
 
