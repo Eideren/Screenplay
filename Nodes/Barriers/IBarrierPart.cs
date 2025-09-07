@@ -9,6 +9,9 @@ namespace Screenplay.Nodes.Barriers
 {
     public interface IBarrierPart : INodeValue
     {
+        public static Action<IBarrierPart, int>? InheritedDrawBegin, InheritedDrawEnd, AdditionalDrawEnd;
+
+
         public static bool InNodeEditor;
 
         IPort[] InheritedPorts { get; }

@@ -104,5 +104,44 @@ namespace Screenplay.Nodes.Editor.Barriers
                 }
             }
         }
+
+        static IBarrierPartEditor()
+        {
+            IBarrierPart.InheritedDrawBegin += InheritedDrawBegin;
+            IBarrierPart.InheritedDrawEnd += InheritedDrawEnd;
+            IBarrierPart.AdditionalDrawEnd += InheritedDrawEnd;
+        }
+
+        private static bool? state;
+
+        private static void InheritedDrawBegin(IBarrierPart arg1, int arg2)
+        {
+            if (GraphWindow.InNodeEditor is IBarrierPartEditor barrierPartEditor == false)
+                return;
+
+            if (arg1.InheritedPorts.Length > arg2)
+            {
+                var port = arg1.InheritedPorts[arg2];
+                if (barrierPartEditor.Window.NodesToEditor.TryGetValue(port, out var portEditor)
+                    && barrierPartEditor.Window.LossyConnectedEditors.Contains(portEditor) == false)
+                {
+                    state = GUI.enabled;
+                    GUI.enabled = false;
+                }
+            }
+        }
+
+        private static void InheritedDrawEnd(IBarrierPart arg1, int arg2)
+        {
+            if (GraphWindow.InNodeEditor is IBarrierPartEditor barrierPartEditor == false)
+                return;
+
+            GUILayout.Space(Barrier.SpaceBetweenElements);
+            if (state is {} val)
+            {
+                GUI.enabled = val;
+                state = null;
+            }
+        }
     }
 }

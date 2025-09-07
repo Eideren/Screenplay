@@ -25,7 +25,8 @@ namespace Screenplay.Nodes.Editor.Barriers
         public override void OnBodyGUI()
         {
             var r = GUILayoutUtility.GetRect(Port<T>.Width, Port<T>.HeightOfPort);
-            GUI.Box(r, EditorIcons.Link.ActiveGUIContent);
+            if (Window.LossyConnectedEditors.Contains(this))
+                GUI.Box(r, EditorIcons.Link.ActiveGUIContent);
 
             if (UnityEngine.Event.current.type == EventType.Repaint)
                 if (Array.IndexOf(Value.Parent.InheritedPorts, Value) == -1)

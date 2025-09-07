@@ -13,10 +13,10 @@ namespace Screenplay.Nodes.Barriers
         [SerializeReference, Required, HideIf("@IBarrierPart.InNodeEditor")]
         public IBarrierPart? NextBarrier;
 
-        [ListDrawerSettings(ShowFoldout = false, IsReadOnly = true, ShowItemCount = false, OnEndListElementGUI = nameof(EndDrawListElement)), SerializeReference]
+        [ListDrawerSettings(ShowFoldout = false, IsReadOnly = true, ShowItemCount = false, OnBeginListElementGUI = nameof(BeginDrawListElement), OnEndListElementGUI = nameof(EndDrawListElement)), SerializeReference]
         public IOutput[] InheritedTracks = Array.Empty<IOutput>();
 
-        [SerializeReference, Required, ListDrawerSettings(ShowFoldout = false, ShowItemCount = false, HideAddButton = true, OnEndListElementGUI = nameof(EndDrawListElement)), OnCollectionChanged(nameof(UpdateNextPorts))]
+        [SerializeReference, Required, ListDrawerSettings(ShowFoldout = false, ShowItemCount = false, HideAddButton = true, OnEndListElementGUI = nameof(EndAdditionalDrawListElement)), OnCollectionChanged(nameof(UpdateNextPorts))]
         public IOutput[] AdditionalTracks = Array.Empty<IOutput>();
 
         [SerializeReference, ReadOnly, HideIf("@IBarrierPart.InNodeEditor")]
@@ -68,9 +68,19 @@ namespace Screenplay.Nodes.Barriers
                 track.CollectReferences(references);
         }
 
+        private void BeginDrawListElement(int index)
+        {
+            IBarrierPart.InheritedDrawBegin?.Invoke(this, index);
+        }
+
         private void EndDrawListElement(int index)
         {
-            GUILayout.Space(Barrier.SpaceBetweenElements);
+            IBarrierPart.InheritedDrawEnd?.Invoke(this, index);
+        }
+
+        private void EndAdditionalDrawListElement(int index)
+        {
+            IBarrierPart.AdditionalDrawEnd?.Invoke(this, index);
         }
 
         [Button(SdfIconType.Plus, Name = " ", DirtyOnClick = true)]

@@ -18,7 +18,7 @@ namespace Screenplay.Nodes
         [SerializeReference, HideIf("@IBarrierPart.InNodeEditor")]
         public IBarrierPart NextBarrier = null!;
 
-        [SerializeReference, Required, ListDrawerSettings(ShowFoldout = false, ShowItemCount = false, HideAddButton = true, OnEndListElementGUI = nameof(EndDrawListElement))]
+        [SerializeReference, Required, ListDrawerSettings(ShowFoldout = false, ShowItemCount = false, HideAddButton = true, OnBeginListElementGUI = nameof(BeginDrawListElement), OnEndListElementGUI = nameof(EndDrawListElement))]
         public IOutput[] Tracks = { new EventOutput() };
 
         public IPort[] InheritedPorts => Array.Empty<IPort>();
@@ -78,9 +78,14 @@ namespace Screenplay.Nodes
             return null;
         }
 
+        private void BeginDrawListElement(int index)
+        {
+            IBarrierPart.InheritedDrawBegin?.Invoke(this, index);
+        }
+
         private void EndDrawListElement(int index)
         {
-            GUILayout.Space(SpaceBetweenElements);
+            IBarrierPart.InheritedDrawEnd?.Invoke(this, index);
         }
 
         [Button(SdfIconType.Plus, Name = " ", DirtyOnClick = true)]
