@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using YNode;
@@ -19,36 +20,19 @@ namespace Screenplay.Nodes.Triggers
                 source?.CollectReferences(references);
         }
 
-        public bool TryCreateTrigger(System.Action onTriggered, [MaybeNullWhen(false)] out ITrigger trigger)
+        public async UniTask<IAnnotation?> AwaitTrigger(CancellationToken cancellation)
         {
-            var list = new TriggerList();
-            foreach (var setup in Sources)
+            var list = new UniTask<IAnnotation?>[Sources.Length];
+            for (int i = 0; i < Sources.Length; i++)
             {
+                ITriggerSetup? setup = Sources[i];
                 if (setup is null)
                     continue;
 
-                if (setup.TryCreateTrigger(onTriggered, out var otherTrigger) == false)
-                {
-                    list.Dispose();
-                    trigger = null;
-                    return false;
-                }
-                list.Triggers.Add(otherTrigger);
+                list[i] = setup.AwaitTrigger(cancellation);
             }
 
-            trigger = list;
-            return true;
-        }
-
-        private class TriggerList : ITrigger
-        {
-            public List<ITrigger> Triggers = new();
-
-            public void Dispose()
-            {
-                foreach (var trigger in Triggers)
-                    trigger.Dispose();
-            }
+            return (await UniTask.WhenAny(list)).result;
         }
     }
 }

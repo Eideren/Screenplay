@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -22,8 +23,6 @@ namespace Screenplay
         private Queue<IScreenplayNode?> _orderedVisitation = new();
         private HashSet<Event> _visitedEvents = new();
 
-        // Only serialized for editor reloading purposes
-        [SerializeField, HideInInspector] private Event? _event;
         [SerializeField, HideInInspector, SerializeReference] private List<IPrerequisite> __visitedSerializationProxy = new ();
         [SerializeField, HideInInspector, SerializeReference] private List<IScreenplayNode?> __orderedVisitationSerializationProxy = new ();
         [SerializeField, HideInInspector, SerializeReference] private List<Event> __visitedEventsSerializationProxy = new ();
@@ -35,95 +34,116 @@ namespace Screenplay
         {
             using var context = new DefaultContext(this, seed);
             var events = new List<Event>();
-            var triggers = new Dictionary<Event, ITrigger>();
+            foreach (var value in Nodes)
+            {
+                if (value is Event e && e.Action is not null && (e.Repeatable || _visitedEvents.Contains(e) == false))
+                    events.Add(e);
+                if (value is ICustomEntry customEntry)
+                    customEntry.Run(this, context, cancellation);
+            }
+
+            while (cancellation.IsCancellationRequested == false)
+            {
+                var (currentEvent, additionalContext) = await AwaitAnyEvent(events, context, cancellation);
+
+                _visitedEvents.Add(currentEvent);
+                if (currentEvent.Repeatable == false)
+                    events.Remove(currentEvent);
+
+                additionalContext?.AppendTo(context);
+                await currentEvent.Action.Execute(context, cancellation);
+                context.Annotations.Clear();
+            }
+        }
+
+        private async UniTask<(Event, IAnnotation?)> AwaitAnyEvent(List<Event> events, IEventContext context, CancellationToken cancellation)
+        {
+            (Event, IAnnotation?)? fromTrigger = null;
+            Dictionary<Event, CancellationTokenSource> triggerables = new();
             try
             {
-                foreach (var value in Nodes)
-                {
-                    if (value is Event e && e.Action is not null && (e.Repeatable || _visitedEvents.Contains(e) == false))
-                        events.Add(e);
-                    if (value is ICustomEntry customEntry)
-                        customEntry.Run(this, context, cancellation);
-                }
-
                 do
                 {
-                    if (_event is null) // Check non-triggerable
+                    // Check if any non triggerable can be ran
+                    foreach (var e in events)
                     {
-                        foreach (var e in events)
-                        {
-                            if (e.TriggerSource is not null)
-                                continue;
-                            if (e.Prerequisite?.TestPrerequisite(context) == false)
-                                continue;
-                            if (e.Action is null)
-                                continue;
-
-                            _visitedEvents.Add(e);
-                            if (e.Repeatable == false)
-                                events.Remove(e);
-                            _event = e;
-                            break;
-                        }
+                        if (e.TriggerSource is not null)
+                            continue;
+                        if (e.Prerequisite?.TestPrerequisite(context) == false)
+                            continue;
+                        if (e.Action is null)
+                            continue;
+                        return (e, null);
                     }
 
-                    if (_event is null) // Check triggerable
+                    // Now check only for triggerable, and set them up if they haven't been
+                    foreach (var e in events)
                     {
-                        foreach (var e in events)
-                        {
-                            if (e.Action is null)
-                                continue;
-                            if (e.TriggerSource is null)
-                                continue;
+                        if (e.Action is null)
+                            continue;
+                        if (e.TriggerSource is null)
+                            continue;
 
-                            if (e.Prerequisite?.TestPrerequisite(context) == false)
+                        if (e.Prerequisite?.TestPrerequisite(context) == false)
+                        {
+                            if (triggerables.Remove(e, out var cts)) // Prerequisites are invalid, we must cancel the trigger
                             {
-                                if (triggers.TryGetValue(e, out var outdatedTrigger))
-                                    outdatedTrigger.Dispose();
-                                continue;
+                                cts.Cancel();
+                                cts.Dispose();
                             }
 
-                            if (triggers.ContainsKey(e))
-                                continue;
+                            continue;
+                        }
 
-                            System.Action callback = () =>
-                            {
-                                if (_event is not null)
-                                    return; // Another trigger already queued one
-
-                                _visitedEvents.Add(e);
-                                if (e.Repeatable == false)
-                                    events.Remove(e);
-                                _event = e;
-                            };
-
-                            if (e.TriggerSource.TryCreateTrigger(callback, out var trigger) == false)
-                                continue;
-
-                            triggers.Add(e, trigger);
-                            break;
+                        if (triggerables.ContainsKey(e) == false)
+                        {
+                            var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+                            triggerables.Add(e, cts);
+                            SetFromTriggerWhenSignaled(e, cts.Token);
                         }
                     }
 
-                    if (_event is null)
-                    {
-                        await UniTask.NextFrame(cancellation, cancelImmediately:true);
-                        continue;
-                    }
+                    if (fromTrigger is {} v)
+                        return v;
 
-                    foreach (var (_, trigger) in triggers)
-                        trigger.Dispose();
-                    triggers.Clear();
+                    await UniTask.NextFrame(cancellation, cancelImmediately: true);
 
-                    var currentEvent = _event;
-                    _event = null;
-                    await currentEvent.Action.Execute(context, cancellation);
-                } while (true);
+                    if (fromTrigger is {} v2)
+                        return v2;
+
+                } while (cancellation.IsCancellationRequested == false);
             }
             finally
             {
-                foreach (var (_, trigger) in triggers)
-                    trigger.Dispose();
+                foreach (var cancellationTokenSource in triggerables.ToArray())
+                {
+                    cancellationTokenSource.Value.Cancel();
+                    cancellationTokenSource.Value.Dispose();
+                }
+            }
+
+            throw new OperationCanceledException();
+
+            async void SetFromTriggerWhenSignaled(Event e, CancellationToken token)
+            {
+                try
+                {
+                    var ctx = await e.TriggerSource!.AwaitTrigger(token);
+                    fromTrigger = (e, ctx);
+                }
+                catch (Exception ex)
+                {
+                    if (ex is not OperationCanceledException)
+                        Debug.LogException(ex);
+                }
+                finally
+                {
+                    if (triggerables.Remove(e, out CancellationTokenSource value))
+                    {
+                        value.Cancel();
+                        value.Dispose();
+                    }
+                }
             }
         }
 
@@ -236,7 +256,6 @@ namespace Screenplay
                 {
                     if (screenplay.DebugRetainProgressInEditor)
                         continue;
-                    screenplay._event = null;
                     screenplay.__orderedVisitationSerializationProxy.Clear();
                     screenplay.__visitedSerializationProxy.Clear();
                     screenplay.__visitedEventsSerializationProxy.Clear();
@@ -252,6 +271,7 @@ namespace Screenplay
             private Component.UIBase? _dialogUI;
             private Random _random;
 
+            public List<IAnnotation> Annotations { get; set; } = new();
             public ScreenplayGraph Source { get; }
 
             public DefaultContext(ScreenplayGraph Source, uint seed)

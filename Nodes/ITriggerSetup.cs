@@ -1,5 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using Screenplay.Nodes.Triggers;
+﻿using System.Threading;
+using Cysharp.Threading.Tasks;
 
 namespace Screenplay.Nodes
 {
@@ -10,8 +10,8 @@ namespace Screenplay.Nodes
     public interface ITriggerSetup : IScreenplayNode
     {
         /// <summary>
-        /// Tries to create a new trigger, when successful the trigger will call <paramref name="onTriggered"/> when triggered
+        /// Await for this trigger to signal and optionally return some annotation for other systems to retrieve within the same branch
         /// </summary>
-        bool TryCreateTrigger(System.Action onTriggered, [MaybeNullWhen(false)] out ITrigger trigger);
+        UniTask<IAnnotation?> AwaitTrigger(CancellationToken cancellation);
     }
 }

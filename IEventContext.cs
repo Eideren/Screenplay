@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Screenplay.Nodes;
 
 namespace Screenplay
@@ -7,6 +8,8 @@ namespace Screenplay
     /// </summary>
     public interface IEventContext : IExecutableContext<IEventContext>, IPrerequisiteContext
     {
+        List<IAnnotation> Annotations { get; }
+
         ScreenplayGraph Source { get; }
 
         /// <summary>
@@ -20,5 +23,16 @@ namespace Screenplay
         void Visiting(IBranch? exe);
 
         void IExecutableContext<IEventContext>.Visiting(IExe<IEventContext>? executable) => Visiting(executable);
+
+        T? TryGetFirstContextOf<T>() where T : IAnnotation
+        {
+            foreach (var context in Annotations)
+            {
+                if (context is T t)
+                    return t;
+            }
+
+            return default;
+        }
     }
 }

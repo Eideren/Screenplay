@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Screenplay.Nodes.Triggers
 {
@@ -25,24 +27,28 @@ namespace Screenplay.Nodes.Triggers
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) => references.Add(Target);
 
-        public bool TryCreateTrigger(System.Action onTriggered, [MaybeNullWhen(false)] out ITrigger trigger)
+        public async UniTask<IAnnotation?> AwaitTrigger(CancellationToken cancellation)
         {
-            if (Target.TryGet(out var obj, out _) == false)
-            {
-                trigger = null;
-                return false;
-            }
+            Collider? obj;
+            while (Target.TryGet(out obj, out _) == false)
+                await UniTask.NextFrame(cancellation, true);
 
             var output = obj.gameObject.AddComponent<TriggerZoneComponent>();
-            output.Callback = onTriggered;
             output.LayerMask = LayerMask;
-            trigger = output;
-            return true;
+            try
+            {
+                await output.Completion.Task;
+                return null;
+            }
+            finally
+            {
+                Object.Destroy(output);
+            }
         }
 
-        private class TriggerZoneComponent : MonoBehaviour, ITrigger
+        private class TriggerZoneComponent : MonoBehaviour
         {
-            public System.Action Callback = null!;
+            public readonly UniTaskCompletionSource Completion = new();
             public LayerMask LayerMask;
 
             private void OnTriggerStay(Collider collider)
@@ -57,10 +63,10 @@ namespace Screenplay.Nodes.Triggers
                     Trigger();
             }
 
-            [Button("Force Trigger")]
-            public void Trigger() => Callback.Invoke();
+            private void OnDisable() => Completion.TrySetCanceled();
 
-            public void Dispose() => Destroy(this);
+            [Button("Force Trigger")]
+            public void Trigger() => Completion.TrySetResult();
         }
     }
 }

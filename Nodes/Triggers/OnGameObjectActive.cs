@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Screenplay.Nodes.Triggers
 {
@@ -13,30 +15,31 @@ namespace Screenplay.Nodes.Triggers
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) { references.Add(Target); }
 
-        public bool TryCreateTrigger(System.Action onTriggered, [MaybeNullWhen(false)] out ITrigger trigger)
+        public async UniTask<IAnnotation?> AwaitTrigger(CancellationToken cancellation)
         {
-            if (Target.TryGet(out var go, out _) == false)
-            {
-                trigger = null;
-                return false;
-            }
+            GameObject? obj;
+            while (Target.TryGet(out obj, out _) == false)
+                await UniTask.NextFrame(cancellation, true);
 
-            var comp = go.AddComponent<OnGameObjectActiveComp>();
-            comp.Callback = onTriggered;
-            trigger = comp;
-            return true;
+            var output = obj.AddComponent<OnGameObjectActiveComp>();
+            try
+            {
+                await output.Completion.Task;
+                return null;
+            }
+            finally
+            {
+                Object.Destroy(output);
+            }
         }
 
-        private class OnGameObjectActiveComp : MonoBehaviour, ITrigger
+        private class OnGameObjectActiveComp : MonoBehaviour
         {
-            public System.Action Callback = null!;
+            public readonly UniTaskCompletionSource Completion = new();
 
-            private void OnEnable()
-            {
-                Callback();
-            }
+            private void OnEnable() => Completion.TrySetResult();
 
-            public void Dispose() => Destroy(this);
+            private void OnDestroy() => Completion.TrySetCanceled();
         }
     }
 }
