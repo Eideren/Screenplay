@@ -31,7 +31,7 @@ namespace Screenplay.Nodes.Triggers
         {
             Collider? obj;
             while (Target.TryGet(out obj, out _) == false)
-                await UniTask.NextFrame(cancellation, true);
+                await UniTask.NextFrame(cancellation, cancelImmediately:true);
 
             var output = obj.gameObject.AddComponent<TriggerZoneComponent>();
             output.LayerMask = LayerMask;

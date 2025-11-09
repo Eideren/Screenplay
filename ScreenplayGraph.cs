@@ -59,12 +59,12 @@ namespace Screenplay
         private async UniTask<(Event, IAnnotation?)> AwaitAnyEvent(List<Event> events, IEventContext context, CancellationToken cancellation)
         {
             (Event, IAnnotation?)? fromTrigger = null;
-            Dictionary<Event, CancellationTokenSource> triggerables = new();
+            var triggerables = new Dictionary<Event, CancellationTokenSource>();
             try
             {
                 do
                 {
-                    // Check if any non triggerable can be ran
+                    // Check if any non triggerable can be run
                     foreach (var e in events)
                     {
                         if (e.TriggerSource is not null)
@@ -117,8 +117,11 @@ namespace Screenplay
             {
                 foreach (var cancellationTokenSource in triggerables.ToArray())
                 {
-                    cancellationTokenSource.Value.Cancel();
-                    cancellationTokenSource.Value.Dispose();
+                    if (triggerables.Remove(cancellationTokenSource.Key, out _))
+                    {
+                        cancellationTokenSource.Value.Cancel();
+                        cancellationTokenSource.Value.Dispose();
+                    }
                 }
             }
 
