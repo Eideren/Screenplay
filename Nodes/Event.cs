@@ -12,12 +12,13 @@ namespace Screenplay.Nodes
 
         [Output, SerializeReference, Tooltip("What would be running when this event starts"), Required]
         public IExe<IEventContext>? Action;
-        [Tooltip("Can this event ever run again after having been completed")]
-        public bool Repeatable;
-        [Input(Stroke = NoodleStroke.Dashed), SerializeReference, Tooltip("Which nodes need to be visited for this event to become executable")]
+        [Input, SerializeReference, Tooltip("Which nodes need to be visited for this event to become executable")]
         public IPrerequisite? Prerequisite;
         [Input, SerializeReference, Tooltip("Interaction setup for the sole purpose of triggering this event")]
         public ITriggerSetup? TriggerSource;
+
+        [Tooltip("Can this event ever run again after having been completed"), ToggleLeft]
+        public bool Repeatable;
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) { }
         public IEnumerable<IBranch?> Followup()

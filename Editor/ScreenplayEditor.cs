@@ -19,7 +19,7 @@ namespace Screenplay.Editor
         private List<IScreenplayNode> _previewChain = new();
         private List<IScreenplayNode> _rootToPreview = new();
         private HashSet<IScreenplayNode> _reachable = new();
-        private System.Action? _disposeCallbacks;
+        private Action? _disposeCallbacks;
         private Previewer? _previewer;
         private bool _previewEnabled, _mapEnabled = true, _quickjump = true;
         private PreviewFlags _previewFlags = PreviewFlags.Loop | PreviewFlags.SelectedChain;
@@ -161,32 +161,29 @@ namespace Screenplay.Editor
             }
         }
 
-        [ThreadStatic]
-        private static HashSet<IScreenplayNode>? _isNodeReachableVisitation;
         private void RecalculateReachable()
         {
-            _isNodeReachableVisitation ??= new();
-            _isNodeReachableVisitation.Clear();
             _reachable.Clear();
 
             foreach (var node in Graph.Nodes)
             {
-                if (node is Event e && e.Action is not null)
-                    TraverseTree(e.Action);
+                if (node is ICustomEntry or Event)
+                    TraverseTree(node, _reachable);
             }
 
-            void TraverseTree(IBranch? branch)
+            static void TraverseTree(INodeValue? node, HashSet<IScreenplayNode> reachable)
             {
-                if (branch is null)
+                if (node is not IScreenplayNode screenplayNode)
                     return;
 
-                if (_isNodeReachableVisitation!.Add(branch) == false)
+                if (reachable.Add(screenplayNode) == false)
                     return;
 
-                _reachable.Add(branch);
-
-                foreach (var otherActions in branch.Followup())
-                    TraverseTree(otherActions);
+                if (screenplayNode is IBranch b)
+                {
+                    foreach (var otherActions in b.Followup())
+                        TraverseTree(otherActions, reachable);
+                }
             }
         }
 
