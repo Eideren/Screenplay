@@ -19,8 +19,8 @@ namespace Screenplay.Nodes
         [Output, SerializeReference, Tooltip("What would run when Prerequisite is false")]
         public IExe<IEventContext>? False;
 
-        [Input(Stroke = NoodleStroke.Dashed), Required, SerializeReference, LabelWidth(20), HorizontalGroup(width:90), Tooltip("Select which action should be taken next")]
-        public IPrerequisite Prerequisite = null!;
+        [Input(Stroke = NoodleStroke.Dashed), SerializeReference, LabelWidth(20), HorizontalGroup(width:90), Tooltip("Select which action should be taken next")]
+        public required IPrerequisite Prerequisite = null!;
 
         public IEnumerable<IExe<IEventContext>> Followup()
         {

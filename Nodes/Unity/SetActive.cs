@@ -10,7 +10,7 @@ namespace Screenplay.Nodes.Unity
 {
     public class SetActive : ExecutableLinear
     {
-        [Required, HideLabel, HorizontalGroup] public SceneObjectReference<GameObject> Target;
+        [HideLabel, HorizontalGroup] public required SceneObjectReference<GameObject> Target;
         [HideLabel, HorizontalGroup(width:16)] public bool Active = true;
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) => references.Add(Target);

@@ -4,6 +4,7 @@ using Sirenix.Utilities.Editor;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace Screenplay.Editor
 {
@@ -14,8 +15,11 @@ namespace Screenplay.Editor
         protected override void DrawPropertyLayout(GUIContent? label)
         {
             var value = ValueEntry.SmartValue;
-            if (Property.GetAttribute<RequiredAttribute>() != null && value.Empty())
+            if ((Property.GetAttribute<RequiredAttribute>() is not null || Property.GetAttribute<RequiredMemberAttribute>() is not null)
+                && value.Empty())
+            {
                 SirenixEditorGUI.ErrorMessageBox($"{Property.NiceName} is required");
+            }
 
             Rect rect = EditorGUILayout.GetControlRect();
             value.TryGet(out T? obj, out var state);

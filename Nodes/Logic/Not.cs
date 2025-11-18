@@ -8,8 +8,8 @@ namespace Screenplay.Nodes.Logic
     [NodeWidth(100)]
     public class Not : AbstractScreenplayNode, IPrerequisite
     {
-        [Input(Stroke = NoodleStroke.Dashed), SerializeReference, Required]
-        public IPrerequisite A = null!;
+        [Input(Stroke = NoodleStroke.Dashed), SerializeReference]
+        public required IPrerequisite A = null!;
 
         public bool TestPrerequisite(IEventContext context) => A.TestPrerequisite(context) == false;
 

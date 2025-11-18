@@ -9,7 +9,7 @@ namespace Screenplay.Nodes
 {
     public class TrackPlayer : ExecutableLinear
     {
-        [SerializeReference, Input, Required] public Track? Track;
+        [SerializeReference, Input] public required Track? Track;
         [SerializeField, HideInInspector] public int From = -1, To = -1;
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) => Track?.CollectReferences(references);

@@ -8,7 +8,7 @@ namespace Screenplay.Nodes.Unity
     [Serializable]
     public class IsScene : AbstractScreenplayNode, IPrerequisite
     {
-        [Required, HideLabel, HorizontalGroup] public SceneReference Scene;
+        [HideLabel, HorizontalGroup] public required SceneReference Scene;
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) { }
 

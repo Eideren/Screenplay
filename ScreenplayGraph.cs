@@ -16,8 +16,7 @@ namespace Screenplay
     [CreateAssetMenu(menuName = "Screenplay/Screenplay")]
     public class ScreenplayGraph : NodeGraph, ISerializationCallbackReceiver
     {
-        [Required]
-        public Component.UIBase? DialogUIPrefab;
+        public required Component.UIBase? DialogUIPrefab;
         public bool DebugRetainProgressInEditor;
         private HashSet<IPrerequisite> _visiting = new();
         private Queue<IScreenplayNode?> _orderedVisitation = new();

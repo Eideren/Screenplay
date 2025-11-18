@@ -18,8 +18,8 @@ namespace Screenplay.Nodes
         [SerializeReference, HideIf("@IBarrierPart.InNodeEditor")]
         public IBarrierPart NextBarrier = null!;
 
-        [SerializeReference, Required, ListDrawerSettings(ShowFoldout = false, ShowItemCount = false, HideAddButton = true, OnBeginListElementGUI = nameof(BeginDrawListElement), OnEndListElementGUI = nameof(EndDrawListElement))]
-        public IOutput[] Tracks = { new EventOutput() };
+        [SerializeReference, ListDrawerSettings(ShowFoldout = false, ShowItemCount = false, HideAddButton = true, OnBeginListElementGUI = nameof(BeginDrawListElement), OnEndListElementGUI = nameof(EndDrawListElement))]
+        public required IOutput[] Tracks = { new EventOutput() };
 
         public IPort[] InheritedPorts => Array.Empty<IPort>();
 

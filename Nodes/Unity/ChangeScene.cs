@@ -9,7 +9,7 @@ namespace Screenplay.Nodes.Unity
 {
     public class ChangeScene : ExecutableLinear
     {
-        [Required, HideLabel, HorizontalGroup] public SceneReference Scene;
+        [HideLabel, HorizontalGroup] public required SceneReference Scene;
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) { }
 

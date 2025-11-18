@@ -10,8 +10,8 @@ namespace Screenplay.Nodes
         [HideInInspector, SerializeField]
         public string Name = "My Unnamed Event";
 
-        [Output, SerializeReference, Tooltip("What would be running when this event starts"), Required]
-        public IExe<IEventContext>? Action;
+        [Output, SerializeReference, Tooltip("What would be running when this event starts")]
+        public required IExe<IEventContext>? Action;
         [Input, SerializeReference, Tooltip("Which nodes need to be visited for this event to become executable")]
         public IPrerequisite? Prerequisite;
         [Input, SerializeReference, Tooltip("Interaction setup for the sole purpose of triggering this event")]

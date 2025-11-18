@@ -8,8 +8,8 @@ namespace Screenplay.Nodes.TrackItems
     [Serializable]
     public class AnimationTrackItem : ITrackItem
     {
-        [Required, HorizontalGroup, HideLabel] public SceneObjectReference<GameObject> Target;
-        [Required, HorizontalGroup, HideLabel] public AnimationClip? Clip;
+        [HorizontalGroup, HideLabel] public required SceneObjectReference<GameObject> Target;
+        [HorizontalGroup, HideLabel] public required AnimationClip? Clip;
         [SerializeField, HorizontalGroup, HideLabel, SuffixLabel("Start")] private float _start;
         [SerializeField, HorizontalGroup, HideLabel, SuffixLabel("Duration Mult")] private float _durationMult = 1f;
 

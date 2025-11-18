@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Sirenix.OdinInspector;
 using UnityEngine;
 using YNode;
 
@@ -8,8 +7,8 @@ namespace Screenplay.Nodes.Logic
     [NodeWidth(100)]
     public class And : AbstractScreenplayNode, IPrerequisite
     {
-        [Input(Stroke = NoodleStroke.Dashed), SerializeReference, Required]
-        public IPrerequisite A = null!, B = null!;
+        [Input(Stroke = NoodleStroke.Dashed), SerializeReference]
+        public required IPrerequisite A = null!, B = null!;
 
         public bool TestPrerequisite(IEventContext context) => A.TestPrerequisite(context) && B.TestPrerequisite(context);
 

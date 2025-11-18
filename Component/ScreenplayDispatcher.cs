@@ -9,7 +9,7 @@ namespace Screenplay.Component
     {
         private CancellationTokenSource? _existing;
 
-        [Required] public ScreenplayGraph Screenplay = null!;
+        public required ScreenplayGraph Screenplay = null!;
         public uint Seed = 0;
 
         // ReSharper disable once Unity.IncorrectMethodSignature

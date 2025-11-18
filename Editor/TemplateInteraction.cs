@@ -14,7 +14,7 @@ public class __SCRIPTNAME__ : ScreenplayNode, ITriggerSetup
     // This class is not the object that is interactable, it specifically handles setting up interactable objects in the scene, see below
 
     // The scene object this interaction will be attached to
-    [Required] public SceneObjectReference<GameObject> Target;
+    public required SceneObjectReference<GameObject> Target;
 
     // Append any reference you have above in this function to ensure they work as expected
     public override void CollectReferences(List<GenericSceneObjectReference> references) => references.Add(Target);

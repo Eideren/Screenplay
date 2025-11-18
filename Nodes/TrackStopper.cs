@@ -11,7 +11,7 @@ namespace Screenplay.Nodes
 {
     public class TrackStopper : ExecutableLinear
     {
-        [Required, Input, SerializeReference] public TrackBackgroundPlayer? BackgroundPlayer;
+        [Input, SerializeReference] public required TrackBackgroundPlayer? BackgroundPlayer;
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) { }
 

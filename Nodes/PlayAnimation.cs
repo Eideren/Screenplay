@@ -8,8 +8,8 @@ namespace Screenplay.Nodes
 {
     public class PlayAnimation : ExecutableLinear
     {
-        [Required] public SceneObjectReference<GameObject> Target;
-        [Required] public AnimationClip? Clip = null;
+        public required SceneObjectReference<GameObject> Target;
+        public required AnimationClip? Clip = null;
 
         protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
         {

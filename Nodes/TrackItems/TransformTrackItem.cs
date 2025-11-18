@@ -8,7 +8,7 @@ namespace Screenplay.Nodes.TrackItems
     [Serializable]
     public class TransformTrackItem : ITrackItem
     {
-        [Required, HorizontalGroup, HideLabel] public SceneObjectReference<Transform> Target;
+        [HorizontalGroup, HideLabel] public required SceneObjectReference<Transform> Target;
         [SerializeField, HorizontalGroup, HideLabel, SuffixLabel("Start")] private float _start;
         [SerializeField, HorizontalGroup, HideLabel, SuffixLabel("Duration")] private float _duration = 1f;
         [HorizontalGroup("G2")] public Vector3 Position;

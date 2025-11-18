@@ -11,7 +11,7 @@ namespace Screenplay.Nodes.Triggers
     [Serializable]
     public class TriggerZone : AbstractScreenplayNode, ITriggerSetup
     {
-        [Required, ValidateInput(nameof(IsTrigger))] public SceneObjectReference<Collider> Target;
+        [ValidateInput(nameof(IsTrigger))] public required SceneObjectReference<Collider> Target;
         public LayerMask LayerMask = ~0;
 
         private bool IsTrigger(SceneObjectReference<Collider> target, ref string message)

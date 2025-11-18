@@ -11,7 +11,7 @@ namespace Screenplay.Nodes.Triggers
     [Serializable]
     public class OnGameObjectActive : AbstractScreenplayNode, ITriggerSetup
     {
-        [Required] public SceneObjectReference<GameObject> Target;
+        public required SceneObjectReference<GameObject> Target;
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) { references.Add(Target); }
 

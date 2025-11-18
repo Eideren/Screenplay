@@ -10,14 +10,14 @@ namespace Screenplay.Nodes.Barriers
     [NodeWidth(Barrier.Width)]
     public class BarrierIntermediate : AbstractScreenplayNode, IBarrierPart
     {
-        [SerializeReference, Required, HideIf("@IBarrierPart.InNodeEditor")]
-        public IBarrierPart? NextBarrier;
+        [SerializeReference, HideIf("@IBarrierPart.InNodeEditor")]
+        public required IBarrierPart? NextBarrier;
 
         [ListDrawerSettings(ShowFoldout = false, IsReadOnly = true, ShowItemCount = false, OnBeginListElementGUI = nameof(BeginDrawListElement), OnEndListElementGUI = nameof(EndDrawListElement)), SerializeReference]
         public IOutput[] InheritedTracks = Array.Empty<IOutput>();
 
-        [SerializeReference, Required, ListDrawerSettings(ShowFoldout = false, ShowItemCount = false, HideAddButton = true, OnEndListElementGUI = nameof(EndAdditionalDrawListElement)), OnCollectionChanged(nameof(UpdateNextPorts))]
-        public IOutput[] AdditionalTracks = Array.Empty<IOutput>();
+        [SerializeReference, ListDrawerSettings(ShowFoldout = false, ShowItemCount = false, HideAddButton = true, OnEndListElementGUI = nameof(EndAdditionalDrawListElement)), OnCollectionChanged(nameof(UpdateNextPorts))]
+        public required IOutput[] AdditionalTracks = Array.Empty<IOutput>();
 
         [SerializeReference, ReadOnly, HideIf("@IBarrierPart.InNodeEditor")]
         public IPort[] InheritedPorts = Array.Empty<IPort>();
