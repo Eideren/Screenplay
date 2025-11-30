@@ -1,0 +1,16 @@
+﻿using System.Threading;
+using Cysharp.Threading.Tasks;
+
+namespace Screenplay.Nodes
+{
+    /// <summary>
+    /// Provides a way to trigger events under certain conditions
+    /// </summary>
+    public interface IPrecondition : IScreenplayNode
+    {
+        /// <summary>
+        /// Set <see cref="tracker"/>'s <see cref="IEventTracker.SetUnlockedState"/> when this case is triggered
+        /// </summary>
+        UniTask Setup(IEventTracker tracker, CancellationToken triggerCancellation);
+    }
+}

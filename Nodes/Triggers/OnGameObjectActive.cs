@@ -2,44 +2,30 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Sirenix.OdinInspector;
+using Cysharp.Threading.Tasks.Triggers;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace Screenplay.Nodes.Triggers
 {
     [Serializable]
-    public class OnGameObjectActive : AbstractScreenplayNode, ITriggerSetup
+    public class OnGameObjectActive : AbstractScreenplayNode, IPrecondition
     {
         public required SceneObjectReference<GameObject> Target;
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) { references.Add(Target); }
 
-        public async UniTask<IAnnotation?> AwaitTrigger(CancellationToken cancellation)
+        public async UniTask Setup(IEventTracker tracker, CancellationToken triggerCancellation)
         {
-            GameObject? obj;
-            while (Target.TryGet(out obj, out _) == false)
-                await UniTask.NextFrame(cancellation, cancelImmediately:true);
-
-            var output = obj.AddComponent<OnGameObjectActiveComp>();
-            try
+            while (triggerCancellation.IsCancellationRequested == false)
             {
-                await output.Completion.Task;
-                return null;
+                var target = await Target.GetAsync(triggerCancellation);
+
+                var output = target.gameObject;
+                await output.GetAsyncEnableTrigger().OnEnableAsync(triggerCancellation);
+                tracker.SetUnlockedState(true);
+                await output.GetAsyncDisableTrigger().OnDisableAsync(triggerCancellation);
+                tracker.SetUnlockedState(false);
             }
-            finally
-            {
-                Object.Destroy(output);
-            }
-        }
-
-        private class OnGameObjectActiveComp : MonoBehaviour
-        {
-            public readonly UniTaskCompletionSource Completion = new();
-
-            private void OnEnable() => Completion.TrySetResult();
-
-            private void OnDestroy() => Completion.TrySetCanceled();
         }
     }
 }

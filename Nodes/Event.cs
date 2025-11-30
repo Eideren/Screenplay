@@ -12,10 +12,8 @@ namespace Screenplay.Nodes
 
         [Output, SerializeReference, Tooltip("What would be running when this event starts")]
         public required IExe<IEventContext>? Action;
-        [Input, SerializeReference, Tooltip("Which nodes need to be visited for this event to become executable")]
-        public IPrerequisite? Prerequisite;
         [Input, SerializeReference, Tooltip("Interaction setup for the sole purpose of triggering this event")]
-        public ITriggerSetup? TriggerSource;
+        public IPrecondition? TriggerSource;
 
         [Tooltip("Can this event ever run again after having been completed"), ToggleLeft]
         public bool Repeatable;

@@ -22,7 +22,7 @@ namespace Screenplay.Editor
         private UIBase? _dialogUIComponentPrefab, _dialogUI;
         private Unity.Mathematics.Random _random;
 
-        public List<IAnnotation> Annotations { get; set; } = new();
+        public Dictionary<VariantBase, guid> Variants { get; set; } = new();
 
         public ScreenplayGraph Source { get; }
 

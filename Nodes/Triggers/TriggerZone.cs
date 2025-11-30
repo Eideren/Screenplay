@@ -9,7 +9,7 @@ using Object = UnityEngine.Object;
 namespace Screenplay.Nodes.Triggers
 {
     [Serializable]
-    public class TriggerZone : AbstractScreenplayNode, ITriggerSetup
+    public class TriggerZone : AbstractScreenplayNode, IPrecondition
     {
         [ValidateInput(nameof(IsTrigger))] public required SceneObjectReference<Collider> Target;
         public LayerMask LayerMask = ~0;
@@ -27,46 +27,67 @@ namespace Screenplay.Nodes.Triggers
 
         public override void CollectReferences(List<GenericSceneObjectReference> references) => references.Add(Target);
 
-        public async UniTask<IAnnotation?> AwaitTrigger(CancellationToken cancellation)
+        public async UniTask Setup(IEventTracker tracker, CancellationToken triggerCancellation)
         {
-            Collider? obj;
-            while (Target.TryGet(out obj, out _) == false)
-                await UniTask.NextFrame(cancellation, cancelImmediately:true);
+            while (triggerCancellation.IsCancellationRequested == false)
+            {
+                var target = await Target.GetAsync(triggerCancellation);
 
-            var output = obj.gameObject.AddComponent<TriggerZoneComponent>();
-            output.LayerMask = LayerMask;
-            try
-            {
-                await output.Completion.Task;
-                return null;
-            }
-            finally
-            {
-                Object.Destroy(output);
+                var trigger = target.gameObject.AddComponent<TriggerZoneComponent>();
+                trigger.Tracker = tracker;
+                trigger.LayerMask = LayerMask;
+
+                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(trigger.destroyCancellationToken, triggerCancellation))
+                {
+                    await UniTask.WaitUntilCanceled(cts.Token, completeImmediately: true);
+                }
+
+                Object.Destroy(trigger);
+
+                triggerCancellation.ThrowIfCancellationRequested();
             }
         }
 
         private class TriggerZoneComponent : MonoBehaviour
         {
-            public readonly UniTaskCompletionSource Completion = new();
             public LayerMask LayerMask;
+            public int Count;
+            public required IEventTracker Tracker;
 
-            private void OnTriggerStay(Collider collider)
+            private void OnTriggerEnter(Collider other)
             {
                 GameObject go;
-                if (collider is CharacterController cc)
+                if (other is CharacterController cc)
                     go = cc.gameObject;
                 else
-                    go = collider.attachedRigidbody.gameObject;
+                    go = other.attachedRigidbody.gameObject;
 
                 if ((LayerMask & 1 << go.layer) != 0)
-                    Trigger();
+                {
+                    Count++;
+                    Tracker.SetUnlockedState(true);
+                }
             }
 
-            private void OnDisable() => Completion.TrySetCanceled();
+            private void OnTriggerExit(Collider other)
+            {
+                GameObject go;
+                if (other is CharacterController cc)
+                    go = cc.gameObject;
+                else
+                    go = other.attachedRigidbody.gameObject;
+
+                if ((LayerMask & 1 << go.layer) != 0)
+                {
+                    Count--;
+                    Tracker.SetUnlockedState(Count != 0);
+                }
+            }
+
+            private void OnDisable() => Tracker.SetUnlockedState(false);
 
             [Button("Force Trigger")]
-            public void Trigger() => Completion.TrySetResult();
+            public void Trigger() => Tracker.SetUnlockedState(true);
         }
     }
 }

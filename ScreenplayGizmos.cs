@@ -62,20 +62,8 @@ namespace Screenplay
                 Vector3? root = null;
                 if (e.TriggerSource is {} trigger && s_anchor.TryGetValue(trigger, out var anchor))
                 {
-                    if (e.Prerequisite is {} prereq && s_anchor.TryGetValue(prereq, out var anchorPrereq))
-                    {
-                        root = (anchorPrereq + anchor) / 2;
-                        Gizmos.color = color * new Color(1,1,1,0.25f);
-                        Gizmos.DrawLine(anchorPrereq, root.Value);
-                        Gizmos.DrawLine(anchor, root.Value);
-                    }
-                    else
-                    {
-                        root = anchor;
-                    }
-                }
-                else if (e.Prerequisite is {} prereq && s_anchor.TryGetValue(prereq, out anchor))
                     root = anchor;
+                }
 
                 if (root is { } r)
                 {

@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using YNode;
 using Screenplay.Nodes;
-using Screenplay.Nodes.Triggers;
-using Sirenix.OdinInspector;
 using Event = Screenplay.Nodes.Event;
 using Random = Unity.Mathematics.Random;
 
@@ -20,131 +17,108 @@ namespace Screenplay
         public bool DebugRetainProgressInEditor;
         private HashSet<IPrerequisite> _visiting = new();
         private Queue<IScreenplayNode?> _orderedVisitation = new();
-        private HashSet<Event> _visitedEvents = new();
+        private Dictionary<Event, VisitedPermutation> _visited = new();
 
         [SerializeField, HideInInspector, SerializeReference] private List<IPrerequisite> __visitedSerializationProxy = new ();
         [SerializeField, HideInInspector, SerializeReference] private List<IScreenplayNode?> __orderedVisitationSerializationProxy = new ();
-        [SerializeField, HideInInspector, SerializeReference] private List<Event> __visitedEventsSerializationProxy = new ();
+        [SerializeField, HideInInspector, SerializeReference] private List<VisitedPermutation> __visitedEventsSerializationProxy = new ();
 
         /// <summary>
-        /// You must dispose of this UniTask when reloading a running game.
+        /// You must cancel this UniTask when reloading a running game.
         /// </summary>
         public async UniTask StartExecution(CancellationToken cancellation, uint seed)
         {
             using var context = new DefaultContext(this, seed);
-            var events = new List<Event>();
-            foreach (var value in Nodes)
-            {
-                if (value is Event e && e.Action is not null && (e.Repeatable || _visitedEvents.Contains(e) == false))
-                    events.Add(e);
-                if (value is ICustomEntry customEntry)
-                    customEntry.Run(this, context, cancellation);
-            }
+            var eventsReady = new List<VisitedPermutation>();
+            var eventsReadySignal = AutoResetUniTaskCompletionSource.Create();
+            var eventsCleanup = new Dictionary<Event, CancellationTokenSource>();
+            var runnerState = new EventRunnerState();
 
-            while (cancellation.IsCancellationRequested == false)
-            {
-                var (currentEvent, additionalContext) = await AwaitAnyEvent(events, context, cancellation);
-
-                _visitedEvents.Add(currentEvent);
-                if (currentEvent.Repeatable == false)
-                    events.Remove(currentEvent);
-
-                additionalContext?.AppendTo(context);
-                await currentEvent.Action.Execute(context, cancellation);
-                context.Annotations.Clear();
-            }
-        }
-
-        private async UniTask<(Event, IAnnotation?)> AwaitAnyEvent(List<Event> events, IEventContext context, CancellationToken cancellation)
-        {
-            (Event, IAnnotation?)? fromTrigger = null;
-            var triggerables = new Dictionary<Event, CancellationTokenSource>();
             try
             {
-                do
+                foreach (var value in Nodes)
                 {
-                    // Check if any non triggerable can be run
-                    foreach (var e in events)
+                    if (value is Event e && e.Action is not null && (e.Repeatable || _visited.ContainsKey(e) == false))
                     {
-                        if (e.TriggerSource is not null)
-                            continue;
-                        if (e.Prerequisite?.TestPrerequisite(context) == false)
-                            continue;
-                        if (e.Action is null)
-                            continue;
-                        return (e, null);
+                        if (e.TriggerSource == null)
+                        {
+                            lock (eventsReady)
+                                eventsReady.Add(new VisitedPermutation { Event = e, Variants = Array.Empty<(VariantBase, guid)>() });
+                        }
+                        else
+                        {
+                            var eventTracker = new EventTracker(eventsReady, eventsReadySignal, e, runnerState);
+                            var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+                            eventsCleanup[e] = cts;
+                            var task = e.TriggerSource.Setup(eventTracker, cts.Token);
+                            ObserveExceptions(task);
+                        }
                     }
 
-                    // Now check only for triggerable, and set them up if they haven't been
-                    foreach (var e in events)
-                    {
-                        if (e.Action is null)
-                            continue;
-                        if (e.TriggerSource is null)
-                            continue;
+                    if (value is ICustomEntry customEntry)
+                        customEntry.Run(this, context, cancellation);
+                }
 
-                        if (e.Prerequisite?.TestPrerequisite(context) == false)
+                while (cancellation.IsCancellationRequested == false)
+                {
+                    VisitedPermutation permutation;
+                    while (true) // Pick next event
+                    {
+                        UniTask eventsReadyTask;
+                        lock (eventsReady)
                         {
-                            if (triggerables.Remove(e, out var cts)) // Prerequisites are invalid, we must cancel the trigger
+                            if (eventsReady.Count != 0)
                             {
-                                cts.Cancel();
-                                cts.Dispose();
+                                permutation = eventsReady[0];
+                                eventsReady.RemoveAt(0);
+                                if (permutation.Event.Repeatable)
+                                    eventsReady.Add(permutation); // Move it to the end of the list
+                                else if (eventsCleanup.Remove(permutation.Event, out var triggerSource))
+                                    triggerSource.Cancel(); // Otherwise dispose of the trigger and be done with it
+
+                                break;
                             }
 
-                            continue;
+                            eventsReadyTask = eventsReadySignal.Task;
                         }
 
-                        if (triggerables.ContainsKey(e) == false)
-                        {
-                            var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
-                            triggerables.Add(e, cts);
-                            SetFromTriggerWhenSignaled(e, cts.Token);
-                        }
+                        await UniTask.WhenAny(eventsReadyTask, UniTask.WaitUntilCanceled(cancellation, completeImmediately: true));
+
+                        cancellation.ThrowIfCancellationRequested();
                     }
 
-                    if (fromTrigger is {} v)
-                        return v;
+                    _visited.Add(permutation.Event, permutation);
 
-                    await UniTask.NextFrame(cancellation, cancelImmediately: true);
+                    foreach (var (variant, guid) in permutation.Variants)
+                        context.Variants[variant] = guid;
 
-                    if (fromTrigger is {} v2)
-                        return v2;
+                    runnerState.IsRunningEvent = true;
+                    runnerState.StateChanged.TrySetResult();
 
-                } while (cancellation.IsCancellationRequested == false);
+                    await permutation.Event.Action.Execute(context, cancellation);
+
+                    runnerState.IsRunningEvent = false;
+                    runnerState.StateChanged.TrySetResult();
+
+                    context.Variants.Clear();
+                }
             }
             finally
             {
-                foreach (var cancellationTokenSource in triggerables.ToArray())
-                {
-                    if (triggerables.Remove(cancellationTokenSource.Key, out _))
-                    {
-                        cancellationTokenSource.Value.Cancel();
-                        cancellationTokenSource.Value.Dispose();
-                    }
-                }
+                runnerState.StateChanged.TrySetCanceled();
+                eventsReadySignal.TrySetCanceled();
             }
 
-            throw new OperationCanceledException();
-
-            async void SetFromTriggerWhenSignaled(Event e, CancellationToken token)
+            static async void ObserveExceptions(UniTask uniTask)
             {
                 try
                 {
-                    var ctx = await e.TriggerSource!.AwaitTrigger(token);
-                    fromTrigger = (e, ctx);
+                    await uniTask;
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
-                    if (ex is not OperationCanceledException)
-                        Debug.LogException(ex);
-                }
-                finally
-                {
-                    if (triggerables.Remove(e, out CancellationTokenSource value))
-                    {
-                        value.Cancel();
-                        value.Dispose();
-                    }
+                    if (e is not OperationCanceledException)
+                        Debug.LogException(e);
                 }
             }
         }
@@ -219,7 +193,7 @@ namespace Screenplay
             __orderedVisitationSerializationProxy.Clear();
             __orderedVisitationSerializationProxy.AddRange(_orderedVisitation);
             __visitedSerializationProxy.AddRange(_visiting);
-            __visitedEventsSerializationProxy.AddRange(_visitedEvents);
+            __visitedEventsSerializationProxy.AddRange(_visited.Values);
 
             var guids = new Dictionary<Guid, LocalizableText>();
             foreach (var localizableText in GetLocalizableText())
@@ -241,7 +215,7 @@ namespace Screenplay
             foreach (var prerequisite in __visitedSerializationProxy)
                 _visiting.Add(prerequisite);
             foreach (var e in __visitedEventsSerializationProxy)
-                _visitedEvents.Add(e);
+                _visited.Add(e.Event, e);
         }
 
 #if UNITY_EDITOR
@@ -262,7 +236,7 @@ namespace Screenplay
                     screenplay.__visitedSerializationProxy.Clear();
                     screenplay.__visitedEventsSerializationProxy.Clear();
                     screenplay._visiting.Clear();
-                    screenplay._visitedEvents.Clear();
+                    screenplay._visited.Clear();
                 }
             };
         }
@@ -273,7 +247,8 @@ namespace Screenplay
             private Component.UIBase? _dialogUI;
             private Random _random;
 
-            public List<IAnnotation> Annotations { get; set; } = new();
+            public Dictionary<VariantBase, guid> Variants { get; set; } = new();
+
             public ScreenplayGraph Source { get; }
 
             public DefaultContext(ScreenplayGraph Source, uint seed)

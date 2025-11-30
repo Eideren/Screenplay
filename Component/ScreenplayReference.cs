@@ -106,16 +106,14 @@ namespace Screenplay.Component
         public static async UniTask<Object> GetAsync(guid guid, CancellationToken cancellationToken)
         {
             if (TryGetRef(guid, out var output))
-            {
                 return output;
-            }
-            else
-            {
-                if (s_completionSources.TryGetValue(guid, out var acs) == false)
-                    s_completionSources[guid] = acs = new UniTaskCompletionSource<Object>();
 
-                return await acs.Task.AttachExternalCancellation(cancellationToken);
-            }
+            if (s_completionSources.TryGetValue(guid, out var acs) == false)
+                s_completionSources[guid] = acs = new UniTaskCompletionSource<Object>();
+
+            var s = await UniTask.WhenAny(acs.Task, UniTask.WaitUntilCanceled(cancellationToken, completeImmediately: true));
+            cancellationToken.ThrowIfCancellationRequested();
+            return s.result;
         }
 
         public static guid GetOrCreate(GameObject obj)
