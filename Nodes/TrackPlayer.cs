@@ -12,7 +12,7 @@ namespace Screenplay.Nodes
         [SerializeReference, Input] public required Track? Track;
         [SerializeField, HideInInspector] public int From = -1, To = -1;
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references) => Track?.CollectReferences(references);
+        public override void CollectReferences(ReferenceCollector references) => Track?.CollectReferences(references);
 
         protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
         {

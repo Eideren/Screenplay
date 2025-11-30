@@ -18,7 +18,7 @@ namespace Screenplay.Nodes
         [Tooltip("Can this event ever run again after having been completed"), ToggleLeft]
         public bool Repeatable;
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references) { }
+        public override void CollectReferences(ReferenceCollector references) { }
         public IEnumerable<IBranch?> Followup()
         {
             yield return Action;

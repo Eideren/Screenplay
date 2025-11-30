@@ -10,7 +10,7 @@ namespace Screenplay.Nodes.Unity
     {
         [HideLabel, HorizontalGroup] public required SceneReference Scene;
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references) { }
+        public override void CollectReferences(ReferenceCollector references) { }
 
         public bool TestPrerequisite(IEventContext context)
         {

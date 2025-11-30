@@ -20,7 +20,7 @@ namespace Screenplay.Nodes.Barriers
 
         public UniTask Execute(IEventContext context, CancellationToken cancellation) => Next.Execute(context, cancellation);
 
-        public void CollectReferences(List<GenericSceneObjectReference> references) { }
+        public void CollectReferences(ReferenceCollector references) { }
 
         public IPort ValidatePortType(IPort? port)
         {

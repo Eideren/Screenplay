@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Screenplay.Nodes.TrackItems
 {
     public interface ITrackItem
@@ -8,8 +6,17 @@ namespace Screenplay.Nodes.TrackItems
         float Start { get; set; }
         float Duration { get; set; }
         (float start, float end) Timespan => (Start, Start + Duration);
-        void CollectReferences(List<GenericSceneObjectReference> references);
+        void CollectReferences(ReferenceCollector references);
         ITrackSampler? TryGetSampler();
         void AppendRollbackMechanism(IPreviewer previewer);
+    }
+
+    public static class ReferenceCollectorExtension
+    {
+        public static void Collect<T>(this ReferenceCollector @this, params T?[] outputs) where T : ITrackItem
+        {
+            foreach (T? output in outputs)
+                output?.CollectReferences(@this);
+        }
     }
 }

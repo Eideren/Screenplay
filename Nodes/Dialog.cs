@@ -32,7 +32,7 @@ namespace Screenplay.Nodes
             yield return Line;
         }
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references) { }
+        public override void CollectReferences(ReferenceCollector references) { }
 
         public override void FastForward(IEventContext context, CancellationToken cancellationToken) { }
 

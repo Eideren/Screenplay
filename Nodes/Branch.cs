@@ -46,6 +46,6 @@ namespace Screenplay.Nodes
                 previewer.PlaySafeAction(this);
         }
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references) { }
+        public override void CollectReferences(ReferenceCollector references) { }
     }
 }

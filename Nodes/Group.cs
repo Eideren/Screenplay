@@ -14,6 +14,6 @@ namespace Screenplay.Nodes
 
         [SerializeReference] public List<INodeValue> Children = new();
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references) { }
+        public override void CollectReferences(ReferenceCollector references) { }
     }
 }

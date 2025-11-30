@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using YNode;
 
 namespace Screenplay.Nodes
@@ -11,6 +10,6 @@ namespace Screenplay.Nodes
         /// <remarks>
         /// Used to mark objects that are referenced by a <see cref="ScreenplayGraph"/> in the scene.
         /// </remarks>
-        void CollectReferences(List<GenericSceneObjectReference> references);
+        void CollectReferences(ReferenceCollector references);
     }
 }

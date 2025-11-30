@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
@@ -12,7 +11,7 @@ namespace Screenplay.Nodes
         [HideLabel] public Vector3 Destination;
         [HideLabel] public Quaternion Rotation = Quaternion.identity;
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references) => references.Add(Target);
+        public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
         protected override UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
         {

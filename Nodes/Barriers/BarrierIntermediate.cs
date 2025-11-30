@@ -60,12 +60,10 @@ namespace Screenplay.Nodes.Barriers
             NextBarrier?.UpdatePorts(this);
         }
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references)
+        public override void CollectReferences(ReferenceCollector references)
         {
-            foreach (var track in InheritedTracks)
-                track.CollectReferences(references);
-            foreach (var track in AdditionalTracks)
-                track.CollectReferences(references);
+            references.Collect(InheritedTracks);
+            references.Collect(AdditionalTracks);
         }
 
         private void BeginDrawListElement(int index)

@@ -43,7 +43,7 @@ namespace Screenplay.Nodes.TrackItems
             }
         }
 
-        public void CollectReferences(List<GenericSceneObjectReference> references) => references.Add(Target);
+        public void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
         public ITrackSampler? TryGetSampler()
         {

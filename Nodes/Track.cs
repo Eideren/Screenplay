@@ -55,11 +55,7 @@ namespace Screenplay.Nodes
             } while (loop || t < timespan.end);
         }
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references)
-        {
-            foreach (var trackItem in Items)
-                trackItem?.CollectReferences(references);
-        }
+        public override void CollectReferences(ReferenceCollector references) => references.Collect(Items);
 
         public void SetupPreview(IPreviewer previewer, bool fastForwarded)
         {

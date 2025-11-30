@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -38,7 +37,7 @@ namespace Screenplay.Nodes.TrackItems
             set => _duration = value;
         }
 
-        public void CollectReferences(List<GenericSceneObjectReference> references) => references.Add(Target);
+        public void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
         public ITrackSampler? TryGetSampler()
         {

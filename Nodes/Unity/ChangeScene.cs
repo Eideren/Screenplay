@@ -11,7 +11,7 @@ namespace Screenplay.Nodes.Unity
     {
         [HideLabel, HorizontalGroup] public required SceneReference Scene;
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references) { }
+        public override void CollectReferences(ReferenceCollector references) { }
 
         protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
         {

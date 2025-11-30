@@ -13,7 +13,7 @@ namespace Screenplay.Nodes.Logic
 
         public bool TestPrerequisite(IEventContext context) => A.TestPrerequisite(context) == false;
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references)
+        public override void CollectReferences(ReferenceCollector references)
         {
             A?.CollectReferences(references);
         }

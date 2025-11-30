@@ -33,11 +33,7 @@ namespace Screenplay.Nodes
 
         public IEnumerable<IOutput> AllTracks() => Tracks;
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references)
-        {
-            foreach (var output in Tracks)
-                output.CollectReferences(references);
-        }
+        public override void CollectReferences(ReferenceCollector references) => references.Collect(Tracks);
 
         public IEnumerable<IBranch?> Followup()
         {

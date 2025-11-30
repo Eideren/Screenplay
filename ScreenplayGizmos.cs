@@ -13,7 +13,7 @@ namespace Screenplay
     {
         private static Dictionary<INodeValue, Vector3> s_anchor = new();
         private static HashSet<INodeValue> s_visited = new();
-        private static List<GenericSceneObjectReference> s_workingList = new();
+        private static ReferenceCollector s_workingList = new();
         private static List<Vector3> s_lineForPathList = new();
         private static List<Event> s_events = new();
         private static List<IScreenplayNode> s_stack = new();
@@ -30,7 +30,7 @@ namespace Screenplay
                 if (node is IScreenplayNode refContainer)
                 {
                     refContainer.CollectReferences(s_workingList);
-                    if (s_workingList.Count > 0)
+                    if (s_workingList.RawData.Count > 0)
                     {
                         if (ParseWorkingListAndGetAnchor(out Vector3 anchor))
                             s_anchor[node] = anchor;
@@ -148,9 +148,9 @@ namespace Screenplay
 
         private static bool ParseWorkingListAndGetAnchor(out Vector3 anchor)
         {
-            Span<Vector3> buffer = stackalloc Vector3[s_workingList.Count];
+            Span<Vector3> buffer = stackalloc Vector3[s_workingList.RawData.Count];
             int found = 0;
-            foreach (var sRef in s_workingList)
+            foreach (var sRef in s_workingList.RawData)
             {
                 if (sRef.TryGet(out var obj, out _) == false)
                     continue;

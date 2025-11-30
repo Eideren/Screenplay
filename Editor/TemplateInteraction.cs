@@ -17,7 +17,7 @@ public class __SCRIPTNAME__ : ScreenplayNode, ITriggerSetup
     public required SceneObjectReference<GameObject> Target;
 
     // Append any reference you have above in this function to ensure they work as expected
-    public override void CollectReferences(List<GenericSceneObjectReference> references) => references.Add(Target);
+    public override void CollectReferences(ReferenceCollector references) => references.Add(Target);
 
     // This is called by the screenplay when the progression of the story reached the event this interaction is attached to
     public bool TryCreateTrigger(System.Action onTriggered, [MaybeNullWhen(false)] out ITrigger trigger)

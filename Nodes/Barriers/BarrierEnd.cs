@@ -24,7 +24,7 @@ namespace Screenplay.Nodes.Barriers
             set { }
         }
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references) { }
+        public override void CollectReferences(ReferenceCollector references) { }
 
         public IEnumerable<IOutput> AllTracks()
         {

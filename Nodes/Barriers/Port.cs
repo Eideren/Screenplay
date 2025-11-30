@@ -25,7 +25,7 @@ namespace Screenplay.Nodes.Barriers
 
         IBarrierPart IPort.Parent { set => Parent = value; }
 
-        public void CollectReferences(List<GenericSceneObjectReference> references) { }
+        public void CollectReferences(ReferenceCollector references) { }
         public bool TestPrerequisite(IEventContext context) => context.Visited(this);
         public void SetupPreview(IPreviewer previewer, bool fastForwarded) { }
 

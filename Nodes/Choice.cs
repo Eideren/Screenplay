@@ -76,7 +76,7 @@ namespace Screenplay.Nodes
             }
         }
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references) { }
+        public override void CollectReferences(ReferenceCollector references) { }
 
         [Serializable]
         public struct ChoiceInstance

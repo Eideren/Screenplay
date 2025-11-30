@@ -15,6 +15,6 @@ namespace Screenplay.Nodes
             set => _position = value;
         }
 
-        public abstract void CollectReferences(List<GenericSceneObjectReference> references);
+        public abstract void CollectReferences(ReferenceCollector references);
     }
 }

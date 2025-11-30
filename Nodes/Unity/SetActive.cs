@@ -13,7 +13,7 @@ namespace Screenplay.Nodes.Unity
         [HideLabel, HorizontalGroup] public required SceneObjectReference<GameObject> Target;
         [HideLabel, HorizontalGroup(width:16)] public bool Active = true;
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references) => references.Add(Target);
+        public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
         protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
         {

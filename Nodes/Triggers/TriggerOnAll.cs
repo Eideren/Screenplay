@@ -14,11 +14,7 @@ namespace Screenplay.Nodes.Triggers
         [SerializeReference, Input, ListDrawerSettings(AlwaysAddDefaultValue = true, ShowFoldout = false)]
         public IPrecondition?[] Sources = Array.Empty<IPrecondition?>();
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references)
-        {
-            foreach (var source in Sources)
-                source?.CollectReferences(references);
-        }
+        public override void CollectReferences(ReferenceCollector references) => references.Collect(Sources);
 
         public async UniTask Setup(IEventTracker tracker, CancellationToken triggerCancellation)
         {

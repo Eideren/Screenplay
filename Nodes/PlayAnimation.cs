@@ -64,9 +64,6 @@ namespace Screenplay.Nodes
                 previewer.PlaySafeAction(this);
         }
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references)
-        {
-            references.Add(Target);
-        }
+        public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
     }
 }

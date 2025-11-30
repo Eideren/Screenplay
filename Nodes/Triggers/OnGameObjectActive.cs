@@ -12,7 +12,7 @@ namespace Screenplay.Nodes.Triggers
     {
         public required SceneObjectReference<GameObject> Target;
 
-        public override void CollectReferences(List<GenericSceneObjectReference> references) { references.Add(Target); }
+        public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
         public async UniTask Setup(IEventTracker tracker, CancellationToken triggerCancellation)
         {
