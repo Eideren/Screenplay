@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
@@ -27,7 +26,7 @@ namespace Screenplay.Nodes.Triggers
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
-        public async UniTask Setup(IEventTracker tracker, CancellationToken triggerCancellation)
+        public async UniTask Setup(IPreconditionCollector tracker, CancellationToken triggerCancellation)
         {
             while (triggerCancellation.IsCancellationRequested == false)
             {
@@ -52,7 +51,7 @@ namespace Screenplay.Nodes.Triggers
         {
             public LayerMask LayerMask;
             public int Count;
-            public required IEventTracker Tracker;
+            public required IPreconditionCollector Tracker;
 
             private void OnTriggerEnter(Collider other)
             {

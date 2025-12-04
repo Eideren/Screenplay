@@ -8,6 +8,7 @@ using UnityEngine;
 using Screenplay.Nodes;
 using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
+using Random = Unity.Mathematics.Random;
 
 namespace Screenplay.Editor
 {
@@ -20,15 +21,17 @@ namespace Screenplay.Editor
         private Stack<Action> _rollbacksRegistered = new();
         private bool _loopPreview;
         private UIBase? _dialogUIComponentPrefab, _dialogUI;
-        private Unity.Mathematics.Random _random;
+        private Random _random;
 
-        public Dictionary<VariantBase, guid> Variants { get; set; } = new();
+        public Locals Locals { get; set; } = new();
 
         public ScreenplayGraph Source { get; }
 
         public List<IScreenplayNode> Path { get; }
 
         public bool Loop => _loopPreview;
+
+        public ref Random GetRandom() => ref _random;
 
         public UIBase? GetDialogUI()
         {
@@ -199,7 +202,5 @@ namespace Screenplay.Editor
         public bool Visited(IPrerequisite executable) => false;
 
         public void Visiting(IBranch? executable) { }
-
-        public uint NextSeed() => _random.NextUInt(1, uint.MaxValue);
     }
 }

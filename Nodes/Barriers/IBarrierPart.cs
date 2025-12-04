@@ -14,7 +14,7 @@ namespace Screenplay.Nodes.Barriers
 
         public static bool InNodeEditor;
 
-        IPort[] InheritedPorts { get; }
+        Port[] InheritedPorts { get; }
         IBarrierPart? NextBarrier { get; set; }
         IEnumerable<IOutput> AllTracks();
         void UpdatePorts(IBarrierPart parent);

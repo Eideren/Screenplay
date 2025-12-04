@@ -25,7 +25,7 @@ namespace Screenplay
             static async UniTask UniTaskOfTWrapper(CancellationToken cancellation, Func<CancellationToken, UniTask<T>> signal) => await signal(cancellation);
         }
 
-        void PlaySafeAction(IExe<IEventContext> executable)
+        void PlaySafeAction(IExecutable executable)
         {
             AddCustomPreview(PreviewPlay);
 

@@ -1,10 +1,10 @@
-﻿using Sirenix.OdinInspector;
+﻿using System.Runtime.CompilerServices;
+using Sirenix.OdinInspector;
 using Sirenix.OdinInspector.Editor;
 using Sirenix.Utilities.Editor;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.Scripting;
 
 namespace Screenplay.Editor
 {

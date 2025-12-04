@@ -11,7 +11,7 @@ using YNode;
 namespace Screenplay.Nodes
 {
     [NodeTint(60, 60, 60)]
-    public class Choice : AbstractScreenplayNode, IExecutable<IEventContext>, ILocalizableNode, IPrerequisiteVisitedSelf
+    public class Choice : AbstractScreenplayNode, IExecutable, ILocalizableNode
     {
         [ListDrawerSettings(ShowFoldout = false), LabelText(" ")]
         public ChoiceInstance[] Choices =
@@ -26,7 +26,7 @@ namespace Screenplay.Nodes
             }
         };
 
-        public IEnumerable<IExe<IEventContext>> Followup()
+        public IEnumerable<IExecutable> Followup()
         {
             foreach (var instance in Choices)
             {
@@ -85,7 +85,7 @@ namespace Screenplay.Nodes
             public IPrerequisite? Prerequisite;
 
             [Output, SerializeReference, LabelWidth(10), HorizontalGroup, Tooltip("What will be executed when this choice is selected")]
-            public IExe<IEventContext>? Action;
+            public IExecutable? Action;
 
             [HideLabel, InlineProperty]
             public LocalizableText Text;

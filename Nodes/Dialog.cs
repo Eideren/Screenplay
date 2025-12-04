@@ -5,16 +5,19 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using YNode;
 
 namespace Screenplay.Nodes
 {
-    public class Dialog : ExecutableLinear, ILocalizableNode
+    public class Dialog : ExecutableLinear, ILocalizableNode, IInterlocutorSource
     {
-        [HideLabel]
-        public Interlocutor? Interlocutor;
-
         [InlineProperty, HideLabel]
         public LocalizableText Line = new("Dialog Line\n\nAnother Line");
+
+        [Input, SerializeReference]
+        public required IInterlocutorSource InterlocutorSource;
+
+        public Interlocutor GetInterlocutor(IEventContext context) => InterlocutorSource.GetInterlocutor(context);
 
         IEnumerable<string> Lines()
         {
@@ -61,6 +64,7 @@ namespace Screenplay.Nodes
                 return;
             }
 
+            var interlocutor = GetInterlocutor(context);
             ui.StartDialogPresentation();
             foreach (var text in Lines())
             {
@@ -75,10 +79,10 @@ namespace Screenplay.Nodes
                     if (i + 1 == text.Length)
                         break; // Don't delay for the last character
 
-                    if (Interlocutor != null && i - lastChatter >= Interlocutor.CharactersPerChatter)
-                        Chatter(ref lastChatter, i, text, Interlocutor, ui);
+                    if (interlocutor != null && i - lastChatter >= interlocutor.CharactersPerChatter)
+                        Chatter(ref lastChatter, i, text, interlocutor, ui);
 
-                    time += Interlocutor?.GetDuration(text[i]) ?? 0.1f;
+                    time += interlocutor?.GetDuration(text[i]) ?? 0.1f;
                     for (; time > 0f; time -= Time.unscaledDeltaTime)
                     {
                         if (ui.FastForwardRequested)
@@ -91,8 +95,8 @@ namespace Screenplay.Nodes
                     }
                 }
 
-                if (Interlocutor != null)
-                    Chatter(ref lastChatter, text.Length - 1, text, Interlocutor, ui);
+                if (interlocutor != null)
+                    Chatter(ref lastChatter, text.Length - 1, text, interlocutor, ui);
 
                 BREAK_TYPEWRITING:
                 ui.SetTypewritingCharacter(text.Length);

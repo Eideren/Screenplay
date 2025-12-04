@@ -6,9 +6,8 @@ namespace Screenplay
 {
     public class Door
     {
-        private readonly IEventTracker _parentTracker;
+        private readonly IPreconditionCollector _parentTracker;
         private readonly AutoResetUniTaskCompletionSource _autoReset = AutoResetUniTaskCompletionSource.Create();
-        private readonly Dictionary<Latch, (VariantBase, guid)[]> _permutations = new();
         private readonly object _lock = new();
         private int _counter;
 
@@ -18,31 +17,22 @@ namespace Screenplay
 
         public UniTask WaitClosed() => Closed ? UniTask.CompletedTask : _autoReset.Task;
 
-        public (VariantBase, guid)[] CollectPermutations()
-        {
-            lock (_lock)
-            {
-                var list = new List<(VariantBase, guid)>();
-                foreach (var (latch, permutation) in _permutations)
-                    list.AddRange(permutation);
-
-                return list.ToArray();
-            }
-        }
-
-        public Door(IEventTracker parentTracker)
+        public Door(IPreconditionCollector parentTracker)
         {
             _parentTracker = parentTracker;
         }
 
-        public class Latch : IEventTracker
+        public class Latch : IPreconditionCollector
         {
+            private readonly List<(ILocal, guid)> _lastAppliedVariants = new();
             private readonly Door _door;
             private bool _isUnlocked;
 
-            public EventRunnerState RunnerState => _door._parentTracker.RunnerState;
+            public Locals SharedLocals => _door._parentTracker.SharedLocals;
 
-            public void SetUnlockedState(bool state, params (VariantBase, guid)[] permutationValues)
+            public LatentVariable<bool> IsBusy => _door._parentTracker.IsBusy;
+
+            public void SetUnlockedState(bool state, params (ILocal, guid)[] locals)
             {
                 if (_isUnlocked == state)
                     return;
@@ -52,12 +42,22 @@ namespace Screenplay
                 lock (_door._lock)
                 {
                     if (_isUnlocked)
-                        _door._permutations[this] = permutationValues;
+                    {
+                        foreach (var v in locals)
+                        {
+                            if (SharedLocals.TryAdd(v))
+                                _lastAppliedVariants.Add(v);
+                        }
+                    }
                     else
-                        _door._permutations.Remove(this);
+                    {
+                        foreach (var v in _lastAppliedVariants)
+                            SharedLocals.Remove(v);
+                        _lastAppliedVariants.Clear();
+                    }
 
-                    if (   _isUnlocked          && --_door._counter == 0
-                           || _isUnlocked == false && ++_door._counter == 1)
+                    if (_isUnlocked             && --_door._counter == 0
+                        || _isUnlocked == false && ++_door._counter == 1)
                     {
                         _door._autoReset.TrySetResult();
                     }

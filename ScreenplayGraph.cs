@@ -29,10 +29,10 @@ namespace Screenplay
         public async UniTask StartExecution(CancellationToken cancellation, uint seed)
         {
             using var context = new DefaultContext(this, seed);
-            var eventsReady = new List<VisitedPermutation>();
+            var eventsReady = new List<(Event Event, PreconditionCollector? collector)>();
             var eventsReadySignal = AutoResetUniTaskCompletionSource.Create();
             var eventsCleanup = new Dictionary<Event, CancellationTokenSource>();
-            var runnerState = new EventRunnerState();
+            using var busy = new LatentVariable<bool>(false);
 
             try
             {
@@ -43,69 +43,78 @@ namespace Screenplay
                         if (e.TriggerSource == null)
                         {
                             lock (eventsReady)
-                                eventsReady.Add(new VisitedPermutation { Event = e, Variants = Array.Empty<(VariantBase, guid)>() });
+                                eventsReady.Add((e, null));
                         }
                         else
                         {
-                            var eventTracker = new EventTracker(eventsReady, eventsReadySignal, e, runnerState);
                             var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
                             eventsCleanup[e] = cts;
-                            var task = e.TriggerSource.Setup(eventTracker, cts.Token);
+                            var task = e.TriggerSource.Setup(new PreconditionCollector(OnUnlocked, OnLocked, busy), cts.Token);
                             ObserveExceptions(task);
+
+                            void OnUnlocked(PreconditionCollector pc)
+                            {
+                                lock (eventsReady)
+                                {
+                                    eventsReady.Add((e, pc));
+                                    eventsReadySignal.TrySetResult();
+                                }
+                            }
+
+                            void OnLocked(PreconditionCollector pc)
+                            {
+                                lock (eventsReady)
+                                    eventsReady.Remove((e, pc));
+                            }
                         }
                     }
 
                     if (value is ICustomEntry customEntry)
-                        customEntry.Run(this, context, cancellation);
+                        customEntry.Run(context, cancellation);
                 }
 
                 while (cancellation.IsCancellationRequested == false)
                 {
-                    VisitedPermutation permutation;
-                    while (true) // Pick next event
+                    Event? eventToProcess;
+                    lock (eventsReady)
                     {
-                        UniTask eventsReadyTask;
-                        lock (eventsReady)
+                        if (eventsReady.Count != 0)
                         {
-                            if (eventsReady.Count != 0)
-                            {
-                                permutation = eventsReady[0];
-                                eventsReady.RemoveAt(0);
-                                if (permutation.Event.Repeatable)
-                                    eventsReady.Add(permutation); // Move it to the end of the list
-                                else if (eventsCleanup.Remove(permutation.Event, out var triggerSource))
-                                    triggerSource.Cancel(); // Otherwise dispose of the trigger and be done with it
+                            var ready = eventsReady[0];
+                            eventsReady.RemoveAt(0);
 
-                                break;
-                            }
+                            context.Locals.Clear();
+                            ready.collector?.SharedLocals.CopyTo(context.Locals);
+                            eventToProcess = ready.Event;
 
-                            eventsReadyTask = eventsReadySignal.Task;
+                            if (eventToProcess.Repeatable)
+                                eventsReady.Add(ready); // Move it to the end of the list
+                            else if (eventsCleanup.Remove(eventToProcess, out var triggerSource))
+                                triggerSource.Cancel(); // Otherwise dispose of the trigger and be done with it
                         }
-
-                        await UniTask.WhenAny(eventsReadyTask, UniTask.WaitUntilCanceled(cancellation, completeImmediately: true));
-
-                        cancellation.ThrowIfCancellationRequested();
+                        else
+                        {
+                            eventToProcess = null;
+                        }
                     }
 
-                    _visited.Add(permutation.Event, permutation);
+                    if (eventToProcess == null)
+                    {
+                        await eventsReadySignal.Task.WithInterruptingCancellation(cancellation);
+                        continue;
+                    }
 
-                    foreach (var (variant, guid) in permutation.Variants)
-                        context.Variants[variant] = guid;
+                    _visited.Add(eventToProcess, new VisitedPermutation{ Event = eventToProcess, Local = context.Locals.ToArray() });
 
-                    runnerState.IsRunningEvent = true;
-                    runnerState.StateChanged.TrySetResult();
+                    busy.Set(true);
 
-                    await permutation.Event.Action.Execute(context, cancellation);
+                    await eventToProcess.Action.Execute(context, cancellation);
 
-                    runnerState.IsRunningEvent = false;
-                    runnerState.StateChanged.TrySetResult();
-
-                    context.Variants.Clear();
+                    busy.Set(false);
                 }
             }
             finally
             {
-                runnerState.StateChanged.TrySetCanceled();
                 eventsReadySignal.TrySetCanceled();
             }
 
@@ -195,15 +204,33 @@ namespace Screenplay
             __visitedSerializationProxy.AddRange(_visiting);
             __visitedEventsSerializationProxy.AddRange(_visited.Values);
 
-            var guids = new Dictionary<Guid, LocalizableText>();
-            foreach (var localizableText in GetLocalizableText())
             {
-                while (guids.TryGetValue(localizableText.Guid, out var existingInstance) && existingInstance != localizableText)
+                var guids = new Dictionary<Guid, LocalizableText>();
+                foreach (var localizableText in GetLocalizableText())
                 {
-                    localizableText.ForceRegenerateGuid();
-                    Debug.LogWarning($"Duplicate Guid detected between '{localizableText.Content}' and '{existingInstance.Content}', regenerating Guid. This is standard behavior when copying nodes");
+                    while (guids.TryGetValue(localizableText.Guid, out var existingInstance) && existingInstance != localizableText)
+                    {
+                        localizableText.ForceRegenerateGuid();
+                        Debug.LogWarning($"Duplicate Guid detected between '{localizableText.Content}' and '{existingInstance.Content}', regenerating Guid. This is expected when copying nodes");
+                    }
+                    guids[localizableText.Guid] = localizableText;
                 }
-                guids[localizableText.Guid] = localizableText;
+            }
+
+            {
+                var guids = new Dictionary<Guid, ILocal>();
+                foreach (var node in Nodes)
+                {
+                    if (node is not ILocal local)
+                        continue;
+
+                    while (guids.TryGetValue(local.Id, out var existingInstance) && existingInstance != local)
+                    {
+                        local.Id = guid.New();
+                        Debug.LogWarning($"Duplicate Guid detected between '{existingInstance}' and '{local}', regenerating Guid. This is expected when copying nodes");
+                    }
+                    guids[local.Id] = local;
+                }
             }
         }
 
@@ -247,7 +274,7 @@ namespace Screenplay
             private Component.UIBase? _dialogUI;
             private Random _random;
 
-            public Dictionary<VariantBase, guid> Variants { get; set; } = new();
+            public Locals Locals { get; set; } = new();
 
             public ScreenplayGraph Source { get; }
 
@@ -263,14 +290,14 @@ namespace Screenplay
                     Destroy(_dialogUI.gameObject);
             }
 
+            public ref Random GetRandom() => ref _random;
+
             public void Visiting(IBranch? executable)
             {
                 Source._orderedVisitation.Enqueue(executable);
                 if (executable is IPrerequisite prerequisite)
                     Source._visiting.Add(prerequisite);
             }
-
-            public uint NextSeed() => _random.NextUInt(1, uint.MaxValue);
 
             public bool Visited(IPrerequisite executable) => Source._visiting.Contains(executable);
 

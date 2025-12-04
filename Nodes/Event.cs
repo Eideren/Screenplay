@@ -11,7 +11,7 @@ namespace Screenplay.Nodes
         public string Name = "My Unnamed Event";
 
         [Output, SerializeReference, Tooltip("What would be running when this event starts")]
-        public required IExe<IEventContext>? Action;
+        public required IExecutable? Action;
         [Input, SerializeReference, Tooltip("Interaction setup for the sole purpose of triggering this event")]
         public IPrecondition? TriggerSource;
 

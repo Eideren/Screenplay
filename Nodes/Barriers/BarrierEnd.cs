@@ -11,12 +11,12 @@ namespace Screenplay.Nodes.Barriers
     public class BarrierEnd : AbstractScreenplayNode, IBarrierPart
     {
         [Output, SerializeReference]
-        public IExe<IEventContext>? Next;
+        public IExecutable? Next;
 
         [SerializeReference, ReadOnly, HideIf("@IBarrierPart.InNodeEditor")]
-        public IPort[] InheritedPorts = Array.Empty<IPort>();
+        public Port[] InheritedPorts = Array.Empty<Port>();
 
-        IPort[] IBarrierPart.InheritedPorts => InheritedPorts;
+        Port[] IBarrierPart.InheritedPorts => InheritedPorts;
 
         IBarrierPart? IBarrierPart.NextBarrier
         {
@@ -37,7 +37,7 @@ namespace Screenplay.Nodes.Barriers
             Array.Resize(ref InheritedPorts, parentTracks.Length);
             for (int i = 0; i < InheritedPorts.Length; i++)
             {
-                InheritedPorts[i] = parentTracks[i].ValidatePortType(InheritedPorts[i]);
+                InheritedPorts[i] ??= new Port();
                 InheritedPorts[i].Parent = this;
             }
         }

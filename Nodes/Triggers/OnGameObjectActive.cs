@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Cysharp.Threading.Tasks.Triggers;
@@ -14,7 +13,7 @@ namespace Screenplay.Nodes.Triggers
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
-        public async UniTask Setup(IEventTracker tracker, CancellationToken triggerCancellation)
+        public async UniTask Setup(IPreconditionCollector tracker, CancellationToken triggerCancellation)
         {
             while (triggerCancellation.IsCancellationRequested == false)
             {

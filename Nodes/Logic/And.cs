@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using YNode;
 
 namespace Screenplay.Nodes.Logic

@@ -1,14 +1,14 @@
-using System.Collections.Generic;
 using Screenplay.Nodes;
+using Unity.Mathematics;
 
 namespace Screenplay
 {
     /// <summary>
     /// Working data when executing a <see cref="ScreenplayGraph"/> shared for the whole run
     /// </summary>
-    public interface IEventContext : IExecutableContext<IEventContext>, IPrerequisiteContext
+    public interface IEventContext : IPrerequisiteContext
     {
-        Dictionary<VariantBase, guid> Variants { get; }
+        Locals Locals { get; }
 
         ScreenplayGraph Source { get; }
 
@@ -17,11 +17,8 @@ namespace Screenplay
         /// </summary>
         Component.UIBase? GetDialogUI();
 
-        /// <summary> Return a new random seed to be used during the execution of the Screenplay </summary>
-        uint NextSeed();
+        ref Random GetRandom();
 
         void Visiting(IBranch? exe);
-
-        void IExecutableContext<IEventContext>.Visiting(IExe<IEventContext>? executable) => Visiting(executable);
     }
 }

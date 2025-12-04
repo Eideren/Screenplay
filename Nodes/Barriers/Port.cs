@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Screenplay.Nodes.Barriers
 {
     [Serializable]
-    public class Port<T> : IPort, IExe<T> where T : IExecutableContext<T>
+    public class Port : IExecutable
     {
         public const int Width = 24;
         public const int OffsetFromTop = 22;
@@ -23,23 +23,22 @@ namespace Screenplay.Nodes.Barriers
             set { }
         }
 
-        IBarrierPart IPort.Parent { set => Parent = value; }
-
         public void CollectReferences(ReferenceCollector references) { }
-        public bool TestPrerequisite(IEventContext context) => context.Visited(this);
         public void SetupPreview(IPreviewer previewer, bool fastForwarded) { }
 
-        public IEnumerable<IBranch?> Followup()
+        public IEnumerable<IExecutable?> Followup()
         {
             yield break;
         }
 
-        public virtual UniTask InnerExecution(T context, CancellationToken cancellation)
+        public virtual UniTask InnerExecution(IEventContext context, CancellationToken cancellation)
         {
             return IBarrierPart.Group.NotifyReceivedGroup(cancellation, Parent);
         }
 
-        public void FastForwardEval(T context, FastForwardData data, CancellationToken cancellation, out UniTask? playbackStart)
+        public void FastForward(IEventContext context, CancellationToken cancellation) => throw new NotImplementedException();
+
+        public void FastForwardEval(IEventContext context, FastForwardData data, CancellationToken cancellation, out UniTask? playbackStart)
         {
             // Sounds like we don't need to do anything here ? Need to validate
 #warning unfinished

@@ -108,12 +108,10 @@ namespace Screenplay.Component
             if (TryGetRef(guid, out var output))
                 return output;
 
-            if (s_completionSources.TryGetValue(guid, out var acs) == false)
-                s_completionSources[guid] = acs = new UniTaskCompletionSource<Object>();
+            if (s_completionSources.TryGetValue(guid, out var completion) == false)
+                s_completionSources[guid] = completion = new UniTaskCompletionSource<Object>();
 
-            var s = await UniTask.WhenAny(acs.Task, UniTask.WaitUntilCanceled(cancellationToken, completeImmediately: true));
-            cancellationToken.ThrowIfCancellationRequested();
-            return s.result;
+            return await completion.Task.WithInterruptingCancellation(cancellationToken);
         }
 
         public static guid GetOrCreate(GameObject obj)

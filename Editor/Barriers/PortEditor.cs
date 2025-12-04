@@ -1,17 +1,16 @@
 using System;
-using Screenplay.Nodes.Barriers;
 using Sirenix.Utilities.Editor;
-using UnityEditor;
 using UnityEngine;
 using YNode.Editor;
+using Port = Screenplay.Nodes.Barriers.Port;
 
 namespace Screenplay.Nodes.Editor.Barriers
 {
-    public class PortEditor<T> : NodeEditor, ICustomNodeEditor<Port<T>> where T : IExecutableContext<T>
+    public class PortEditor<T> : NodeEditor, ICustomNodeEditor<Port>
     {
-        public new Port<T> Value => (Port<T>)base.Value;
+        public new Port Value => (Port)base.Value;
 
-        public override int GetWidth() => Port<T>.Width;
+        public override int GetWidth() => Port.Width;
 
         public override GUIStyle GetBodyHighlightStyle() => GUIStyle.none;
 
@@ -24,7 +23,7 @@ namespace Screenplay.Nodes.Editor.Barriers
 
         public override void OnBodyGUI()
         {
-            var r = GUILayoutUtility.GetRect(Port<T>.Width, Port<T>.HeightOfPort);
+            var r = GUILayoutUtility.GetRect(Port.Width, Port.HeightOfPort);
             if (Window.LossyConnectedEditors.Contains(this))
                 GUI.Box(r, EditorIcons.Link.ActiveGUIContent);
 

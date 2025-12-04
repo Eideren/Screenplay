@@ -9,8 +9,8 @@ namespace Screenplay.Nodes
     public interface IPrecondition : IScreenplayNode
     {
         /// <summary>
-        /// Set <see cref="tracker"/>'s <see cref="IEventTracker.SetUnlockedState"/> when this case is triggered
+        /// Set <see cref="tracker"/>'s <see cref="IPreconditionCollector.SetUnlockedState"/> when this case is triggered
         /// </summary>
-        UniTask Setup(IEventTracker tracker, CancellationToken triggerCancellation);
+        UniTask Setup(IPreconditionCollector tracker, CancellationToken triggerCancellation);
     }
 }

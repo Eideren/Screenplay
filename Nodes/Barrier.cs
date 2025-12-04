@@ -10,7 +10,7 @@ using Screenplay.Nodes.Barriers;
 namespace Screenplay.Nodes
 {
     [NodeWidth(Width)]
-    public class Barrier : AbstractScreenplayNode, IExe<IEventContext>, IPrerequisiteVisitedSelf, IBarrierPart
+    public class Barrier : AbstractScreenplayNode, IExecutable, IBarrierPart
     {
         public const int Width = NodeWidthAttribute.Default;
         public const int SpaceBetweenElements = 100;
@@ -21,7 +21,7 @@ namespace Screenplay.Nodes
         [SerializeReference, ListDrawerSettings(ShowFoldout = false, ShowItemCount = false, HideAddButton = true, OnBeginListElementGUI = nameof(BeginDrawListElement), OnEndListElementGUI = nameof(EndDrawListElement))]
         public required IOutput[] Tracks = { new EventOutput() };
 
-        public IPort[] InheritedPorts => Array.Empty<IPort>();
+        public Port[] InheritedPorts => Array.Empty<Port>();
 
         IBarrierPart? IBarrierPart.NextBarrier
         {
@@ -35,7 +35,7 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Tracks);
 
-        public IEnumerable<IBranch?> Followup()
+        public IEnumerable<IExecutable?> Followup()
         {
             foreach (var output in Tracks)
                 yield return output.Branch;
@@ -56,6 +56,8 @@ namespace Screenplay.Nodes
 
             await barrierEnd.Next.Execute(context, cancellation);
         }
+
+        public void FastForward(IEventContext context, CancellationToken cancellation) => throw new NotImplementedException();
 
         public void FastForwardEval(IEventContext context, FastForwardData data, CancellationToken cancellation, out UniTask? playbackStart)
         {

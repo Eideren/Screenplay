@@ -17,6 +17,7 @@ namespace Screenplay
         [SerializeField, HideInInspector] private GenericSceneObjectReference _genericRef;
 
         public GenericSceneObjectReference ToGeneric => _genericRef;
+        public guid Guid => _genericRef.Guid;
 
 #if UNITY_EDITOR
         public SceneObjectReference(GameObject obj)
@@ -67,6 +68,8 @@ namespace Screenplay
         [SerializeField, HideInInspector] private string _scenePath;
         [SerializeField, HideInInspector] private guid _objId;
 
+        public guid Guid => _objId;
+
         public bool Empty() => _objId == default;
 
         public bool TryGet([MaybeNullWhen(false)] out Object obj, out ReferenceState referenceState)
@@ -78,7 +81,7 @@ namespace Screenplay
                 return false;
             }
 
-            if (Component.ScreenplayReference.TryGetRef(_objId, out var abstractObj))
+            if (ScreenplayReference.TryGetRef(_objId, out var abstractObj))
             {
                 obj = abstractObj;
                 referenceState = ReferenceState.Success;

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
@@ -16,7 +15,7 @@ namespace Screenplay.Nodes.Triggers
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Sources);
 
-        public async UniTask Setup(IEventTracker tracker, CancellationToken triggerCancellation)
+        public async UniTask Setup(IPreconditionCollector tracker, CancellationToken triggerCancellation)
         {
             var door = new Door(tracker);
             foreach (var source in Sources)
@@ -27,12 +26,12 @@ namespace Screenplay.Nodes.Triggers
                 if (door.Closed)
                 {
                     tracker.SetUnlockedState(false);
-                    await UniTask.WhenAny(door.WaitOpen(), UniTask.WaitUntilCanceled(triggerCancellation, completeImmediately: true));
+                    await door.WaitOpen().WithInterruptingCancellation(triggerCancellation);
                 }
                 else
                 {
-                    tracker.SetUnlockedState(true, door.CollectPermutations());
-                    await UniTask.WhenAny(door.WaitClosed(), UniTask.WaitUntilCanceled(triggerCancellation, completeImmediately: true));
+                    tracker.SetUnlockedState(true);
+                    await door.WaitClosed().WithInterruptingCancellation(triggerCancellation);
                 }
             }
         }

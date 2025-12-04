@@ -5,29 +5,30 @@ namespace Screenplay
 {
     public struct VisitedPermutation : IEquatable<VisitedPermutation>
     {
-        private (VariantBase, guid)[] _variants;
+        private (ILocal, guid)[] _local;
         public required Event Event;
 
-        public required (VariantBase, guid)[] Variants
+        public required (ILocal, guid)[] Local
         {
             get
             {
-                return _variants;
+                return _local;
             }
             set
             {
-                guid previous = default;
-                foreach (var (variant, guid)  in value)
+                _local = new (ILocal, guid)[value.Length];
+                Array.Copy(value, _local, value.Length);
+                Array.Sort(_local, Comparison);
+
+                int Comparison((ILocal local, guid value) x, (ILocal local, guid value) y)
                 {
-                    if (previous.CompareTo(guid) < 0)
-                        throw new ArgumentException();
-                    previous = guid;
+                    int localComp = x.local.Id.CompareTo(y.local.Id);
+                    return localComp != 0 ? localComp : x.value.CompareTo(y.value);
                 }
-                _variants = value;
             }
         }
 
-        public bool Equals(VisitedPermutation other) => Event.Equals(other.Event) && Variants.AsSpan().SequenceEqual(other.Variants);
+        public bool Equals(VisitedPermutation other) => Event.Equals(other.Event) && Local.AsSpan().SequenceEqual(other.Local);
 
         public override bool Equals(object? obj) => obj is VisitedPermutation other && Equals(other);
 
@@ -35,7 +36,7 @@ namespace Screenplay
         {
             var h = new HashCode();
             h.Add(Event);
-            foreach (var (variant, guid) in Variants)
+            foreach (var (variant, guid) in Local)
             {
                 h.Add(variant);
                 h.Add(guid);

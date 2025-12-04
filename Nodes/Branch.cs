@@ -11,18 +11,18 @@ using YNode;
 namespace Screenplay.Nodes
 {
     [Serializable]
-    public class Branch : AbstractScreenplayNode, IExecutable<IEventContext>, IPrerequisiteVisitedSelf
+    public class Branch : AbstractScreenplayNode, IExecutable
     {
         [Output, SerializeReference, Tooltip("What would run when Prerequisite is true")]
-        public IExe<IEventContext>? True;
+        public IExecutable? True;
 
         [Output, SerializeReference, Tooltip("What would run when Prerequisite is false")]
-        public IExe<IEventContext>? False;
+        public IExecutable? False;
 
         [Input(Stroke = NoodleStroke.Dashed), SerializeReference, LabelWidth(20), HorizontalGroup(width:90), Tooltip("Select which action should be taken next")]
         public required IPrerequisite Prerequisite = null!;
 
-        public IEnumerable<IExe<IEventContext>> Followup()
+        public IEnumerable<IExecutable> Followup()
         {
             if (True != null)
                 yield return True;

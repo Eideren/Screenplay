@@ -20,9 +20,9 @@ namespace Screenplay.Nodes.Barriers
         public required IOutput[] AdditionalTracks = Array.Empty<IOutput>();
 
         [SerializeReference, ReadOnly, HideIf("@IBarrierPart.InNodeEditor")]
-        public IPort[] InheritedPorts = Array.Empty<IPort>();
+        public Port[] InheritedPorts = Array.Empty<Port>();
 
-        IPort[] IBarrierPart.InheritedPorts => InheritedPorts;
+        Port[] IBarrierPart.InheritedPorts => InheritedPorts;
 
         IBarrierPart? IBarrierPart.NextBarrier
         {
@@ -49,7 +49,7 @@ namespace Screenplay.Nodes.Barriers
             Array.Resize(ref InheritedPorts, parentTracks.Length);
             for (int i = 0; i < InheritedPorts.Length; i++)
             {
-                InheritedPorts[i] = parentTracks[i].ValidatePortType(InheritedPorts[i]);
+                InheritedPorts[i] ??= new Port();
                 InheritedPorts[i].Parent = this;
             }
 

@@ -10,10 +10,10 @@ namespace Screenplay.Nodes
 {
     /// <summary> A node which does not branch, it only has one possible followup and will always continue onto that followup </summary>
     [Serializable]
-    public abstract class ExecutableLinear : AbstractScreenplayNode, IExecutable<IEventContext>, IPrerequisiteVisitedSelf
+    public abstract class ExecutableLinear : AbstractScreenplayNode, IExecutable
     {
         [Output, SerializeReference, HideLabel, Tooltip("What would run right after this is done running")]
-        public IExe<IEventContext>? Next;
+        public IExecutable? Next;
 
         public async UniTask InnerExecution(IEventContext context, CancellationToken cancellation)
         {
@@ -27,7 +27,7 @@ namespace Screenplay.Nodes
 
         public abstract void SetupPreview(IPreviewer previewer, bool fastForwarded);
 
-        IEnumerable<IExe<IEventContext>?> IExecutable<IEventContext>.Followup()
+        IEnumerable<IExecutable?> IExecutable.Followup()
         {
             yield return Next;
         }

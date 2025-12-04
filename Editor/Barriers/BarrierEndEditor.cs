@@ -1,6 +1,7 @@
 using Screenplay.Nodes.Barriers;
 using UnityEngine;
 using YNode.Editor;
+using Port = Screenplay.Nodes.Barriers.Port;
 
 namespace Screenplay.Nodes.Editor.Barriers
 {
@@ -13,7 +14,7 @@ namespace Screenplay.Nodes.Editor.Barriers
             GUILayout.Space(20);
             base.OnBodyGUI();
             var lastR = GUILayoutUtility.GetLastRect();
-            var inheritedPortLength = (Value.InheritedPorts.Length * Port<IEventContext>.HeightOfPort) + Port<IEventContext>.OffsetFromTop;
+            var inheritedPortLength = (Value.InheritedPorts.Length * Port.HeightOfPort) + Port.OffsetFromTop;
             var heightLeft = inheritedPortLength - lastR.y + lastR.height;
 
             GUILayoutUtility.GetRect(0, 0, heightLeft, heightLeft);

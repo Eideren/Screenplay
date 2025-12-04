@@ -1,8 +1,7 @@
-using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
-using UnityEngine;
+
 // Async method lacks 'await' operators and will run synchronously - done on purpose
 #pragma warning disable CS1998
 
