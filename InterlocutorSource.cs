@@ -1,6 +1,6 @@
 using Sirenix.OdinInspector;
 
-namespace Screenplay.Nodes
+namespace Screenplay
 {
     #warning should be reworked
     public class InterlocutorSource : AbstractScreenplayNode, IInterlocutorSource

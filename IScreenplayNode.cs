@@ -1,6 +1,6 @@
 using YNode;
 
-namespace Screenplay.Nodes
+namespace Screenplay
 {
     public interface IScreenplayNode : INodeValue
     {

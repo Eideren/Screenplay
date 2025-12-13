@@ -1,4 +1,4 @@
-namespace Screenplay.Nodes
+namespace Screenplay
 {
     /// <summary>
     /// A node that can be executed in the editor as a preview

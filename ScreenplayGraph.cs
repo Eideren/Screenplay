@@ -218,18 +218,18 @@ namespace Screenplay
             }
 
             {
-                var guids = new Dictionary<Guid, ILocal>();
+                var guids = new Dictionary<Guid, IUntypedGlobalsDeclarer>();
                 foreach (var node in Nodes)
                 {
-                    if (node is not ILocal local)
+                    if (node is not IUntypedGlobalsDeclarer local || node is IProxyForUntypedGlobalsDeclarer)
                         continue;
 
-                    while (guids.TryGetValue(local.Id, out var existingInstance) && existingInstance != local)
+                    while (guids.TryGetValue(local.Guid, out var existingInstance) && existingInstance != local)
                     {
-                        local.Id = guid.New();
+                        local.Guid = guid.New();
                         Debug.LogWarning($"Duplicate Guid detected between '{existingInstance}' and '{local}', regenerating Guid. This is expected when copying nodes");
                     }
-                    guids[local.Id] = local;
+                    guids[local.Guid] = local;
                 }
             }
         }

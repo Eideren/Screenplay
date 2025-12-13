@@ -1,7 +1,7 @@
-﻿namespace Screenplay.Nodes
+namespace Screenplay
 {
     /// <summary>
-    /// This node can act as a prerequisite to run an <see cref="Event"/>
+    /// This node can act as a prerequisite to run an <see cref="Nodes.Event"/>
     /// </summary>
     public interface IPrerequisite : IScreenplayNode
     {

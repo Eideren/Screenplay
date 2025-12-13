@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 
-namespace Screenplay.Nodes
+namespace Screenplay
 {
     public interface IExecutable : IBranch, IPrerequisite, IPreviewable
     {

@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using UnityEngine;
 
-namespace Screenplay.Nodes
+namespace Screenplay
 {
     [Serializable]
     public abstract class AbstractScreenplayNode : IScreenplayNode

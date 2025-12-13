@@ -1,96 +1,65 @@
 using System.Collections.Generic;
-using Screenplay.Nodes;
+using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
 namespace Screenplay
 {
     public class Locals
     {
-        private List<(ILocal id, guid value)> _values = new();
+        private readonly List<GlobalId> _values = new();
 
-        public bool FindFirst(ILocal id, out guid value)
+        public bool TryFind<T>(IGlobalsDeclarer<T> declarer, out guid id, [MaybeNullWhen(false)]out T value)
         {
             lock (_values)
             {
                 foreach (var local in _values)
                 {
-                    if (local.id == id)
+                    if (local.DeclarerGuid == declarer.Guid && declarer.TryGetValue(local.ValueGuid, out value))
                     {
-                        value = local.value;
+                        id = local.ValueGuid;
                         return true;
                     }
                 }
 
                 value = default;
+                id = default;
                 return false;
             }
         }
 
-        public bool TryGet(ILocal id, out guid value)
+        public T FindWithFallback<T>(IGlobalsDeclarer<T> declarer, out guid id, bool logWarningOnFallback = true)
         {
-            lock (_values)
+            if (TryFind(declarer, out id, out var value))
             {
-                foreach (var data in _values)
-                {
-                    if (data.id == id)
-                    {
-                        value = data.value;
-                        return true;
-                    }
-                }
+                return value;
             }
 
-            value = default;
-            return false;
+            if (logWarningOnFallback)
+                Debug.LogWarning($"Using fallback for {declarer}");
+
+            return declarer.GetDefault(out id);
         }
 
-        public bool TryGet(ILocal id, List<guid> values)
-        {
-            bool any = false;
-            lock (_values)
-            {
-                foreach (var local in _values)
-                {
-                    if (local.id == id)
-                    {
-                        any = true;
-                        values.Add(local.value);
-                    }
-                }
-            }
-
-            return any;
-        }
-
-        public bool TryAdd((ILocal id, guid value) v)
+        public bool TryAdd(GlobalId v)
         {
             lock (_values)
             {
-                if (v.id.AllowMultipleKeys == false && _values.FindIndex(x => x.id == v.id) != -1)
+                /*if (v.Declarer.AllowMultipleKeys == false && _values.FindIndex(x => x.Declarer == v.Declarer) != -1)
                 {
-                    Debug.LogWarning($"Overlapping variants:{v.id}");
+                    Debug.LogWarning($"Overlapping variants:{v.Declarer}");
                     return false;
-                }
+                }*/
 
                 _values.Add(v);
                 return true;
             }
         }
 
-        public void Remove((ILocal id, guid value) v)
+        public void Remove(GlobalId v)
         {
             lock (_values)
             {
                 _values.Remove(v);
-            }
-        }
-
-        public void CopyTo(List<(ILocal id, guid value)> locals)
-        {
-            lock (_values)
-            {
-                foreach (var local in _values)
-                    locals.Add(local);
             }
         }
 
@@ -114,7 +83,7 @@ namespace Screenplay
             }
         }
 
-        public (ILocal id, guid value)[] ToArray()
+        public GlobalId[] ToArray()
         {
             lock (_values)
             {

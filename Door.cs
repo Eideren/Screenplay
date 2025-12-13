@@ -24,7 +24,7 @@ namespace Screenplay
 
         public class Latch : IPreconditionCollector
         {
-            private readonly List<(ILocal, guid)> _lastAppliedVariants = new();
+            private readonly List<GlobalId> _lastAppliedLocals = new();
             private readonly Door _door;
             private bool _isUnlocked;
 
@@ -32,7 +32,7 @@ namespace Screenplay
 
             public LatentVariable<bool> IsBusy => _door._parentTracker.IsBusy;
 
-            public void SetUnlockedState(bool state, params (ILocal, guid)[] locals)
+            public void SetUnlockedState(bool state, params GlobalId[] locals)
             {
                 if (_isUnlocked == state)
                     return;
@@ -46,14 +46,14 @@ namespace Screenplay
                         foreach (var v in locals)
                         {
                             if (SharedLocals.TryAdd(v))
-                                _lastAppliedVariants.Add(v);
+                                _lastAppliedLocals.Add(v);
                         }
                     }
                     else
                     {
-                        foreach (var v in _lastAppliedVariants)
+                        foreach (var v in _lastAppliedLocals)
                             SharedLocals.Remove(v);
-                        _lastAppliedVariants.Clear();
+                        _lastAppliedLocals.Clear();
                     }
 
                     if (_isUnlocked             && --_door._counter == 0

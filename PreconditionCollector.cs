@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
-using Screenplay.Nodes;
 
 namespace Screenplay
 {
     public class PreconditionCollector : IPreconditionCollector
     {
-        private readonly List<(ILocal, guid)> _lastAppliedLocals = new();
+        private readonly List<GlobalId> _lastAppliedLocals = new();
         private readonly Action<PreconditionCollector> _onUnlocked;
         private readonly Action<PreconditionCollector> _onLocked;
         private bool _isUnlocked;
@@ -21,7 +20,7 @@ namespace Screenplay
             IsBusy = isBusy;
         }
 
-        public void SetUnlockedState(bool state, params (ILocal id, guid value)[] locals)
+        public void SetUnlockedState(bool state, params GlobalId[] locals)
         {
             lock (SharedLocals)
             {

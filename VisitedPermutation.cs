@@ -5,10 +5,10 @@ namespace Screenplay
 {
     public struct VisitedPermutation : IEquatable<VisitedPermutation>
     {
-        private (ILocal, guid)[] _local;
+        private GlobalId[] _local;
         public required Event Event;
 
-        public required (ILocal, guid)[] Local
+        public required GlobalId[] Local
         {
             get
             {
@@ -16,14 +16,14 @@ namespace Screenplay
             }
             set
             {
-                _local = new (ILocal, guid)[value.Length];
+                _local = new GlobalId[value.Length];
                 Array.Copy(value, _local, value.Length);
                 Array.Sort(_local, Comparison);
 
-                int Comparison((ILocal local, guid value) x, (ILocal local, guid value) y)
+                int Comparison(GlobalId x, GlobalId y)
                 {
-                    int localComp = x.local.Id.CompareTo(y.local.Id);
-                    return localComp != 0 ? localComp : x.value.CompareTo(y.value);
+                    int localComp = x.DeclarerGuid.CompareTo(y.DeclarerGuid);
+                    return localComp != 0 ? localComp : x.ValueGuid.CompareTo(y.ValueGuid);
                 }
             }
         }
@@ -36,10 +36,10 @@ namespace Screenplay
         {
             var h = new HashCode();
             h.Add(Event);
-            foreach (var (variant, guid) in Local)
+            foreach (var global in Local)
             {
-                h.Add(variant);
-                h.Add(guid);
+                h.Add(global.DeclarerGuid);
+                h.Add(global.ValueGuid);
             }
             return h.ToHashCode();
         }

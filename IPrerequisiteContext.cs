@@ -1,4 +1,4 @@
-namespace Screenplay.Nodes
+namespace Screenplay
 {
     public interface IPrerequisiteContext
     {

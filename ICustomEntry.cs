@@ -1,6 +1,6 @@
 using System.Threading;
 
-namespace Screenplay.Nodes
+namespace Screenplay
 {
     public interface ICustomEntry : IScreenplayNode
     {

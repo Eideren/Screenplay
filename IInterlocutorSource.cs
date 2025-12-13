@@ -1,4 +1,4 @@
-namespace Screenplay.Nodes
+namespace Screenplay
 {
     #warning rework this to have AI contribute
     public interface IInterlocutorSource : IScreenplayNode

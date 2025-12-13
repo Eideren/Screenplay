@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using Cysharp.Threading.Tasks;
 
-namespace Screenplay.Nodes
+namespace Screenplay
 {
     /// <summary>
     /// Provides a way to trigger events under certain conditions

@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
-namespace Screenplay.Nodes
+namespace Screenplay
 {
     /// <summary>
     /// A node that contain localizable data
