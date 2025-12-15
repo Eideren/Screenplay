@@ -20,9 +20,9 @@ namespace Screenplay
         object? GetDefault(out guid valueId);
     }
 
-    public interface IProxyForUntypedGlobalsDeclarer : IUntypedGlobalsDeclarer
+    public interface IUntypedGlobalsProxy : IUntypedGlobalsDeclarer
     {
-        /// <summary> The Proxy to forward calls to </summary>
+        /// <summary> The Proxy to forward calls to, may be self when this isn't a true proxy </summary>
         IUntypedGlobalsDeclarer ProxyTarget { get; }
 
         /// <inheritdoc/>
@@ -67,9 +67,9 @@ namespace Screenplay
         object? IUntypedGlobalsDeclarer.GetDefault(out guid valueId) => GetDefault(out valueId);
     }
 
-    public interface IProxyForGlobalsDeclarer<T> : IGlobalsDeclarer<T>, IProxyForUntypedGlobalsDeclarer
+    public interface IGlobalsProxy<T> : IGlobalsDeclarer<T>, IUntypedGlobalsProxy
     {
-        /// <inheritdoc cref="IProxyForUntypedGlobalsDeclarer.ProxyTarget"/>
+        /// <inheritdoc cref="IUntypedGlobalsProxy.ProxyTarget"/>
         new IGlobalsDeclarer<T> ProxyTarget { get; }
 
         /// <inheritdoc/>
@@ -80,7 +80,7 @@ namespace Screenplay
         }
 
         /// <inheritdoc/>
-        IUntypedGlobalsDeclarer IProxyForUntypedGlobalsDeclarer.ProxyTarget => ProxyTarget;
+        IUntypedGlobalsDeclarer IUntypedGlobalsProxy.ProxyTarget => ProxyTarget;
 
         /// <inheritdoc/>
         IEnumerable<guid> IUntypedGlobalsDeclarer.ValueIds => ProxyTarget.ValueIds;

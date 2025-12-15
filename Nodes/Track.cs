@@ -9,7 +9,7 @@ using YNode;
 
 namespace Screenplay.Nodes
 {
-    [Serializable, NodeWidth(800), NodeTint(0.25f, 0.25f, 0.25f)]
+    [Serializable, NodeVisuals(0.25f, 0.25f, 0.25f, Width = 800)]
     public class Track : AbstractScreenplayNode, IPreviewable, INodeWithSceneGizmos
     {
         [SerializeReference, InlineProperty]

@@ -2,9 +2,11 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using YNode;
 
 namespace Screenplay.Nodes
 {
+    [NodeVisuals(Icon = "EchoFilter Icon")]
     public class Move : ExecutableLinear, INodeWithSceneGizmos
     {
         [HideLabel] public SceneObjectReference<GameObject> Target;

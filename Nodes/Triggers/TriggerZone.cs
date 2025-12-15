@@ -3,11 +3,12 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using YNode;
 using Object = UnityEngine.Object;
 
 namespace Screenplay.Nodes.Triggers
 {
-    [Serializable]
+    [Serializable, NodeVisuals(Icon = "LightProbeProxyVolume Gizmo")]
     public class TriggerZone : AbstractScreenplayNode, IPrecondition
     {
         [ValidateInput(nameof(IsTrigger))] public required SceneObjectReference<Collider> Target;

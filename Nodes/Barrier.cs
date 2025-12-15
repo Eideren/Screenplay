@@ -9,10 +9,10 @@ using Screenplay.Nodes.Barriers;
 
 namespace Screenplay.Nodes
 {
-    [NodeWidth(Width)]
+    [NodeVisuals(Width = Width)]
     public class Barrier : AbstractScreenplayNode, IExecutable, IBarrierPart
     {
-        public const int Width = NodeWidthAttribute.Default;
+        public const int Width = NodeVisualsAttribute.DefaultWidth;
         public const int SpaceBetweenElements = 100;
 
         [SerializeReference, HideIf("@IBarrierPart.InNodeEditor")]

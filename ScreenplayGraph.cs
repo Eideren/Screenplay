@@ -221,7 +221,11 @@ namespace Screenplay
                 var guids = new Dictionary<Guid, IUntypedGlobalsDeclarer>();
                 foreach (var node in Nodes)
                 {
-                    if (node is not IUntypedGlobalsDeclarer local || node is IProxyForUntypedGlobalsDeclarer)
+                    if (node is not IUntypedGlobalsDeclarer local)
+                        continue;
+
+                    // Check that the proxy is a real proxy, that is that it doesn't point at itself
+                    if (node is IUntypedGlobalsProxy p && p != p.ProxyTarget)
                         continue;
 
                     while (guids.TryGetValue(local.Guid, out var existingInstance) && existingInstance != local)

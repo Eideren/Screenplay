@@ -1,9 +1,10 @@
 using System;
 using UnityEngine;
+using YNode;
 
 namespace Screenplay.Nodes
 {
-    [Serializable]
+    [Serializable, NodeVisuals(Icon = "d_UnityEditor.ConsoleWindow")]
     public class Notes : IScreenplayNode
     {
         [SerializeField, HideInInspector] private Vector2 _position;

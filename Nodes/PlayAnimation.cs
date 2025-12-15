@@ -1,9 +1,11 @@
 ﻿using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using YNode;
 
 namespace Screenplay.Nodes
 {
+    [NodeVisuals(Icon = "d_AnimationClip Icon")]
     public class PlayAnimation : ExecutableLinear
     {
         public required SceneObjectReference<GameObject> Target;

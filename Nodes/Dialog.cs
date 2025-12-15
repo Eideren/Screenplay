@@ -9,15 +9,16 @@ using YNode;
 
 namespace Screenplay.Nodes
 {
+    [NodeVisuals(Icon = "d_console.infoicon")]
     public class Dialog : ExecutableLinear, ILocalizableNode, IInterlocutorSource
     {
         [InlineProperty, HideLabel]
         public LocalizableText Line = new("Dialog Line\n\nAnother Line");
 
-        [Input, SerializeReference]
+        [Input(Stroke = NoodleStroke.Dashed), SerializeReference]
         public required IInterlocutorSource InterlocutorSource;
 
-        public Interlocutor GetInterlocutor(IEventContext context) => InterlocutorSource.GetInterlocutor(context);
+        public UniTask<Interlocutor> GetInterlocutor(IEventContext context, CancellationToken cancellationToken) => InterlocutorSource.GetInterlocutor(context, cancellationToken);
 
         IEnumerable<string> Lines()
         {
@@ -64,7 +65,7 @@ namespace Screenplay.Nodes
                 return;
             }
 
-            var interlocutor = GetInterlocutor(context);
+            var interlocutor = await GetInterlocutor(context, cancellation);
             ui.StartDialogPresentation();
             foreach (var text in Lines())
             {

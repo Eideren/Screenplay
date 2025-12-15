@@ -3,9 +3,11 @@ using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using YNode;
 
 namespace Screenplay.Nodes.Unity
 {
+    [NodeVisuals(Icon = "d_TerrainInspector.TerrainToolAdd")]
     public class ChangeScene : ExecutableLinear
     {
         [HideLabel, HorizontalGroup] public required SceneReference Scene;

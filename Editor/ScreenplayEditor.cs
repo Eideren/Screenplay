@@ -298,11 +298,7 @@ namespace Screenplay.Editor
             // ReSharper disable once RedundantNameQualifier
             if (typeof(AbstractScreenplayNode).IsAssignableFrom(type) || type == typeof(Notes))
             {
-                var str = base.GetNodeMenuName(type);
-                string comparison = typeof(ExecutableLinear).Namespace!.Replace('.', '/') + "/";
-                if (str.StartsWith(comparison))
-                    return str[comparison.Length..];
-                return str;
+                return base.GetNodeMenuName(type);
             }
 
             return "";

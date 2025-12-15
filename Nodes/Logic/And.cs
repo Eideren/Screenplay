@@ -3,7 +3,7 @@ using YNode;
 
 namespace Screenplay.Nodes.Logic
 {
-    [NodeWidth(100)]
+    [NodeVisuals(Width = 100)]
     public class And : AbstractScreenplayNode, IPrerequisite
     {
         [Input(Stroke = NoodleStroke.Dashed), SerializeReference]

@@ -2,11 +2,14 @@
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using YNode;
+
 // Async method lacks 'await' operators and will run synchronously - done on purpose
 #pragma warning disable CS1998
 
 namespace Screenplay.Nodes.Unity
 {
+    [NodeVisuals(Icon = "d_Toggle Icon")]
     public class SetActive : ExecutableLinear
     {
         [HideLabel, HorizontalGroup] public required SceneObjectReference<GameObject> Target;

@@ -1,8 +1,10 @@
+using System.Threading;
+using Cysharp.Threading.Tasks;
+
 namespace Screenplay
 {
-    #warning rework this to have AI contribute
     public interface IInterlocutorSource : IScreenplayNode
     {
-        Interlocutor GetInterlocutor(IEventContext context);
+        UniTask<Interlocutor> GetInterlocutor(IEventContext context, CancellationToken cancellationToken);
     }
 }

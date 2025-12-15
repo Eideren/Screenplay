@@ -5,7 +5,7 @@ using YNode;
 
 namespace Screenplay.Nodes
 {
-    [Serializable]
+    [Serializable, NodeVisuals(Icon = "d_winbtn_win_rest_h")]
     public class Group : AbstractScreenplayNode
     {
         public string Description = "My Group Description";

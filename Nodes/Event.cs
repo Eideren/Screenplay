@@ -5,6 +5,7 @@ using YNode;
 
 namespace Screenplay.Nodes
 {
+    [NodeVisuals(Icon = "d_CollabConflict Icon", Width = 312)]
     public class Event : AbstractScreenplayNode, IBranch
     {
         [HideInInspector, SerializeField]

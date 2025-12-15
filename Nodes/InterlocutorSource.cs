@@ -1,6 +1,8 @@
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 
-namespace Screenplay
+namespace Screenplay.Nodes
 {
     #warning should be reworked
     public class InterlocutorSource : AbstractScreenplayNode, IInterlocutorSource
@@ -8,7 +10,7 @@ namespace Screenplay
         [HideLabel]
         public required Interlocutor Interlocutor;
 
-        public Interlocutor GetInterlocutor(IEventContext context) => Interlocutor;
+        public UniTask<Interlocutor> GetInterlocutor(IEventContext context, CancellationToken cancellationToken) => new(Interlocutor);
 
         public override void CollectReferences(ReferenceCollector references) { }
     }

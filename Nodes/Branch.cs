@@ -10,7 +10,7 @@ using YNode;
 
 namespace Screenplay.Nodes
 {
-    [Serializable]
+    [Serializable, NodeVisuals(Icon = "Git")]
     public class Branch : AbstractScreenplayNode, IExecutable
     {
         [Output, SerializeReference, Tooltip("What would run when Prerequisite is true")]

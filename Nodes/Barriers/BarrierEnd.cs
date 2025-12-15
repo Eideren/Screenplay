@@ -7,7 +7,7 @@ using YNode;
 
 namespace Screenplay.Nodes.Barriers
 {
-    [NodeWidth(Barrier.Width)]
+    [NodeVisuals(Width = Barrier.Width)]
     public class BarrierEnd : AbstractScreenplayNode, IBarrierPart
     {
         [Output, SerializeReference]
