@@ -84,7 +84,8 @@ namespace Screenplay.Component
             {
                 if (s_refToId.TryGetValue(Reference, out var existingId))
                 {
-                    Debug.LogWarning($"'{Guid}' and '{existingId}' refer to the same object, skipping former.", Reference);
+                    if (existingId != Guid)
+                        Debug.LogError($"Unexpected guid migration, previously {existingId} now {Guid}", Reference);
                     return;
                 }
 
@@ -100,8 +101,22 @@ namespace Screenplay.Component
             }
         }
 
-        public static bool TryGetRef(guid guid, out Object obj) => s_idToRef.TryGetValue(guid, out obj) && obj != null; // obj may be destroyed
-        public static bool TryGetId(Object obj, out guid guid) => s_refToId.TryGetValue(obj, out guid);
+        public static bool TryGetRef(guid guid, out Object obj)
+        {
+            lock (s_idToRef)
+            {
+                return s_idToRef.TryGetValue(guid, out obj)
+                       // obj may be destroyed
+                       && obj != null
+                       && (obj is not MonoBehaviour mb || mb.destroyCancellationToken.IsCancellationRequested == false);
+            }
+        }
+
+        public static bool TryGetId(Object obj, out guid guid)
+        {
+            lock (s_idToRef)
+                return s_refToId.TryGetValue(obj, out guid);
+        }
 
         public static async UniTask<Object> GetAsync(guid guid, CancellationToken cancellationToken)
         {
@@ -116,40 +131,46 @@ namespace Screenplay.Component
 
         public static guid GetOrCreate(GameObject obj)
         {
-            if (s_refToId.TryGetValue(obj, out var guid))
+            lock (s_idToRef)
             {
+                if (s_refToId.TryGetValue(obj, out var guid))
+                {
+                    return guid;
+                }
+
+                var reff = obj.AddComponent<ScreenplayReference>();
+                reff.Reference = obj;
+                guid = reff.Guid;
+
+                s_idToRef[guid] = obj;
+                s_refToId[obj] = guid;
+                #if UNITY_EDITOR
+                UnityEditor.EditorUtility.SetDirty(obj);
+                #endif
                 return guid;
             }
-
-            var reff = obj.AddComponent<ScreenplayReference>();
-            reff.Reference = obj;
-            guid = reff.Guid;
-
-            s_idToRef[guid] = obj;
-            s_refToId[obj] = guid;
-            #if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(obj);
-            #endif
-            return guid;
         }
 
         public static guid GetOrCreate(UnityEngine.Component comp)
         {
-            if (s_refToId.TryGetValue(comp, out var guid))
+            lock (s_idToRef)
             {
+                if (s_refToId.TryGetValue(comp, out var guid))
+                {
+                    return guid;
+                }
+
+                var reff = comp.gameObject.AddComponent<ScreenplayReference>();
+                reff.Reference = comp;
+                guid = reff.Guid;
+
+                s_idToRef[guid] = comp;
+                s_refToId[comp] = guid;
+    #if UNITY_EDITOR
+                UnityEditor.EditorUtility.SetDirty(comp);
+    #endif
                 return guid;
             }
-
-            var reff = comp.gameObject.AddComponent<ScreenplayReference>();
-            reff.Reference = comp;
-            guid = reff.Guid;
-
-            s_idToRef[guid] = comp;
-            s_refToId[comp] = guid;
-#if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(comp);
-#endif
-            return guid;
         }
     }
 }

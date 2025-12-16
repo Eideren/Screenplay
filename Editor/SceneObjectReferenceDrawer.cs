@@ -42,7 +42,9 @@ namespace Screenplay.Editor
                     obj = (T)EditorGUI.ObjectField(rect, label, obj, typeof(T), true);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    if (typeof(UnityEngine.Component).IsAssignableFrom(typeof(T)))
+                    if (obj is null || obj.Equals(null))
+                        this.ValueEntry.SmartValue = new();
+                    else if (typeof(UnityEngine.Component).IsAssignableFrom(typeof(T)))
                         this.ValueEntry.SmartValue = new((UnityEngine.Component)(Object)obj);
                     else
                         this.ValueEntry.SmartValue = new((GameObject)(Object)obj);
