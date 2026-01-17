@@ -9,7 +9,9 @@ namespace Screenplay
     {
         Locals Locals { get; }
 
-        ScreenplayGraph Source { get; }
+        ScreenplayGraph Source => Introspection.Graph;
+
+        ScreenplayGraph.Introspection Introspection { get; }
 
         /// <summary>
         /// Creates the dialog component if it doesn't exist yet and return it

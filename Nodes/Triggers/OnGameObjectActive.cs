@@ -7,13 +7,13 @@ using UnityEngine;
 namespace Screenplay.Nodes.Triggers
 {
     [Serializable]
-    public class OnGameObjectActive : AbstractScreenplayNode, IPrecondition
+    public class OnGameObjectActive : Precondition
     {
         public required SceneObjectReference<GameObject> Target;
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
-        public async UniTask Setup(IPreconditionCollector tracker, CancellationToken triggerCancellation)
+        public override async UniTask Setup(IPreconditionCollector tracker, CancellationToken triggerCancellation)
         {
             while (triggerCancellation.IsCancellationRequested == false)
             {

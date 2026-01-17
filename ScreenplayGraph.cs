@@ -4,7 +4,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using YNode;
-using Screenplay.Nodes;
+using Screenplay.Nodes.Triggers;
 using Event = Screenplay.Nodes.Event;
 using Random = Unity.Mathematics.Random;
 
@@ -13,8 +13,11 @@ namespace Screenplay
     [CreateAssetMenu(menuName = "Screenplay/Screenplay")]
     public class ScreenplayGraph : NodeGraph, ISerializationCallbackReceiver
     {
+        public readonly List<Introspection> Introspections = new();
+
         public required Component.UIBase? DialogUIPrefab;
         public bool DebugRetainProgressInEditor;
+
         private HashSet<IPrerequisite> _visiting = new();
         private Queue<IScreenplayNode?> _orderedVisitation = new();
         private Dictionary<Event, VisitedPermutation> _visited = new();
@@ -28,11 +31,18 @@ namespace Screenplay
         /// </summary>
         public async UniTask StartExecution(CancellationToken cancellation, uint seed)
         {
-            using var context = new DefaultContext(this, seed);
             var eventsReady = new List<(Event Event, PreconditionCollector? collector)>();
+            var introspection = new Introspection
+            {
+                Graph = this,
+                EventsReady = eventsReady,
+            };
+
+            using var context = new DefaultContext(seed, introspection);
             var eventsReadySignal = AutoResetUniTaskCompletionSource.Create();
             var eventsCleanup = new Dictionary<Event, CancellationTokenSource>();
             using var busy = new LatentVariable<bool>(false);
+            Introspections.Add(introspection);
 
             try
             {
@@ -40,7 +50,17 @@ namespace Screenplay
                 {
                     if (value is Event e && e.Action is not null && (e.Repeatable || _visited.ContainsKey(e) == false))
                     {
-                        if (e.TriggerSource == null)
+                        var triggerSource = e.TriggerSource;
+                        if (e.Scene.IsValid())
+                        {
+                            var sceneLoadedTrigger = new WhileSceneLoaded { Target = e.Scene };
+                            if (triggerSource != null)
+                                triggerSource = new WhenAll { Sources = new[] { sceneLoadedTrigger, triggerSource } };
+                            else
+                                triggerSource = sceneLoadedTrigger;
+                        }
+
+                        if (triggerSource == null)
                         {
                             lock (eventsReady)
                                 eventsReady.Add((e, null));
@@ -49,7 +69,7 @@ namespace Screenplay
                         {
                             var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
                             eventsCleanup[e] = cts;
-                            var task = e.TriggerSource.Setup(new PreconditionCollector(OnUnlocked, OnLocked, busy), cts.Token);
+                            var task = triggerSource.Setup(new PreconditionCollector(OnUnlocked, OnLocked, busy, triggerSource, introspection), cts.Token);
                             ObserveExceptions(task);
 
                             void OnUnlocked(PreconditionCollector pc)
@@ -115,6 +135,7 @@ namespace Screenplay
             }
             finally
             {
+                Introspections.Remove(introspection);
                 eventsReadySignal.TrySetCanceled();
             }
 
@@ -278,14 +299,14 @@ namespace Screenplay
             private Component.UIBase? _dialogUI;
             private Random _random;
 
-            public Locals Locals { get; set; } = new();
+            public Locals Locals { get; } = new();
 
-            public ScreenplayGraph Source { get; }
+            public Introspection Introspection { get; }
 
-            public DefaultContext(ScreenplayGraph Source, uint seed)
+            public DefaultContext(uint seed, Introspection introspection)
             {
-                this.Source = Source;
                 _random = new Random(seed);
+                Introspection = introspection;
             }
 
             public void Dispose()
@@ -298,17 +319,24 @@ namespace Screenplay
 
             public void Visiting(IBranch? executable)
             {
-                Source._orderedVisitation.Enqueue(executable);
+                Introspection.Graph._orderedVisitation.Enqueue(executable);
                 if (executable is IPrerequisite prerequisite)
-                    Source._visiting.Add(prerequisite);
+                    Introspection.Graph._visiting.Add(prerequisite);
             }
 
-            public bool Visited(IPrerequisite executable) => Source._visiting.Contains(executable);
+            public bool Visited(IPrerequisite executable) => Introspection.Graph._visiting.Contains(executable);
 
             public Component.UIBase? GetDialogUI()
             {
-                return _dialogUI != null ? _dialogUI : _dialogUI = Instantiate(Source.DialogUIPrefab);
+                return _dialogUI != null ? _dialogUI : _dialogUI = Instantiate(Introspection.Graph.DialogUIPrefab);
             }
+        }
+
+        public class Introspection
+        {
+            public required ScreenplayGraph Graph;
+            public required List<(Event Event, PreconditionCollector? collector)> EventsReady;
+            public Dictionary<Precondition, List<IPreconditionCollector>> Preconditions = new();
         }
     }
 }

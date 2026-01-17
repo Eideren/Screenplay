@@ -1,42 +1,41 @@
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using Screenplay.Nodes;
 
 namespace Screenplay
 {
-    public class Door
+    public class Lock
     {
         private readonly IPreconditionCollector _parentTracker;
         private readonly AutoResetUniTaskCompletionSource _autoReset = AutoResetUniTaskCompletionSource.Create();
         private readonly object _lock = new();
         private int _counter;
 
-        public bool Open => _counter == 0;
+        public bool Open => _counter != 0;
 
         public UniTask WaitOpen() => Open ? UniTask.CompletedTask : _autoReset.Task;
 
         public UniTask WaitClosed() => Open ? _autoReset.Task : UniTask.CompletedTask;
 
-        public Door(IPreconditionCollector parentTracker, IList<Precondition> targets, out IPreconditionCollector[] preconditions)
+        public Lock(IPreconditionCollector parentTracker, IList<Precondition> targets, out IPreconditionCollector[] preconditions)
         {
             _parentTracker = parentTracker;
             preconditions = new IPreconditionCollector[targets.Count];
             for (int i = 0; i < preconditions.Length; i++)
-                preconditions[i] = new Latch(this, targets[i]);
+                preconditions[i] = new Key(this, targets[i]);
         }
 
-        private class Latch : IPreconditionCollector
+        private class Key : IPreconditionCollector
         {
             private readonly List<GlobalId> _lastAppliedLocals = new();
-            private readonly Door _door;
+            private readonly Lock _lock;
 
             public bool IsUnlocked { get; private set; }
 
-            public ScreenplayGraph.Introspection Introspection => _door._parentTracker.Introspection;
+            public ScreenplayGraph.Introspection Introspection => _lock._parentTracker.Introspection;
 
-            public Locals SharedLocals => _door._parentTracker.SharedLocals;
+            public Locals SharedLocals => _lock._parentTracker.SharedLocals;
 
-            public LatentVariable<bool> IsBusy => _door._parentTracker.IsBusy;
+            public LatentVariable<bool> IsBusy => _lock._parentTracker.IsBusy;
 
             public void SetUnlockedState(bool state, params GlobalId[] locals)
             {
@@ -45,7 +44,7 @@ namespace Screenplay
 
                 IsUnlocked = state;
 
-                lock (_door._lock)
+                lock (_lock._lock)
                 {
                     if (IsUnlocked)
                     {
@@ -62,18 +61,20 @@ namespace Screenplay
                         _lastAppliedLocals.Clear();
                     }
 
-                    if (IsUnlocked             && --_door._counter == 0
-                        || IsUnlocked == false && ++_door._counter == 1)
+                    int previousCounter = _lock._counter;
+                    _lock._counter += IsUnlocked ? 1 : -1;
+
+                    if (previousCounter == 0 && _lock._counter == 1
+                        || previousCounter == 1 && _lock._counter == 0)
                     {
-                        _door._autoReset.TrySetResult();
+                        _lock._autoReset.TrySetResult();
                     }
                 }
             }
 
-            public Latch(Door door, Precondition target)
+            public Key(Lock l, Precondition target)
             {
-                _door = door;
-                _door._counter++;
+                _lock = l;
 
                 if (Introspection.Preconditions.TryGetValue(target, out var list) == false)
                     Introspection.Preconditions[target] = list = new();

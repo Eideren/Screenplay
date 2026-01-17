@@ -5,7 +5,6 @@ using Cysharp.Threading.Tasks;
 using Screenplay.Component;
 using UnityEditor;
 using UnityEngine;
-using Screenplay.Nodes;
 using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
 using Random = Unity.Mathematics.Random;
@@ -23,9 +22,9 @@ namespace Screenplay.Editor
         private UIBase? _dialogUIComponentPrefab, _dialogUI;
         private Random _random;
 
-        public Locals Locals { get; set; } = new();
+        public Locals Locals { get; } = new();
 
-        public ScreenplayGraph Source { get; }
+        public ScreenplayGraph.Introspection Introspection { get; }
 
         public List<IScreenplayNode> Path { get; }
 
@@ -47,12 +46,12 @@ namespace Screenplay.Editor
             return _dialogUI;
         }
 
-        public Previewer(bool loopPreview, uint seed, UIBase? dialogUIComponentPrefab, List<IScreenplayNode> path, ScreenplayGraph sourceParam)
+        public Previewer(bool loopPreview, uint seed, UIBase? dialogUIComponentPrefab, List<IScreenplayNode> path, ScreenplayGraph.Introspection introspection)
         {
             _loopPreview = loopPreview;
             _dialogUIComponentPrefab = dialogUIComponentPrefab;
             EditorApplication.update += Update;
-            Source = sourceParam;
+            Introspection = introspection;
             UnityEditor.Editor.finishedDefaultHeaderGUI += OnInspectorDrawHeaderGUI;
             Path = path;
             EditorApplication.QueuePlayerLoopUpdate();

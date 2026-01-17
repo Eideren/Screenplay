@@ -14,12 +14,16 @@ namespace Screenplay.Nodes
         [Output, SerializeReference, Tooltip("What would be running when this event starts")]
         public required IExecutable? Action;
         [Input, SerializeReference, Tooltip("Interaction setup for the sole purpose of triggering this event")]
-        public IPrecondition? TriggerSource;
+        public Precondition? TriggerSource;
 
         [Tooltip("Can this event ever run again after having been completed"), ToggleLeft]
         public bool Repeatable;
 
+        [Tooltip("The scene within which this event can start")]
+        public SceneReference Scene;
+
         public override void CollectReferences(ReferenceCollector references) { }
+
         public IEnumerable<IBranch?> Followup()
         {
             yield return Action;

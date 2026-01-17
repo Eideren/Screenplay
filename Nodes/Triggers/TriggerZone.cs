@@ -9,7 +9,7 @@ using Object = UnityEngine.Object;
 namespace Screenplay.Nodes.Triggers
 {
     [Serializable, NodeVisuals(Icon = "LightProbeProxyVolume Gizmo")]
-    public class TriggerZone : AbstractScreenplayNode, IPrecondition
+    public class TriggerZone : Precondition
     {
         [ValidateInput(nameof(IsTrigger))] public required SceneObjectReference<Collider> Target;
         public LayerMask LayerMask = ~0;
@@ -27,7 +27,7 @@ namespace Screenplay.Nodes.Triggers
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
-        public async UniTask Setup(IPreconditionCollector tracker, CancellationToken triggerCancellation)
+        public override async UniTask Setup(IPreconditionCollector tracker, CancellationToken triggerCancellation)
         {
             while (triggerCancellation.IsCancellationRequested == false)
             {

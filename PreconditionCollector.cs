@@ -8,27 +8,35 @@ namespace Screenplay
         private readonly List<GlobalId> _lastAppliedLocals = new();
         private readonly Action<PreconditionCollector> _onUnlocked;
         private readonly Action<PreconditionCollector> _onLocked;
-        private bool _isUnlocked;
+
+        public bool IsUnlocked { get; private set; }
+
+        public ScreenplayGraph.Introspection Introspection { get; }
 
         public Locals SharedLocals { get; } = new();
         public LatentVariable<bool> IsBusy { get; }
 
-        public PreconditionCollector(Action<PreconditionCollector> onUnlocked, Action<PreconditionCollector> onLocked, LatentVariable<bool> isBusy)
+        public PreconditionCollector(Action<PreconditionCollector> onUnlocked, Action<PreconditionCollector> onLocked, LatentVariable<bool> isBusy, Precondition target, ScreenplayGraph.Introspection introspection)
         {
             _onUnlocked = onUnlocked;
             _onLocked = onLocked;
             IsBusy = isBusy;
+            Introspection = introspection;
+
+            if (introspection.Preconditions.TryGetValue(target, out var list) == false)
+                introspection.Preconditions[target] = list = new();
+            list.Add(this);
         }
 
         public void SetUnlockedState(bool state, params GlobalId[] locals)
         {
             lock (SharedLocals)
             {
-                if (_isUnlocked == state)
+                if (IsUnlocked == state)
                     return;
 
-                _isUnlocked = !_isUnlocked;
-                if (_isUnlocked)
+                IsUnlocked = !IsUnlocked;
+                if (IsUnlocked)
                 {
                     foreach (var v in locals)
                     {
