@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Sirenix.OdinInspector;
+using Sirenix.Utilities;
 using UnityEngine;
 
 namespace Screenplay
@@ -12,7 +13,7 @@ namespace Screenplay
         [SerializeField, HideInInspector] private string? _path;
 
     #if UNITY_EDITOR
-        [SerializeField, ValidateInput(nameof(SceneNotNull)), HideLabel]
+        [SerializeField, HideLabel]
         private UnityEditor.SceneAsset _sceneAsset;
 
         public SceneReference(UnityEditor.SceneAsset asset)
@@ -81,6 +82,26 @@ namespace Screenplay
         public bool IsValid()
         {
             return _path != null;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is SceneReference other)
+            {
+#if UNITY_EDITOR
+                if (other._sceneAsset == this._sceneAsset)
+                    return true;
+#endif
+                if (other._path == _path)
+                    return true;
+
+                if (other._path.IsNullOrWhitespace() == _path.IsNullOrWhitespace())
+                    return true; // Edge case, unity serializes null string as empty string, we still want those two to match between themselves
+
+                return false;
+            }
+
+            return base.Equals(obj);
         }
     }
 }

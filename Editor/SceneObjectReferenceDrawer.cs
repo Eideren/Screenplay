@@ -15,11 +15,8 @@ namespace Screenplay.Editor
         protected override void DrawPropertyLayout(GUIContent? label)
         {
             var value = ValueEntry.SmartValue;
-            if ((Property.Info.GetAttribute<RequiredAttribute>() is not null || Property.Info.GetAttribute<RequiredMemberAttribute>() is not null)
-                && value.Empty())
-            {
+            if (Property.Info.GetAttribute<RequiredAttribute>() is not null && value.Empty())
                 SirenixEditorGUI.ErrorMessageBox($"{Property.NiceName} is required");
-            }
 
             Rect rect = EditorGUILayout.GetControlRect();
             value.TryGet(out T? obj, out var state);
