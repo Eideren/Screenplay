@@ -332,7 +332,11 @@ namespace Screenplay.Editor
         private static GUIStyle? s_buttonWithClipping;
         private static GUIStyle ButtonWithClipping => s_buttonWithClipping ??= new GUIStyle(EditorStyles.miniButton)
         {
+#if UNITY_2023_1_OR_NEWER
             clipping = TextClipping.Ellipsis,
+#else
+            clipping = TextClipping.Clip,
+#endif
         };
     }
 
