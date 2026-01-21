@@ -16,9 +16,9 @@ namespace Screenplay.Nodes
         public LocalizableText Line = new("Dialog Line\n\nAnother Line");
 
         [Input(Stroke = NoodleStroke.Dashed), SerializeReference]
-        public required IInterlocutorSource InterlocutorSource;
+        public IInterlocutorSource? InterlocutorSource;
 
-        public UniTask<Interlocutor> GetInterlocutor(IEventContext context, CancellationToken cancellationToken) => InterlocutorSource.GetInterlocutor(context, cancellationToken);
+        public UniTask<Interlocutor?> GetInterlocutor(IEventContext context, CancellationToken cancellationToken) => InterlocutorSource?.GetInterlocutor(context, cancellationToken) ?? new UniTask<Interlocutor?>(null);
 
         IEnumerable<string> Lines()
         {
