@@ -15,6 +15,7 @@ namespace Screenplay
     {
         public readonly List<Introspection> Introspections = new();
 
+        [PrefabWithComponent]
         public required Component.UIBase? DialogUIPrefab;
         public bool DebugRetainProgressInEditor;
 
