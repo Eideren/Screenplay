@@ -103,5 +103,11 @@ namespace Screenplay
 
             return base.Equals(obj);
         }
+
+        [EnableIf(nameof(IsValid)), Button]
+        public void OpenScene()
+        {
+            UnityEditor.SceneManagement.EditorSceneManager.OpenScene(_path);
+        }
     }
 }
