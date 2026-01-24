@@ -125,11 +125,17 @@ namespace Screenplay
                         continue;
                     }
 
-                    _visited.Add(eventToProcess, new VisitedPermutation{ Event = eventToProcess, Local = context.Locals.ToArray() });
+                    _visited[eventToProcess] = new VisitedPermutation{ Event = eventToProcess, Local = context.Locals.ToArray() };
 
                     busy.Set(true);
 
-                    await eventToProcess.Action.Execute(context, cancellation);
+                    for (var executable = eventToProcess.Action; executable is not null; )
+                    {
+                        context.Visiting(executable);
+                        var newE = await executable.InnerExecution(context, cancellation);
+                        executable.Persistence(context, cancellation).Forget();
+                        executable = newE;
+                    }
 
                     busy.Set(false);
                 }

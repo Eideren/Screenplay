@@ -1,7 +1,6 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 using YNode;
 
@@ -21,10 +20,7 @@ namespace Screenplay.Nodes.Unity
             await a;
         }
 
-        public override void FastForward(IEventContext context, CancellationToken cancellationToken)
-        {
-            SceneManager.LoadScene(Scene.Path, LoadSceneMode.Single);
-        }
+        public override UniTask Persistence(IEventContext context, CancellationToken cancellationToken) => UniTask.CompletedTask;
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)
         {

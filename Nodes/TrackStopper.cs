@@ -25,16 +25,17 @@ namespace Screenplay.Nodes
             //context.StopAsynchronous(BackgroundPlayer);
         }
 
-        public override void FastForward(IEventContext context, CancellationToken cancellationToken)
+        public override UniTask Persistence(IEventContext context, CancellationToken cancellationToken)
         {
             if (BackgroundPlayer is null)
             {
                 Debug.LogWarning($"Unassigned {nameof(BackgroundPlayer)}, skipping this {nameof(TrackStopper)}");
-                return;
+                return UniTask.CompletedTask;
             }
 
             Debug.LogError("Not implemented");
             //context.StopAsynchronous(BackgroundPlayer);
+            return UniTask.CompletedTask;
         }
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)

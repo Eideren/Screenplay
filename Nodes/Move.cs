@@ -1,5 +1,6 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Cysharp.Threading.Tasks.Triggers;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using YNode;
@@ -28,16 +29,15 @@ namespace Screenplay.Nodes
             return UniTask.CompletedTask;
         }
 
-        public override void FastForward(IEventContext context, CancellationToken cancellationToken)
+        public override async UniTask Persistence(IEventContext context, CancellationToken cancellationToken)
         {
-            if (Target.TryGet(out var go, out var failure) == false)
+            do
             {
-                Debug.LogWarning($"Failed to {nameof(Move)}, {nameof(Target)}: {failure}", context.Source);
-                return;
-            }
-
-            go.transform.position = Destination;
-            go.transform.rotation = Rotation;
+                var go = await Target.GetAsync(cancellationToken);
+                go.transform.position = Destination;
+                go.transform.rotation = Rotation;
+                await go.OnDestroyAsync();
+            } while (cancellationToken.IsCancellationRequested == false);
         }
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)

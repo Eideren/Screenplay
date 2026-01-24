@@ -38,7 +38,7 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(ReferenceCollector references) { }
 
-        public override void FastForward(IEventContext context, CancellationToken cancellationToken) { }
+        public override UniTask Persistence(IEventContext context, CancellationToken cancellationToken) => UniTask.CompletedTask;
 
         protected override UniTask LinearExecution(IEventContext context, CancellationToken cancellation) => RunDialog(context, cancellation, false);
 

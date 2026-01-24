@@ -35,9 +35,9 @@ namespace Screenplay.Nodes
             }
         }
 
-        public void FastForward(IEventContext context, CancellationToken cancellationToken) { }
+        public UniTask Persistence(IEventContext context, CancellationToken cancellationToken) => UniTask.CompletedTask;
 
-        public async UniTask InnerExecution(IEventContext context, CancellationToken cancellation)
+        public async UniTask<IExecutable?> InnerExecution(IEventContext context, CancellationToken cancellation)
         {
             var choicesThin = Choices.Select(x => new Data(x.Prerequisite?.TestPrerequisite(context) ?? true, x.Text.Content)).ToArray();
             if (context.GetDialogUI() is {} ui == false)
@@ -48,18 +48,16 @@ namespace Screenplay.Nodes
                     if (choicesThin[i].Enabled == false)
                         continue;
 
-                    await Choices[i].Action.Execute(context, cancellation);
-                    return;
+                    return Choices[i].Action;
                 }
 
-                return;
+                return null;
             }
 
             var choice = await ui.ChoicePresentation(choicesThin, cancellation);
 
             int index = Array.IndexOf(choicesThin, choice);
-            await Choices[index].Action.Execute(context, cancellation);
-            return;
+            return Choices[index].Action;
         }
 
         public void SetupPreview(IPreviewer previewer, bool fastForwarded)

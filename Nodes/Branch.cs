@@ -30,15 +30,15 @@ namespace Screenplay.Nodes
                 yield return False;
         }
 
-        public UniTask InnerExecution(IEventContext context, CancellationToken cancellation)
+        public UniTask<IExecutable?> InnerExecution(IEventContext context, CancellationToken cancellation)
         {
             if (Prerequisite.TestPrerequisite(context))
-                return True.Execute(context, cancellation);
+                return new UniTask<IExecutable?>(True);
             else
-                return False.Execute(context, cancellation);
+                return new UniTask<IExecutable?>(False);
         }
 
-        public void FastForward(IEventContext context, CancellationToken cancellationToken) { }
+        public UniTask Persistence(IEventContext context, CancellationToken cancellationToken) => UniTask.CompletedTask;
 
         public void SetupPreview(IPreviewer previewer, bool fastForwarded)
         {

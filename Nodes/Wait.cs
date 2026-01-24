@@ -16,7 +16,7 @@ namespace Screenplay.Nodes
             await UniTask.WaitForSeconds(Duration, cancellationToken:cancellation, cancelImmediately:true);
         }
 
-        public override void FastForward(IEventContext context, CancellationToken cancellationToken) { }
+        public override UniTask Persistence(IEventContext context, CancellationToken cancellationToken) => UniTask.CompletedTask;
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded) { }
     }

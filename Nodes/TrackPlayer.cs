@@ -23,12 +23,12 @@ namespace Screenplay.Nodes
             await Track.RangePlayer(GetTimeSpan(Track), cancellation, false);
         }
 
-        public override void FastForward(IEventContext context, CancellationToken cancellationToken)
+        public override UniTask Persistence(IEventContext context, CancellationToken cancellationToken)
         {
             if (Track == null)
             {
                 Debug.LogWarning($"Unassigned {nameof(Track)}, skipping this {nameof(TrackPlayer)}");
-                return;
+                return UniTask.CompletedTask;
             }
 
             var timespan = GetTimeSpan(Track);
@@ -38,6 +38,7 @@ namespace Screenplay.Nodes
                 if (timespan.end >= sampler.start)
                     sampler.sampler.Sample(timespan.start, timespan.end);
             }
+            return UniTask.CompletedTask;
         }
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)
@@ -49,7 +50,7 @@ namespace Screenplay.Nodes
                 trackItem?.AppendRollbackMechanism(previewer);
 
             if (fastForwarded)
-                FastForward(previewer, CancellationToken.None);
+                Persistence(previewer, CancellationToken.None);
             else
                 previewer.PlaySafeAction(this);
         }

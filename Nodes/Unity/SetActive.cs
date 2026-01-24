@@ -1,11 +1,9 @@
 ﻿using System.Threading;
 using Cysharp.Threading.Tasks;
+using Cysharp.Threading.Tasks.Triggers;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using YNode;
-
-// Async method lacks 'await' operators and will run synchronously - done on purpose
-#pragma warning disable CS1998
 
 namespace Screenplay.Nodes.Unity
 {
@@ -17,15 +15,19 @@ namespace Screenplay.Nodes.Unity
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
-        protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
+        protected override UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
         {
-            FastForward(context, cancellation);
+            return UniTask.CompletedTask; // Let persistence deal with this
         }
 
-        public override void FastForward(IEventContext context, CancellationToken cancellationToken)
+        public override async UniTask Persistence(IEventContext context, CancellationToken cancellationToken)
         {
-            if (Target.TryGet(out var target, out _))
-                target.SetActive(Active);
+            do
+            {
+                var go = await Target.GetAsync(cancellationToken);
+                go.SetActive(Active);
+                await go.OnDestroyAsync();
+            } while (cancellationToken.IsCancellationRequested == false);
         }
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)
@@ -35,7 +37,7 @@ namespace Screenplay.Nodes.Unity
                 bool currentValue = target.activeSelf;
                 previewer.RegisterRollback(() => target.SetActive(currentValue));
                 if (fastForwarded)
-                    FastForward(previewer, CancellationToken.None);
+                    target.SetActive(Active);
                 else
                     previewer.PlaySafeAction(this);
             }

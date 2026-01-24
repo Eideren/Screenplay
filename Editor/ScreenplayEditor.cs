@@ -8,7 +8,6 @@ using UnityEngine;
 using YNode;
 using YNode.Editor;
 using Screenplay.Nodes;
-using Screenplay.Nodes.Editor.Barriers;
 using Event = Screenplay.Nodes.Event;
 using Random = Unity.Mathematics.Random;
 
@@ -43,26 +42,6 @@ namespace Screenplay.Editor
                 Rollback();
                 TryPreview();
                 RecalculateReachable();
-            }
-        }
-
-        protected override void DrawGrid(Rect rect, float zoom, Vector2 panOffset)
-        {
-            base.DrawGrid(rect, zoom, panOffset);
-            for (int i = 0; i < Graph.Nodes.Count; i++)
-            {
-                INodeValue? node = Graph.Nodes[i];
-                if (node is Barrier barrier)
-                {
-                    try
-                    {
-                        ((BarrierEditor)NodesToEditor[barrier]).DrawBackground();
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogException(e);
-                    }
-                }
             }
         }
 
