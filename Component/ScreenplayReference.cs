@@ -41,18 +41,6 @@ namespace Screenplay.Component
             }
         }
 
-        private void Awake()
-        {
-            lock (s_idToRef)
-            {
-                if (s_idToRef.TryGetValue(Guid, out var existingRef) && ReferenceEquals(existingRef, Reference))
-                {
-                    if (s_completionSources.TryGetValue(Guid, out var acs))
-                        acs.TrySetResult(Reference);
-                }
-            }
-        }
-
         private void OnDestroy()
         {
             lock (s_idToRef)
@@ -89,7 +77,7 @@ namespace Screenplay.Component
                     return;
                 }
 
-                while (s_idToRef.TryGetValue(Guid, out var existingRef) && existingRef != null)
+                while (s_idToRef.TryGetValue(Guid, out var existingRef) && existingRef is null)
                 {
                     Debug.LogWarning("Guid collision, assigning a new guid for this object. If you're creating a new object by duplicating an existing one you can ignore this warning. Click on me to select the source object", existingRef);
                     Debug.LogWarning("Click on me to select the conflicting object", Reference);
@@ -98,6 +86,24 @@ namespace Screenplay.Component
 
                 s_idToRef[Guid] = Reference;
                 s_refToId[Reference] = Guid;
+
+
+                if (s_completionSources.TryGetValue(Guid, out _))
+                    AsyncSetResult(Guid, Reference).Forget();
+            }
+
+            static async UniTask AsyncSetResult(guid Guid, Object Reference)
+            {
+                await UniTask.NextFrame();
+                lock (s_idToRef)
+                {
+                    if (TryGetRef(Guid, out var existingRef)
+                        && ReferenceEquals(existingRef, Reference)
+                        && s_completionSources.TryGetValue(Guid, out var acs))
+                    {
+                        acs.TrySetResult(Reference);
+                    }
+                }
             }
         }
 
