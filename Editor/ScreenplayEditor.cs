@@ -57,30 +57,18 @@ namespace Screenplay.Editor
 
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
-                var previousColor = GUI.backgroundColor;
-
-                if (_quickjump)
-                    GUI.backgroundColor *= new Color(0.75f, 0.75f, 1.0f, 1f);
-                else
-                    GUI.backgroundColor = previousColor;
-                _quickjump = GUILayout.Button("Quickjump table", EditorStyles.toolbarButton) ? !_quickjump : _quickjump;
+                _quickjump = GUILayout.Toggle(_quickjump, "Quickjump table", EditorStyles.toolbarButton);
 
                 _fixedSeed = (uint)EditorGUILayout.IntField(new GUIContent("Seed:"), (int)_fixedSeed);
 
                 GUILayout.FlexibleSpace();
 
-                if (_mapEnabled)
-                    GUI.backgroundColor *= new Color(0.75f, 0.75f, 1.0f, 1f);
-                else
-                    GUI.backgroundColor = previousColor;
-                _mapEnabled = GUILayout.Button("Map", EditorStyles.toolbarButton) ? !_mapEnabled : _mapEnabled;
+                Graph.DebugRetainProgressInEditor = GUILayout.Toggle(Graph.DebugRetainProgressInEditor, "Retain Progress", EditorStyles.toolbarButton);
 
-                if (_previewEnabled)
-                    GUI.backgroundColor *= new Color(0.75f, 0.75f, 1.0f, 1f);
-                else
-                    GUI.backgroundColor = previousColor;
-                _previewEnabled = GUILayout.Button("Preview", EditorStyles.toolbarButton) ? !_previewEnabled : _previewEnabled;
-                GUI.backgroundColor = previousColor;
+                _mapEnabled = GUILayout.Toggle(_mapEnabled, "Map", EditorStyles.toolbarButton);
+
+                _previewEnabled = GUILayout.Toggle(_previewEnabled, "Preview", EditorStyles.toolbarButton);
+
                 _previewFlags = (PreviewFlags)EditorGUILayout.EnumFlagsField(_previewFlags, EditorStyles.toolbarPopup);
             }
             EditorGUILayout.EndHorizontal();
