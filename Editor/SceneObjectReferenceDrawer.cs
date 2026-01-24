@@ -10,7 +10,7 @@ namespace Screenplay.Editor
 {
     public class SceneObjectReferenceDrawer<T> : OdinValueDrawer<SceneObjectReference<T>> where T : Object
     {
-        private static readonly GUIContent s_unloadedContent = new GUIContent("Load ref scene ?", "This reference is not loaded, press this button to swap to its scene");
+        private static readonly GUIContent s_unloadedContent = new("Open scene ?", "This reference is not loaded, press this button to swap to its scene");
 
         protected override void DrawPropertyLayout(GUIContent? label)
         {
