@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Sirenix.OdinInspector;
 using UnityEngine;
 using YNode;
 
@@ -11,15 +10,26 @@ namespace Screenplay.Nodes
         [HideInInspector, SerializeField]
         public string Name = "My Unnamed Event";
 
-        [Output, SerializeReference, Tooltip("What would be running when this event starts")]
+        /// <summary>
+        /// What would be running when this event starts
+        /// </summary>
+        [Output, SerializeReference]
         public required IExecutable? Action;
-        [Input, SerializeReference, Tooltip("Interaction setup for the sole purpose of triggering this event")]
+        /// <summary>
+        /// Interaction setup for the sole purpose of triggering this event
+        /// </summary>
+        [Input, SerializeReference]
         public Precondition? TriggerSource;
 
-        [Tooltip("Can this event ever run again after having been completed"), ToggleLeft]
+
+        /// <summary>
+        /// Can this event ever run again after having been completed
+        /// </summary>
         public bool Repeatable;
 
-        [Tooltip("The scene within which this event can start")]
+        /// <summary>
+        /// The scene within which this event can start
+        /// </summary>
         public SceneReference Scene;
 
         public override void CollectReferences(ReferenceCollector references) { }
