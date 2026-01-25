@@ -109,7 +109,11 @@ namespace Screenplay.Editor
             if (dispatcher == null)
             {
                 if (GUILayout.Button(EditorGUIUtility.TrTextContentWithIcon($"You must add a {nameof(ScreenplayDispatcher)} to the scene to run this screenplay,\nclick me to add one automatically", MessageType.Warning), EditorStyles.helpBox))
-                    new GameObject(nameof(ScreenplayDispatcher)).AddComponent<ScreenplayDispatcher>().Screenplay = Graph;
+                {
+                    var go = new GameObject(nameof(ScreenplayDispatcher));
+                    go.AddComponent<ScreenplayDispatcher>().Screenplay = Graph;
+                    EditorUtility.SetDirty(go);
+                }
             }
             else if (dispatcher.Screenplay == null)
             {
