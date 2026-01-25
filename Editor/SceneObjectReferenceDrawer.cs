@@ -1,6 +1,6 @@
-﻿using System.Runtime.CompilerServices;
-using Sirenix.OdinInspector;
+﻿using Sirenix.OdinInspector;
 using Sirenix.OdinInspector.Editor;
+using Sirenix.Utilities;
 using Sirenix.Utilities.Editor;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -11,6 +11,7 @@ namespace Screenplay.Editor
     public class SceneObjectReferenceDrawer<T> : OdinValueDrawer<SceneObjectReference<T>> where T : Object
     {
         private static readonly GUIContent s_unloadedContent = new("Open scene ?", "This reference is not loaded, press this button to swap to its scene");
+        private static readonly GUIContent s_clearContent = new("Clear ?", "This reference is not loaded, press this button to unassign it");
 
         protected override void DrawPropertyLayout(GUIContent? label)
         {
@@ -25,10 +26,10 @@ namespace Screenplay.Editor
                 if (label != null)
                     rect = EditorGUI.PrefixLabel(rect, label);
 
-                GUIHelper.PushLabelWidth(20);
-                if (GUI.Button(rect, s_unloadedContent))
+                if (GUI.Button(rect.AlignLeft(rect.width / 3*2), s_unloadedContent))
                     EditorSceneManager.OpenScene(value.ScenePath);
-                GUIHelper.PopLabelWidth();
+                if (GUI.Button(rect.AlignRight(rect.width / 3), s_clearContent))
+                    ValueEntry.SmartValue = new();
             }
             else
             {
