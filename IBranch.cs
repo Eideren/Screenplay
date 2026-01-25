@@ -13,6 +13,6 @@ namespace Screenplay
         /// <remarks>
         /// Used to traverse the node tree, providing insight about nodes that are reachable
         /// </remarks>
-        public IEnumerable<IBranch?> Followup();
+        public IEnumerable<IBranch> Followup();
     }
 }

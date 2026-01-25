@@ -20,6 +20,6 @@ namespace Screenplay
 
         ref Random GetRandom();
 
-        void Visiting(IBranch? exe);
+        bool IPrerequisiteContext.Visited(IPrerequisite executable) => Introspection.Visited.Contains(executable);
     }
 }

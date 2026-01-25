@@ -186,7 +186,7 @@ namespace Screenplay.Editor
             else if (_previewer is null || previousSelection != currentSelection) // Selection changed
             {
                 Rollback();
-                _previewer = new Previewer(_previewFlags.Contains(PreviewFlags.Loop), _fixedSeed == 0 ? _random.NextUInt(1, uint.MaxValue) : _fixedSeed, Graph.DialogUIPrefab, _rootToPreview, new ScreenplayGraph.Introspection(){ Graph = Graph, EventsReady = new() });
+                _previewer = new Previewer(_previewFlags.Contains(PreviewFlags.Loop), _fixedSeed == 0 ? _random.NextUInt(1, uint.MaxValue) : _fixedSeed, Graph.DialogUIPrefab, _rootToPreview, new ScreenplayGraph.Introspection{ Graph = Graph });
                 for (int i = 0; i < _previewChain.Count; i++)
                 {
                     if (_previewChain[i] is IPreviewable previewable)

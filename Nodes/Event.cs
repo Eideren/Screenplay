@@ -34,9 +34,9 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(ReferenceCollector references) { }
 
-        public IEnumerable<IBranch?> Followup()
+        public IEnumerable<IBranch> Followup()
         {
-            yield return Action;
+            yield return Action!;
         }
     }
 }

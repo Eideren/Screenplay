@@ -4,18 +4,19 @@ namespace Screenplay
 {
     /// <summary>
     /// An Id to a specific global value defined in a <see cref="Screenplay"/> which can be serialized and restored
-    /// for persistance and saving purposes
+    /// for persistence and saving purposes
     /// </summary>
-    public readonly struct GlobalId : IEquatable<GlobalId>
+    [Serializable]
+    public struct GlobalId : IEquatable<GlobalId>
     {
         /// <summary> The ID for a <see cref="IUntypedGlobalsDeclarer"/> </summary>
-        public readonly guid DeclarerGuid;
+        public guid DeclarerGuid;
 
         /// <summary>
         /// The ID for a value declared by a <see cref="IUntypedGlobalsDeclarer"/>
         /// which can be used to retrieve the actual value through <see cref="IUntypedGlobalsDeclarer.TryGetValue"/>
         /// </summary>
-        public readonly guid ValueGuid;
+        public guid ValueGuid;
 
         public GlobalId(guid declarerGuid, guid valueGuid)
         {

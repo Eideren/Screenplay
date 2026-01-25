@@ -16,8 +16,14 @@ namespace Screenplay.Editor
             var window = (ScreenplayEditor)Window;
             if (Value is IBranch && window.IsReachable(Value) == false)
                 GUI.color = new Color(GUI.color.r, GUI.color.g * 0.25f, GUI.color.b * 0.25f, GUI.color.a);
-            if (Value is IPrerequisite req && thisScreenplay.Visited(req))
-                GUI.color = new Color(GUI.color.r * 0.25f, GUI.color.g, GUI.color.b * 0.25f, GUI.color.a);
+            if (Value is IPrerequisite req)
+            {
+                foreach (var introspection in thisScreenplay.Introspections)
+                {
+                    if (introspection.Visited.Contains(req))
+                        GUI.color = new Color(GUI.color.r * 0.25f, GUI.color.g, GUI.color.b * 0.25f, GUI.color.a);
+                }
+            }
 
             if (Value is Event e)
                 DrawEditableTitle(ref e.Name);

@@ -7,7 +7,7 @@ namespace Screenplay
     public interface IExecutable : IBranch, IPrerequisite, IPreviewable
     {
         /// <inheritdoc cref="IBranch.Followup"/>
-        new IEnumerable<IExecutable?> Followup();
+        new IEnumerable<IExecutable> Followup();
 
         /// <summary>
         /// Run the barebone logic for this action, return the next action to run
@@ -27,6 +27,6 @@ namespace Screenplay
         bool IPrerequisite.TestPrerequisite(IEventContext context) => context.Visited(this);
 
         /// <inheritdoc/>
-        IEnumerable<IBranch?> IBranch.Followup() => Followup();
+        IEnumerable<IBranch> IBranch.Followup() => Followup();
     }
 }

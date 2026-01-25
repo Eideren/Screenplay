@@ -55,9 +55,9 @@ namespace Screenplay
             return _genericRef.TryGet(out var r, out var result) ? (T)r : throw new InvalidOperationException($"Could not get {ScenePath} {typeof(T)}: {result}");
         }
 
-        public async UniTask<T> GetAsync(CancellationToken cancellationToken)
+        public UniTask<T> GetAsync(CancellationToken cancellationToken)
         {
-            return (T)await _genericRef.GetAsync(cancellationToken);
+            return _genericRef.GetAsync<T>(cancellationToken);
         }
     }
 
@@ -102,9 +102,9 @@ namespace Screenplay
             return false;
         }
 
-        public UniTask<Object> GetAsync(CancellationToken cancellationToken)
+        public UniTask<T> GetAsync<T>(CancellationToken cancellationToken) where T : Object
         {
-            return ScreenplayReference.GetAsync(_objId, cancellationToken);
+            return ScreenplayReference.GetAsync<T>(_objId, cancellationToken);
         }
 
 #if UNITY_EDITOR

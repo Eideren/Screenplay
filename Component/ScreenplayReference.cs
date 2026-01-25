@@ -94,7 +94,7 @@ namespace Screenplay.Component
 
             static async UniTask AsyncSetResult(guid Guid, Object Reference)
             {
-                await UniTask.NextFrame();
+                await UniTask.SwitchToMainThread();
                 lock (s_idToRef)
                 {
                     if (TryGetRef(Guid, out var existingRef)
@@ -124,15 +124,19 @@ namespace Screenplay.Component
                 return s_refToId.TryGetValue(obj, out guid);
         }
 
-        public static async UniTask<Object> GetAsync(guid guid, CancellationToken cancellationToken)
+        public static async UniTask<T> GetAsync<T>(guid guid, CancellationToken cancellationToken) where T : Object
         {
             if (TryGetRef(guid, out var output))
-                return output;
+                return (T)output;
 
-            if (s_completionSources.TryGetValue(guid, out var completion) == false)
-                s_completionSources[guid] = completion = new UniTaskCompletionSource<Object>();
+            UniTaskCompletionSource<Object>? completion;
+            lock (s_idToRef)
+            {
+                if (s_completionSources.TryGetValue(guid, out completion) == false)
+                    s_completionSources[guid] = completion = new UniTaskCompletionSource<Object>();
+            }
 
-            return await completion.Task.WithInterruptingCancellation(cancellationToken);
+            return (T)await completion.Task.WithInterruptingCancellation(cancellationToken);
         }
 
         public static guid GetOrCreate(GameObject obj)

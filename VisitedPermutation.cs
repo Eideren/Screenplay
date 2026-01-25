@@ -1,12 +1,14 @@
 using System;
-using Screenplay.Nodes;
+using UnityEngine;
+using Event = Screenplay.Nodes.Event;
 
 namespace Screenplay
 {
+    [Serializable]
     public struct VisitedPermutation : IEquatable<VisitedPermutation>
     {
-        private GlobalId[] _local;
-        public required Event Event;
+        [SerializeField] private GlobalId[] _local;
+        [SerializeReference] public required Event Event;
 
         public required GlobalId[] Local
         {
