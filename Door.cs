@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using Screenplay.Nodes;
 
 namespace Screenplay
 {

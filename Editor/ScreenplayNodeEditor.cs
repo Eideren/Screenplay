@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using YNode.Editor;
-using Screenplay.Nodes;
 using Event = Screenplay.Nodes.Event;
 
 namespace Screenplay.Editor
