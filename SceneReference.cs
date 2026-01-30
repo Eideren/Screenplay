@@ -12,7 +12,7 @@ namespace Screenplay
         public string Path => _path ?? "";
         [SerializeField, HideInInspector] private string? _path;
 
-    #if UNITY_EDITOR
+#if UNITY_EDITOR
         [SerializeField, HideLabel]
         private UnityEditor.SceneAsset _sceneAsset;
 
@@ -70,11 +70,11 @@ namespace Screenplay
 
         public void OnBeforeSerialize()
         {
-    #if UNITY_EDITOR
+#if UNITY_EDITOR
             // Make sure the path is always updated
             if (_sceneAsset != null)
                 _path = UnityEditor.AssetDatabase.GetAssetPath(_sceneAsset);
-    #endif
+#endif
         }
 
         public void OnAfterDeserialize(){ }
@@ -95,19 +95,13 @@ namespace Screenplay
                 if (other._path == _path)
                     return true;
 
-                if (other._path.IsNullOrWhitespace() == _path.IsNullOrWhitespace())
+                if (other._path.IsNullOrWhitespace() && _path.IsNullOrWhitespace())
                     return true; // Edge case, unity serializes null string as empty string, we still want those two to match between themselves
 
                 return false;
             }
 
             return base.Equals(obj);
-        }
-
-        [EnableIf(nameof(IsValid)), Button]
-        public void OpenScene()
-        {
-            UnityEditor.SceneManagement.EditorSceneManager.OpenScene(_path);
         }
     }
 }
