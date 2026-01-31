@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Screenplay
 {
     [Serializable, InlineProperty]
-    public struct SceneReference : ISerializationCallbackReceiver
+    public struct SceneReference : ISerializationCallbackReceiver, IEquatable<SceneReference>
     {
         public string Path => _path ?? "";
         [SerializeField, HideInInspector] private string? _path;
@@ -87,21 +87,29 @@ namespace Screenplay
         public override bool Equals(object? obj)
         {
             if (obj is SceneReference other)
-            {
-#if UNITY_EDITOR
-                if (other._sceneAsset == this._sceneAsset)
-                    return true;
-#endif
-                if (other._path == _path)
-                    return true;
-
-                if (other._path.IsNullOrWhitespace() && _path.IsNullOrWhitespace())
-                    return true; // Edge case, unity serializes null string as empty string, we still want those two to match between themselves
-
-                return false;
-            }
+                return Equals(other);
 
             return base.Equals(obj);
+        }
+
+        public bool Equals(SceneReference other)
+        {
+#if UNITY_EDITOR
+            if (other._sceneAsset == this._sceneAsset)
+                return true;
+#endif
+            if (other._path == _path)
+                return true;
+
+            if (other._path.IsNullOrWhitespace() && _path.IsNullOrWhitespace())
+                return true; // Edge case, unity serializes null string as empty string, we still want those two to match between themselves
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return _path.IsNullOrWhitespace() ? "".GetHashCode() : _path!.GetHashCode();
         }
     }
 }

@@ -11,7 +11,7 @@ namespace Screenplay
     public abstract class Precondition : AbstractScreenplayNode
     {
         /// <summary>
-        /// Set <see cref="tracker"/>'s <see cref="IPreconditionCollector.SetUnlockedState"/> when this case is triggered
+        /// Set <paramref name="tracker"/>'s <see cref="IPreconditionCollector.SetUnlockedState"/> when this case is triggered
         /// </summary>
         public abstract UniTask Setup(IPreconditionCollector tracker, CancellationToken triggerCancellation);
     }
