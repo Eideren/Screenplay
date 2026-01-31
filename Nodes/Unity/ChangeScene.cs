@@ -17,14 +17,11 @@ namespace Screenplay.Nodes.Unity
         {
             var a = SceneManager.LoadSceneAsync(Scene.Path, LoadSceneMode.Single);
             a!.allowSceneActivation = true;
-            await a;
+            await a.ToUniTask(cancellationToken: cancellation, cancelImmediately: true);
         }
 
         public override UniTask Persistence(IEventContext context, CancellationToken cancellationToken) => UniTask.CompletedTask;
 
-        public override void SetupPreview(IPreviewer previewer, bool fastForwarded)
-        {
-
-        }
+        public override void SetupPreview(IPreviewer previewer, bool fastForwarded) { }
     }
 }
