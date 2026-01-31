@@ -22,12 +22,10 @@ namespace Screenplay.Nodes
         [Input(Stroke = NoodleStroke.Dashed), SerializeReference, LabelWidth(20), HorizontalGroup(width:90), Tooltip("Select which action should be taken next")]
         public required IPrerequisite Prerequisite = null!;
 
-        public IEnumerable<IExecutable> Followup()
+        public IEnumerable<IExecutable?> Followup()
         {
-            if (True != null)
-                yield return True;
-            if (False != null)
-                yield return False;
+            yield return True;
+            yield return False;
         }
 
         public UniTask<IExecutable?> InnerExecution(IEventContext context, CancellationToken cancellation)

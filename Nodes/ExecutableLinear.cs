@@ -27,10 +27,9 @@ namespace Screenplay.Nodes
 
         public abstract void SetupPreview(IPreviewer previewer, bool fastForwarded);
 
-        IEnumerable<IExecutable> IExecutable.Followup()
+        IEnumerable<IExecutable?> IExecutable.Followup()
         {
-            if (Next != null)
-                yield return Next;
+            yield return Next;
         }
     }
 }

@@ -26,12 +26,11 @@ namespace Screenplay.Nodes
             }
         };
 
-        public IEnumerable<IExecutable> Followup()
+        public IEnumerable<IExecutable?> Followup()
         {
             foreach (var instance in Choices)
             {
-                if (instance.Action != null)
-                    yield return instance.Action;
+                yield return instance.Action;
             }
         }
 
