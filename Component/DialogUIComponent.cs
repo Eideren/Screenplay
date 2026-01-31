@@ -35,10 +35,10 @@ namespace Screenplay.Component
         public override async UniTask<Choice.Data> ChoicePresentation(Choice.Data[] choices, CancellationToken cancellation)
         {
             DialogChoiceTemplate.gameObject.SetActive(false);
+            OnStart?.Invoke();
             OnChoicePresented?.Invoke();
-            var uniTaskSource = new UniTaskCompletionSource<Choice.Data>();
 
-            await using var _ = cancellation.RegisterWithoutCaptureExecutionContext(() => uniTaskSource.TrySetCanceled());
+            var tasks = new List<UniTask<Choice.Data>>();
 
             var choiceGameObjects = new List<GameObject>();
             foreach (var choice in choices)
@@ -51,18 +51,25 @@ namespace Screenplay.Component
                 uiChoice.gameObject.SetActive(true);
                 uiChoice.Label.text = choice.Text;
                 uiChoice.Button.interactable = choice.Enabled;
-                uiChoice.Button.onClick.AddListener(() => uniTaskSource.TrySetResult(choice));
+                tasks.Add(AwaitClick());
+
+                async UniTask<Choice.Data> AwaitClick()
+                {
+                    await uiChoice.Button.onClick.OnInvokeAsync(cancellation);
+                    return choice;
+                }
             }
 
             try
             {
-                return await uniTaskSource.Task;
+                return (await UniTask.WhenAny(tasks)).result;
             }
             finally
             {
                 foreach (var go in choiceGameObjects)
                     Destroy(go);
                 OnChoiceClosed?.Invoke();
+                OnEnd?.Invoke();
             }
         }
 
