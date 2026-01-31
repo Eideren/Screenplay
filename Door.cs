@@ -6,15 +6,15 @@ namespace Screenplay
     public class Door
     {
         private readonly IPreconditionCollector _parentTracker;
-        private readonly AutoResetUniTaskCompletionSource _autoReset = AutoResetUniTaskCompletionSource.Create();
         private readonly object _lock = new();
+        private SafeManualResetEvent _manualResetEvent = new();
         private int _counter;
 
         public bool Open => _counter == 0;
 
-        public UniTask WaitOpen() => Open ? UniTask.CompletedTask : _autoReset.Task;
+        public UniTask WaitOpen() => _manualResetEvent.AwaitOpen;
 
-        public UniTask WaitClosed() => Open ? _autoReset.Task : UniTask.CompletedTask;
+        public UniTask WaitClosed() => _manualResetEvent.AwaitClosed;
 
         public Door(IPreconditionCollector parentTracker, IList<Precondition> targets, out IPreconditionCollector[] preconditions)
         {
@@ -64,7 +64,10 @@ namespace Screenplay
                     if (IsUnlocked             && --_door._counter == 0
                         || IsUnlocked == false && ++_door._counter == 1)
                     {
-                        _door._autoReset.TrySetResult();
+                        if (_door.Open)
+                            _door._manualResetEvent.Open();
+                        else
+                            _door._manualResetEvent.Close();
                     }
                 }
             }

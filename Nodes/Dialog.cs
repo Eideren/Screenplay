@@ -83,7 +83,7 @@ namespace Screenplay.Nodes
                     if (interlocutor != null && i - lastChatter >= interlocutor.CharactersPerChatter)
                         Chatter(ref lastChatter, i, text, interlocutor, ui);
 
-                    time += interlocutor?.GetDuration(text[i]) ?? 0.1f;
+                    time += interlocutor?.GetDuration(text[i]) ?? 0.05f;
                     for (; time > 0f; time -= Time.unscaledDeltaTime)
                     {
                         if (ui.FastForwardRequested)

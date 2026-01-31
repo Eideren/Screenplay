@@ -39,7 +39,7 @@ namespace Screenplay
             key.BoundIntrospection = introspection;
 
             using var context = new DefaultContext(seed, introspection);
-            var eventsReadySignal = AutoResetUniTaskCompletionSource.Create();
+            var eventsReadySignal = new SafeManualResetEvent();
             var eventsCleanup = new Dictionary<Event, CancellationTokenSource>();
             using var busy = new LatentVariable<bool>(false);
             Introspections.Add(introspection);
@@ -70,7 +70,10 @@ namespace Screenplay
                         if (triggerSource == null)
                         {
                             lock (introspection.EventsReady)
+                            {
                                 introspection.EventsReady.Add((e, null));
+                                eventsReadySignal.Open();
+                            }
                         }
                         else
                         {
@@ -84,14 +87,18 @@ namespace Screenplay
                                 lock (introspection.EventsReady)
                                 {
                                     introspection.EventsReady.Add((e, pc));
-                                    eventsReadySignal.TrySetResult();
+                                    eventsReadySignal.Open();
                                 }
                             }
 
                             void OnLocked(PreconditionCollector pc)
                             {
                                 lock (introspection.EventsReady)
+                                {
                                     introspection.EventsReady.Remove((e, pc));
+                                    if (introspection.EventsReady.Count == 0)
+                                        eventsReadySignal.Close();
+                                }
                             }
                         }
                     }
@@ -109,13 +116,18 @@ namespace Screenplay
                         {
                             var ready = introspection.EventsReady[0];
                             introspection.EventsReady.RemoveAt(0);
+                            if (introspection.EventsReady.Count == 0)
+                                eventsReadySignal.Close();
 
                             context.Locals.Clear();
                             ready.collector?.SharedLocals.CopyTo(context.Locals);
                             eventToProcess = ready.Event;
 
                             if (eventToProcess.Repeatable)
+                            {
                                 introspection.EventsReady.Add(ready); // Move it to the end of the list
+                                eventsReadySignal.Open();
+                            }
                             else if (eventsCleanup.Remove(eventToProcess, out var triggerSource))
                                 triggerSource.Cancel(); // Otherwise dispose of the trigger and be done with it
                         }
@@ -127,7 +139,7 @@ namespace Screenplay
 
                     if (eventToProcess == null)
                     {
-                        await eventsReadySignal.Task.WithInterruptingCancellation(cancellation);
+                        await eventsReadySignal.AwaitOpen.WithInterruptingCancellation(cancellation);
                         continue;
                     }
 

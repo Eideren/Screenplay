@@ -7,7 +7,7 @@ namespace Screenplay
     public class LatentVariable<T> : IDisposable where T : IEquatable<T>
     {
         public T Value { get; private set; }
-        private readonly AutoResetUniTaskCompletionSource _changed = AutoResetUniTaskCompletionSource.Create();
+        private SafeManualResetEvent _changed = new();
 
         public LatentVariable(T initialValue) => Value = initialValue;
 
@@ -17,7 +17,7 @@ namespace Screenplay
         {
             while (Value.Equals(expect) == false)
             {
-                await _changed.Task.WithInterruptingCancellation(cancellationToken);
+                await _changed.AwaitOpen.WithInterruptingCancellation(cancellationToken);
             }
         }
 
@@ -25,7 +25,7 @@ namespace Screenplay
         {
             while (Value.Equals(expect))
             {
-                await _changed.Task.WithInterruptingCancellation(cancellationToken);
+                await _changed.AwaitClosed.WithInterruptingCancellation(cancellationToken);
             }
         }
 
@@ -35,7 +35,7 @@ namespace Screenplay
                 return;
 
             Value = value;
-            _changed.TrySetResult();
+            _changed.Open();
         }
     }
 }
