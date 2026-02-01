@@ -7,9 +7,6 @@ namespace Screenplay
         /// <summary> The locals which will be sent to a running <see cref="IEventContext"/> </summary>
         Locals SharedLocals { get; }
 
-        /// <summary> Whether the system is currently running a <see cref="IEventContext"/> and as such cannot transition into this one </summary>
-        LatentVariable<bool> IsBusy { get; }
-
         bool IsUnlocked { get; }
 
         /// <summary>

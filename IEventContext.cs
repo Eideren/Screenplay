@@ -7,19 +7,18 @@ namespace Screenplay
     /// </summary>
     public interface IEventContext : IPrerequisiteContext
     {
+        FieldRegistry FieldRegistry { get; }
+
         Locals Locals { get; }
 
         ScreenplayGraph Source => Introspection.Graph;
 
         ScreenplayGraph.Introspection Introspection { get; }
 
-        /// <summary>
-        /// Creates the dialog component if it doesn't exist yet and return it
-        /// </summary>
-        Component.UIBase? GetDialogUI();
-
         ref Random GetRandom();
 
         bool IPrerequisiteContext.Visited(IPrerequisite executable) => Introspection.Visited.Contains(executable);
+
+        T2 Get<T, T2>() where T : ICustomField<T2> => FieldRegistry.Get<T, T2>();
     }
 }

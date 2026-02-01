@@ -28,7 +28,7 @@ namespace Screenplay.Nodes
             yield return False;
         }
 
-        public UniTask<IExecutable?> InnerExecution(IEventContext context, CancellationToken cancellation)
+        public UniTask<IExecutable?> Execute(IEventContext context, CancellationToken cancellation)
         {
             if (Prerequisite.TestPrerequisite(context))
                 return new UniTask<IExecutable?>(True);

@@ -14,13 +14,11 @@ namespace Screenplay
         public ScreenplayGraph.Introspection Introspection { get; }
 
         public Locals SharedLocals { get; } = new();
-        public LatentVariable<bool> IsBusy { get; }
 
-        public PreconditionCollector(Action<PreconditionCollector> onUnlocked, Action<PreconditionCollector> onLocked, LatentVariable<bool> isBusy, Precondition target, ScreenplayGraph.Introspection introspection)
+        public PreconditionCollector(Action<PreconditionCollector> onUnlocked, Action<PreconditionCollector> onLocked, Precondition target, ScreenplayGraph.Introspection introspection)
         {
             _onUnlocked = onUnlocked;
             _onLocked = onLocked;
-            IsBusy = isBusy;
             Introspection = introspection;
 
             if (introspection.Preconditions.TryGetValue(target, out var list) == false)

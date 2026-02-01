@@ -15,7 +15,7 @@ namespace Screenplay.Nodes
         [Output, SerializeReference, HideLabel, Tooltip("What would run right after this is done running")]
         public IExecutable? Next;
 
-        public async UniTask<IExecutable?> InnerExecution(IEventContext context, CancellationToken cancellation)
+        public async UniTask<IExecutable?> Execute(IEventContext context, CancellationToken cancellation)
         {
             await LinearExecution(context, cancellation);
             return Next;

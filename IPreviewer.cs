@@ -30,7 +30,7 @@ namespace Screenplay
 
             async UniTask PreviewPlay(CancellationToken cancellation)
             {
-                await executable.InnerExecution(this, cancellation);
+                await executable.Execute(this, cancellation);
 
                 if (Loop)
                 {

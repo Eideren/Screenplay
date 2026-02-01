@@ -35,8 +35,6 @@ namespace Screenplay
 
             public Locals SharedLocals => _lock._parentTracker.SharedLocals;
 
-            public LatentVariable<bool> IsBusy => _lock._parentTracker.IsBusy;
-
             public void SetUnlockedState(bool state, params GlobalId[] locals)
             {
                 if (IsUnlocked == state)

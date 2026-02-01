@@ -47,7 +47,8 @@ namespace Screenplay.Nodes
             if (fastForwarded == false)
                 previewer.AddCustomPreview(cs => RunDialog(previewer, cs, true));
 
-            if (previewer.GetDialogUI() is {} ui && Lines().LastOrDefault() is {} lastLine)
+            var ui = previewer.GetDialogUI();
+            if (Lines().LastOrDefault() is {} lastLine)
             {
                 ui.StartDialogPresentation();
                 ui.StartLineTypewriting(lastLine);
@@ -59,12 +60,7 @@ namespace Screenplay.Nodes
 
         private async UniTask RunDialog(IEventContext context, CancellationToken cancellation, bool previewMode)
         {
-            if (context.GetDialogUI() is {} ui == false)
-            {
-                Debug.LogWarning($"{nameof(ScreenplayGraph.DialogUIPrefab)} has not been set, no interface to present this {nameof(Dialog)} on");
-                return;
-            }
-
+            var ui = context.GetDialogUI();
             var interlocutor = await GetInterlocutor(context, cancellation);
             ui.StartDialogPresentation();
             foreach (var text in Lines())

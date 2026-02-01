@@ -36,22 +36,10 @@ namespace Screenplay.Nodes
 
         public UniTask Persistence(IEventContext context, CancellationToken cancellationToken) => UniTask.CompletedTask;
 
-        public async UniTask<IExecutable?> InnerExecution(IEventContext context, CancellationToken cancellation)
+        public async UniTask<IExecutable?> Execute(IEventContext context, CancellationToken cancellation)
         {
             var choicesThin = Choices.Select(x => new Data(x.Prerequisite?.TestPrerequisite(context) ?? true, x.Text.Content)).ToArray();
-            if (context.GetDialogUI() is {} ui == false)
-            {
-                Debug.LogWarning($"{nameof(ScreenplayGraph.DialogUIPrefab)} has not been set, no interface to present this {nameof(Choice)} on");
-                for (int i = 0; i < choicesThin.Length; i++)
-                {
-                    if (choicesThin[i].Enabled == false)
-                        continue;
-
-                    return Choices[i].Action;
-                }
-
-                return null;
-            }
+            var ui = context.GetDialogUI();
 
             var choice = await ui.ChoicePresentation(choicesThin, cancellation);
 

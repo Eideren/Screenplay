@@ -22,6 +22,8 @@ namespace Screenplay.Editor
         private UIBase? _dialogUIComponentPrefab, _dialogUI;
         private Random _random;
 
+        public FieldRegistry FieldRegistry { get; }
+
         public Locals Locals { get; } = new();
 
         public ScreenplayGraph.Introspection Introspection { get; }
@@ -46,10 +48,10 @@ namespace Screenplay.Editor
             return _dialogUI;
         }
 
-        public Previewer(bool loopPreview, uint seed, UIBase? dialogUIComponentPrefab, List<IScreenplayNode> path, ScreenplayGraph.Introspection introspection)
+        public Previewer(bool loopPreview, uint seed, List<IScreenplayNode> path, ScreenplayGraph.Introspection introspection)
         {
+            FieldRegistry = new FieldRegistry(introspection.Graph);
             _loopPreview = loopPreview;
-            _dialogUIComponentPrefab = dialogUIComponentPrefab;
             EditorApplication.update += Update;
             Introspection = introspection;
             UnityEditor.Editor.finishedDefaultHeaderGUI += OnInspectorDrawHeaderGUI;
@@ -83,6 +85,8 @@ namespace Screenplay.Editor
                     Debug.LogException(e);
                 }
             }
+
+            FieldRegistry.Dispose();
 
             EditorApplication.update -= Update;
             EditorApplication.QueuePlayerLoopUpdate();

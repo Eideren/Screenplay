@@ -6,12 +6,11 @@ namespace Screenplay
     public interface IBranch : IScreenplayNode
     {
         /// <summary>
-        /// The next action which will be played out, none if this is the last one,
-        /// a single one for most <see cref="Choice"/>,
-        /// multiple in case of branching through <see cref="IExecutable"/> for example.
+        /// The next actions which this node may branch into,
+        /// should return null if any of those leads to the end of the path.
         /// </summary>
         /// <remarks>
-        /// Used to traverse the node tree, providing insight about nodes that are reachable
+        /// Used to restore a screenplay's state from a saved session
         /// </remarks>
         public IEnumerable<IBranch?> Followup();
     }

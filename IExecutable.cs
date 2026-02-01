@@ -12,10 +12,10 @@ namespace Screenplay
         /// <summary>
         /// Run the barebone logic for this action, return the next action to run
         /// </summary>
-        UniTask<IExecutable?> InnerExecution(IEventContext context, CancellationToken cancellation);
+        UniTask<IExecutable?> Execute(IEventContext context, CancellationToken cancellation);
 
         /// <summary>
-        /// Applies all the changes <see cref="InnerExecution"/> introduces to the objects it touches,
+        /// Applies all the changes <see cref="Execute"/> introduces to the objects it touches,
         /// and ensures those objects have those changes re-instated when they are loaded again.
         /// </summary>
         /// <remarks>

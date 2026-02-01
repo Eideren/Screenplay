@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using YNode;
 using Screenplay.Nodes.Triggers;
+using Sirenix.OdinInspector;
 using Event = Screenplay.Nodes.Event;
 using Random = Unity.Mathematics.Random;
 using static UnityEngine.Serialization.ManagedReferenceUtility;
@@ -19,13 +21,13 @@ namespace Screenplay
 
         public bool AllowMultipleInstances = false;
         public RestoreBehavior RestoreMode = RestoreBehavior.ReconstructLinearPaths;
-
-        [PrefabWithComponent]
-        public required Component.UIBase? DialogUIPrefab;
         public bool DebugRetainProgressInEditor;
 
         [SerializeField]
         private State _debugState = new();
+
+        [SerializeReference, InlineProperty, ListDrawerSettings(DefaultExpandedState = true)]
+        public required ICustomField[] Fields = { new DialogUIField{ DialogUIPrefab = null! } };
 
         /// <summary>
         /// You must cancel this UniTask when reloading a running game.
@@ -38,10 +40,9 @@ namespace Screenplay
             var introspection = new Introspection { Graph = this };
             key.BoundIntrospection = introspection;
 
-            using var context = new DefaultContext(seed, introspection);
+            using var fieldRegistry = new FieldRegistry(this);
             var eventsReadySignal = new SafeManualResetEvent();
             var eventsCleanup = new Dictionary<Event, CancellationTokenSource>();
-            using var busy = new LatentVariable<bool>(false);
             Introspections.Add(introspection);
 
             if (key.StateToLoad is not null)
@@ -49,9 +50,10 @@ namespace Screenplay
             else if (DebugRetainProgressInEditor)
                 introspection.Progresses.AddRange(State.Reconstruct(_debugState, this, false));
 
+            var randomSeeder = new Random(seed);
             try
             {
-                RestoreProgress(introspection.Progresses, RestoreMode, introspection.Visited, cancellation, context);
+                RestoreProgress(RestoreMode, cancellation, introspection, ref randomSeeder, fieldRegistry);
 
                 foreach (var value in Nodes)
                 {
@@ -79,7 +81,7 @@ namespace Screenplay
                         {
                             var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
                             eventsCleanup[e] = cts;
-                            var task = triggerSource.Setup(new PreconditionCollector(OnUnlocked, OnLocked, busy, triggerSource, introspection), cts.Token);
+                            var task = triggerSource.Setup(new PreconditionCollector(OnUnlocked, OnLocked, triggerSource, introspection), cts.Token);
                             ObserveExceptions(task);
 
                             void OnUnlocked(PreconditionCollector pc)
@@ -104,11 +106,12 @@ namespace Screenplay
                     }
 
                     if (value is ICustomEntry customEntry)
-                        customEntry.Run(context, cancellation);
+                        customEntry.Run(new DefaultContext(randomSeeder.NextUInt(1, uint.MaxValue), introspection, fieldRegistry), cancellation);
                 }
 
                 while (cancellation.IsCancellationRequested == false)
                 {
+                    var context = new DefaultContext(randomSeeder.NextUInt(1, uint.MaxValue), introspection, fieldRegistry);
                     Event? eventToProcess;
                     lock (introspection.EventsReady)
                     {
@@ -129,7 +132,10 @@ namespace Screenplay
                                 eventsReadySignal.Open();
                             }
                             else if (eventsCleanup.Remove(eventToProcess, out var triggerSource))
+                            {
                                 triggerSource.Cancel(); // Otherwise dispose of the trigger and be done with it
+                                triggerSource.Dispose();
+                            }
                         }
                         else
                         {
@@ -149,18 +155,14 @@ namespace Screenplay
                     };
                     introspection.Progresses.Add(progress);
 
-                    busy.Set(true);
-
                     for (var executable = eventToProcess.Action; executable is not null; )
                     {
                         progress.Executables.Add(executable);
                         introspection.Visited.Add(executable);
-                        var newE = await executable.InnerExecution(context, cancellation);
+                        var newE = await executable.Execute(context, cancellation);
                         executable.Persistence(context, cancellation).Forget();
                         executable = newE;
                     }
-
-                    busy.Set(false);
                 }
             }
             finally
@@ -184,10 +186,13 @@ namespace Screenplay
                 }
             }
 
-            static void RestoreProgress(List<EventProgress> progresses, RestoreBehavior restoreBehavior, HashSet<IPrerequisite> visited, CancellationToken cancellationToken, DefaultContext defaultContext)
+            static void RestoreProgress(RestoreBehavior restoreBehavior, CancellationToken cancellationToken, Introspection introspection, ref Random random, FieldRegistry fieldRegistry)
             {
+                var progresses = introspection.Progresses;
+                var visited = introspection.Visited;
                 foreach (var eventProgress in progresses)
                 {
+                    var seed = random.NextUInt(1, uint.MaxValue);
                     if (eventProgress.Permutation.Event.Action == null)
                         continue;
 
@@ -317,16 +322,15 @@ namespace Screenplay
                         fork.AddRange(reconstructedPath[^1].Followup());
                     }
 
-                    } while (fork.Count > 0);
-
-                    defaultContext.Locals.Clear();
+                    var context = new DefaultContext(seed, introspection, fieldRegistry);
+                    context.Locals.Clear();
                     foreach (var local in eventProgress.Permutation.Local)
-                        defaultContext.Locals.TryAdd(local);
+                        context.Locals.TryAdd(local);
 
                     foreach (var executable in reconstructedPath)
                     {
                         visited.Add(executable);
-                        executable.Persistence(defaultContext, cancellationToken).Forget();
+                        executable.Persistence(context, cancellationToken).Forget();
                     }
 
                     static bool AllNull(List<IExecutable?> nextPossibilities)
@@ -457,33 +461,24 @@ namespace Screenplay
 
         void ISerializationCallbackReceiver.OnAfterDeserialize() { }
 
-        private record DefaultContext : IEventContext, IDisposable
+        private record DefaultContext : IEventContext
         {
-            private Component.UIBase? _dialogUI;
             private Random _random;
+
+            public FieldRegistry FieldRegistry { get; }
 
             public Locals Locals { get; } = new();
 
             public Introspection Introspection { get; }
 
-            public DefaultContext(uint seed, Introspection introspection)
+            public DefaultContext(uint seed, Introspection introspection, FieldRegistry fieldRegistry)
             {
                 _random = new Random(seed);
                 Introspection = introspection;
-            }
-
-            public void Dispose()
-            {
-                if (_dialogUI != null)
-                    Destroy(_dialogUI.gameObject);
+                FieldRegistry = fieldRegistry;
             }
 
             public ref Random GetRandom() => ref _random;
-
-            public Component.UIBase? GetDialogUI()
-            {
-                return _dialogUI != null ? _dialogUI : _dialogUI = Instantiate(Introspection.Graph.DialogUIPrefab);
-            }
         }
 
         public class Introspection

@@ -124,12 +124,6 @@ namespace Screenplay.Editor
             {
                 EditorGUILayout.HelpBox($"The existing {nameof(ScreenplayDispatcher)} doesn't run with this screenplay, you might want to assign it to this screenplay", MessageType.Warning);
             }
-
-            if (Graph.DialogUIPrefab == null)
-            {
-                if (GUILayout.Button(EditorGUIUtility.TrTextContentWithIcon("This graph does not have a UI setup to handle dialogs,\nclick me to select the asset it in the inspector", MessageType.Warning), EditorStyles.helpBox))
-                    Selection.objects = new[] { Graph };
-            }
         }
 
         private void RecalculateReachable()
@@ -186,7 +180,7 @@ namespace Screenplay.Editor
             else if (_previewer is null || previousSelection != currentSelection) // Selection changed
             {
                 Rollback();
-                _previewer = new Previewer(_previewFlags.Contains(PreviewFlags.Loop), _fixedSeed == 0 ? _random.NextUInt(1, uint.MaxValue) : _fixedSeed, Graph.DialogUIPrefab, _rootToPreview, new ScreenplayGraph.Introspection{ Graph = Graph });
+                _previewer = new Previewer(_previewFlags.Contains(PreviewFlags.Loop), _fixedSeed == 0 ? _random.NextUInt(1, uint.MaxValue) : _fixedSeed, _rootToPreview, new ScreenplayGraph.Introspection{ Graph = Graph });
                 for (int i = 0; i < _previewChain.Count; i++)
                 {
                     if (_previewChain[i] is IPreviewable previewable)
