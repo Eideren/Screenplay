@@ -191,15 +191,32 @@ namespace Screenplay
                     if (eventProgress.Permutation.Event.Action == null)
                         continue;
 
-                    var fork = new List<IExecutable>{ eventProgress.Permutation.Event.Action };
+                    var fork = new List<IExecutable?>{ eventProgress.Permutation.Event.Action };
 
                     int head = 0;
                     var lastSessionList = eventProgress.Executables;
                     var reconstructedPath = new List<IExecutable>();
-                    do
+                    while (fork.Count > 0)
                     {
-                        if (TrySkipOverOutdatedNodes(ref head, lastSessionList, fork, out var path))
+                        if (AllNull(fork))
                         {
+                            // Fork ends here
+                            break;
+                        }
+                        else if (head == lastSessionList.Count && fork.Contains(null))
+                        {
+                            // Last session ended here, and according to our fork, we can end here
+                            break;
+                        }
+                        else if (fork.Contains(lastSessionList[head]))
+                        {
+                            // Current session can reach last session's next node
+                            reconstructedPath.Add(lastSessionList[head]);
+                            head++;
+                        }
+                        else if (LastSessionsHasOutdatedNodes(ref head, lastSessionList, fork, out var path))
+                        {
+                            // Skip over those outdated nodes and select from what the fork provides
                             reconstructedPath.Add(path);
                         }
                         else if (restoreBehavior == RestoreBehavior.StopOnFirstMismatch)
@@ -208,23 +225,31 @@ namespace Screenplay
                         }
                         else if (restoreBehavior == RestoreBehavior.ReconstructLinearPaths)
                         {
-                            if (fork.Count > 1)
+                            if (fork.Count != 1)
+                            {
+                                Debug.LogError($"Restore failed on {restoreBehavior}; reached fork composed of {string.Join(", ", fork)}, previous session did not visit any of those paths");
                                 return;
+                            }
 
-                            reconstructedPath.Add(fork[0]);
+                            if (fork[0] is {} p)
+                                reconstructedPath.Add(p);
+                            else
+                                break; // End of the road
                         }
                         else // No direct path, try to pick back up from further down this fork
                         {
                             var lastSession = new HashSet<IExecutable>(lastSessionList.ToArray()[head..]);
-                            var executableVisited = new HashSet<IExecutable>(fork);
+                            var executableVisited = new HashSet<IExecutable>(fork.Where(x => x is not null)!);
                             var pathsToTraverse = new List<List<IExecutable>>();
-                            foreach (var executable in fork)
-                                pathsToTraverse.Add(new List<IExecutable>{ executable });
+                            foreach (var p in fork)
+                            {
+                                if (p is not null)
+                                    pathsToTraverse.Add(new List<IExecutable> { p });
+                            }
 
                             do
                             {
-                                // Check if any of the ends of the paths we're currently traversing match any of the
-                                // paths we took in the previous session
+                                // Check if any of the forks of this path match any of the nodes we took in the previous session
                                 if (pathsToTraverse.Find(pathToTest => lastSession.Contains(pathToTest[^1])) is { } matchingPath)
                                 {
                                     // The tip of this path matches one of the last session's
@@ -238,6 +263,9 @@ namespace Screenplay
                                 {
                                     foreach (var followup in pathsToTraverse[i][^1].Followup())
                                     {
+                                        if (followup is null)
+                                            continue;
+
                                         if (executableVisited.Add(followup))
                                             pathsToTraverse.Add(new List<IExecutable>(pathsToTraverse[i]) { followup });
                                     }
@@ -248,9 +276,17 @@ namespace Screenplay
                             // None of the rest of the nodes are part of all the branches, see if we can find a nice linear path to the end
                             while (fork.Count == 1)
                             {
-                                reconstructedPath.Add(fork[0]);
-                                fork.Clear();
-                                fork.AddRange(reconstructedPath[^1].Followup());
+                                var next = fork[0];
+                                if (next is null)
+                                {
+                                    fork.Clear();
+                                }
+                                else
+                                {
+                                    reconstructedPath.Add(next);
+                                    fork.Clear();
+                                    fork.AddRange(reconstructedPath[^1].Followup());
+                                }
                             }
 
                             if (fork.Count != 0 && restoreBehavior == RestoreBehavior.BestGuessPathUpToFirstNonVisitedFork)
@@ -259,9 +295,17 @@ namespace Screenplay
                             // Pick the first path regardless of
                             while (fork.Count != 0)
                             {
-                                reconstructedPath.Add(fork[0]);
-                                fork.Clear();
-                                fork.AddRange(reconstructedPath[^1].Followup());
+                                var next = fork[0];
+                                if (next is null)
+                                {
+                                    fork.Clear();
+                                }
+                                else
+                                {
+                                    reconstructedPath.Add(next);
+                                    fork.Clear();
+                                    fork.AddRange(reconstructedPath[^1].Followup());
+                                }
                             }
 
                             break;
@@ -271,6 +315,7 @@ namespace Screenplay
 
                         fork.Clear();
                         fork.AddRange(reconstructedPath[^1].Followup());
+                    }
 
                     } while (fork.Count > 0);
 
@@ -284,19 +329,29 @@ namespace Screenplay
                         executable.Persistence(defaultContext, cancellationToken).Forget();
                     }
 
-                    static bool TrySkipOverOutdatedNodes(ref int head, List<IExecutable> queue, List<IExecutable> paths, [MaybeNullWhen(false)] out IExecutable path)
+                    static bool AllNull(List<IExecutable?> nextPossibilities)
                     {
-                        for (int i = head; i < queue.Count; i++)
+                        foreach (var possibility in nextPossibilities)
                         {
-                            if (paths.Contains(queue[i]))
+                            if (possibility is not null)
+                                return false;
+                        }
+                        return true;
+                    }
+
+                    static bool LastSessionsHasOutdatedNodes(ref int head, List<IExecutable> lastSession, List<IExecutable?> nextPossibilities, [MaybeNullWhen(false)] out IExecutable chosenPossibility)
+                    {
+                        for (int i = head; i < lastSession.Count; i++)
+                        {
+                            if (nextPossibilities.Contains(lastSession[i]))
                             {
                                 head = i + 1;
-                                path = queue[i];
+                                chosenPossibility = lastSession[i];
                                 return true;
                             }
                         }
 
-                        path = null;
+                        chosenPossibility = null;
                         return false;
                     }
                 }
