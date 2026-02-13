@@ -172,6 +172,19 @@ namespace Screenplay.Editor
             _rollbacksRegistered.Push(rollback);
         }
 
+        public void RegisterTRSRollback(Transform trs)
+        {
+            var t = trs.position;
+            var r = trs.rotation;
+            var s = trs.localScale;
+            RegisterRollback(() =>
+            {
+                trs.position = t;
+                trs.rotation = r;
+                trs.localScale = s;
+            });
+        }
+
         public void RegisterRollback(AnimationClip clip, GameObject go)
         {
             var animState = new AnimationRollback(go, clip);
