@@ -5,18 +5,18 @@ using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using YNode;
-// Async method lacks 'await' operators and will run synchronously - done on purpose
-#pragma warning disable CS1998
 
 namespace Screenplay.Nodes
 {
     [Serializable, NodeVisuals(Icon = "Git")]
     public class Branch : AbstractScreenplayNode, IExecutable
     {
-        [Output, SerializeReference, Tooltip("What would run when Prerequisite is true")]
+        /// <summary> What would run when Prerequisite is true </summary>
+        [Output, SerializeReference]
         public IExecutable? True;
 
-        [Output, SerializeReference, Tooltip("What would run when Prerequisite is false")]
+        /// <summary> What would run when Prerequisite is false </summary>
+        [Output, SerializeReference]
         public IExecutable? False;
 
         [Input(Stroke = NoodleStroke.Dashed), SerializeReference, LabelWidth(20), HorizontalGroup(width:90), Tooltip("Select which action should be taken next")]

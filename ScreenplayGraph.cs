@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Screenplay.Nodes;
 using UnityEngine;
 using YNode;
 using Screenplay.Nodes.Triggers;
@@ -20,7 +20,7 @@ namespace Screenplay
         public readonly List<Introspection> Introspections = new();
 
         public bool AllowMultipleInstances = false;
-        public RestoreBehavior RestoreMode = RestoreBehavior.ReconstructLinearPaths;
+        public RestoreBehavior RestoreMode = RestoreBehavior.NoRestriction;
         public bool DebugRetainProgressInEditor;
 
         [SerializeField]
@@ -45,15 +45,38 @@ namespace Screenplay
             var eventsCleanup = new Dictionary<Event, CancellationTokenSource>();
             Introspections.Add(introspection);
 
+            State? state;
             if (key.StateToLoad is not null)
-                introspection.Progresses.AddRange(State.Reconstruct(key.StateToLoad, this, false));
+                state = key.StateToLoad;
             else if (DebugRetainProgressInEditor)
-                introspection.Progresses.AddRange(State.Reconstruct(_debugState, this, false));
+                state = _debugState;
+            else
+                state = null;
 
             var randomSeeder = new Random(seed);
             try
             {
-                RestoreProgress(RestoreMode, cancellation, introspection, ref randomSeeder, fieldRegistry);
+                if (state is not null)
+                {
+                    var reconstructed = State.Reconstruct(state, RestoreMode, out RestoreBehavior effects, this);
+                    foreach (var eventProgress in reconstructed)
+                    {
+                        var context = new DefaultContext(seed, introspection, fieldRegistry);
+                        context.Locals.Clear();
+                        foreach (var local in eventProgress.Permutation.Local)
+                            context.Locals.TryAdd(local);
+
+                        introspection.Visited.Add(eventProgress.First);
+                        eventProgress.First.Persistence(context, cancellation).Forget();
+
+                        foreach (var executable in eventProgress.ExecutionOrder)
+                        {
+                            introspection.Visited.Add(executable.Next);
+                            executable.Next.Persistence(context, cancellation).Forget();
+                        }
+                    }
+                    introspection.Progresses.AddRange(reconstructed);
+                }
 
                 foreach (var value in Nodes)
                 {
@@ -82,7 +105,7 @@ namespace Screenplay
                             var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
                             eventsCleanup[e] = cts;
                             var task = triggerSource.Setup(new PreconditionCollector(OnUnlocked, OnLocked, triggerSource, introspection), cts.Token);
-                            ObserveExceptions(task);
+                            task.Forget();
 
                             void OnUnlocked(PreconditionCollector pc)
                             {
@@ -143,7 +166,7 @@ namespace Screenplay
                         }
                     }
 
-                    if (eventToProcess == null)
+                    if (eventToProcess?.Action is null)
                     {
                         await eventsReadySignal.AwaitOpen.WithInterruptingCancellation(cancellation);
                         continue;
@@ -151,17 +174,26 @@ namespace Screenplay
 
                     var progress = new EventProgress
                     {
+                        First = eventToProcess.Action,
                         Permutation = new VisitedPermutation{ Event = eventToProcess, Local = context.Locals.ToArray() }
                     };
                     introspection.Progresses.Add(progress);
 
-                    for (var executable = eventToProcess.Action; executable is not null; )
+                    for (IExecutable? executable = eventToProcess.Action, nextExecutable; executable is not null; executable = nextExecutable)
                     {
-                        progress.Executables.Add(executable);
                         introspection.Visited.Add(executable);
-                        var newE = await executable.Execute(context, cancellation);
-                        executable.Persistence(context, cancellation).Forget();
-                        executable = newE;
+
+                        if (executable is IExecutableSimultaneously ies)
+                        {
+                            nextExecutable = await HandleSimultaneousExecutable(ies, progress, context, cancellation);
+                        }
+                        else
+                        {
+                            nextExecutable = await executable.Execute(context, cancellation);
+                            executable.Persistence(context, cancellation).Forget();
+                            if (nextExecutable is not null)
+                                progress.ExecutionOrder.Add(new(executable, nextExecutable));
+                        }
                     }
                 }
             }
@@ -172,191 +204,53 @@ namespace Screenplay
                 if (DebugRetainProgressInEditor)
                     _debugState = State.CreateFrom(introspection);
             }
+        }
 
-            static async void ObserveExceptions(UniTask uniTask)
+        private static UniTask<IExecutable?> HandleSimultaneousExecutable(IExecutableSimultaneously ies, EventProgress progress, IEventContext context, CancellationToken cancellation)
+        {
+            var entries = ies.Followup().Where(x => x != null).ToList();
+            var doneSignal = new UniTaskCompletionSource<IExecutable?>();
+            IExecutableJoin? expectedJoin = null;
+            int leftToDo = entries.Count;
+
+            foreach (var entry in entries)
+            {
+                progress.ExecutionOrder.Add(new(ies, entry!));
+                ParallelTask(entry!).Forget();
+            }
+
+            return doneSignal.Task.WithInterruptingCancellation(cancellation);
+
+            async UniTask ParallelTask(IExecutable? executable)
             {
                 try
                 {
-                    await uniTask;
+                    for (IExecutable? nextExecutable; executable is not null; executable = nextExecutable)
+                    {
+                        switch (executable)
+                        {
+                            case IExecutableJoin iJoin when expectedJoin is null:
+                                expectedJoin = iJoin;
+                                return; // We're done, let screenplay continue on from this join
+                            case IExecutableJoin iJoin when expectedJoin == iJoin: return; // We reached the same join as the preceding branch
+                            case IExecutableJoin iJoin: throw new InvalidOperationException($"Reached a different join ({iJoin} / {expectedJoin}) while originating from the same {ies}");
+                            case IExecutableSimultaneously ies:
+                                nextExecutable = await HandleSimultaneousExecutable(ies, progress, context, cancellation);
+                                break;
+                            default:
+                                nextExecutable = await executable.Execute(context, cancellation);
+                                executable.Persistence(context, cancellation).Forget();
+                                if (nextExecutable is not null)
+                                    progress.ExecutionOrder.Add(new(executable, nextExecutable));
+                                break;
+                        }
+                    }
                 }
-                catch (Exception e)
+                finally
                 {
-                    if (e is not OperationCanceledException)
-                        Debug.LogException(e);
-                }
-            }
-
-            static void RestoreProgress(RestoreBehavior restoreBehavior, CancellationToken cancellationToken, Introspection introspection, ref Random random, FieldRegistry fieldRegistry)
-            {
-                var progresses = introspection.Progresses;
-                var visited = introspection.Visited;
-                foreach (var eventProgress in progresses)
-                {
-                    var seed = random.NextUInt(1, uint.MaxValue);
-                    if (eventProgress.Permutation.Event.Action == null)
-                        continue;
-
-                    var fork = new List<IExecutable?>{ eventProgress.Permutation.Event.Action };
-
-                    int head = 0;
-                    var lastSessionList = eventProgress.Executables;
-                    var reconstructedPath = new List<IExecutable>();
-                    while (fork.Count > 0)
+                    if (Interlocked.Decrement(ref leftToDo) == 0)
                     {
-                        if (AllNull(fork))
-                        {
-                            // Fork ends here
-                            break;
-                        }
-                        else if (head == lastSessionList.Count && fork.Contains(null))
-                        {
-                            // Last session ended here, and according to our fork, we can end here
-                            break;
-                        }
-                        else if (fork.Contains(lastSessionList[head]))
-                        {
-                            // Current session can reach last session's next node
-                            reconstructedPath.Add(lastSessionList[head]);
-                            head++;
-                        }
-                        else if (LastSessionsHasOutdatedNodes(ref head, lastSessionList, fork, out var path))
-                        {
-                            // Skip over those outdated nodes and select from what the fork provides
-                            reconstructedPath.Add(path);
-                        }
-                        else if (restoreBehavior == RestoreBehavior.StopOnFirstMismatch)
-                        {
-                            return;
-                        }
-                        else if (restoreBehavior == RestoreBehavior.ReconstructLinearPaths)
-                        {
-                            if (fork.Count != 1)
-                            {
-                                Debug.LogError($"Restore failed on {restoreBehavior}; reached fork composed of {string.Join(", ", fork)}, previous session did not visit any of those paths");
-                                return;
-                            }
-
-                            if (fork[0] is {} p)
-                                reconstructedPath.Add(p);
-                            else
-                                break; // End of the road
-                        }
-                        else // No direct path, try to pick back up from further down this fork
-                        {
-                            var lastSession = new HashSet<IExecutable>(lastSessionList.ToArray()[head..]);
-                            var executableVisited = new HashSet<IExecutable>(fork.Where(x => x is not null)!);
-                            var pathsToTraverse = new List<List<IExecutable>>();
-                            foreach (var p in fork)
-                            {
-                                if (p is not null)
-                                    pathsToTraverse.Add(new List<IExecutable> { p });
-                            }
-
-                            do
-                            {
-                                // Check if any of the forks of this path match any of the nodes we took in the previous session
-                                if (pathsToTraverse.Find(pathToTest => lastSession.Contains(pathToTest[^1])) is { } matchingPath)
-                                {
-                                    // The tip of this path matches one of the last session's
-                                    reconstructedPath.AddRange(matchingPath);
-                                    head = lastSessionList.IndexOf(matchingPath[^1], head);
-                                    goto FOUND_PATH;
-                                }
-
-                                int prevCount = pathsToTraverse.Count;
-                                for (int i = 0; i < pathsToTraverse.Count; i++)
-                                {
-                                    foreach (var followup in pathsToTraverse[i][^1].Followup())
-                                    {
-                                        if (followup is null)
-                                            continue;
-
-                                        if (executableVisited.Add(followup))
-                                            pathsToTraverse.Add(new List<IExecutable>(pathsToTraverse[i]) { followup });
-                                    }
-                                }
-                                pathsToTraverse.RemoveRange(0, prevCount);
-                            } while (pathsToTraverse.Count > 0);
-
-                            // None of the rest of the nodes are part of all the branches, see if we can find a nice linear path to the end
-                            while (fork.Count == 1)
-                            {
-                                var next = fork[0];
-                                if (next is null)
-                                {
-                                    fork.Clear();
-                                }
-                                else
-                                {
-                                    reconstructedPath.Add(next);
-                                    fork.Clear();
-                                    fork.AddRange(reconstructedPath[^1].Followup());
-                                }
-                            }
-
-                            if (fork.Count != 0 && restoreBehavior == RestoreBehavior.BestGuessPathUpToFirstNonVisitedFork)
-                                return; // We're on a fork, let's bail from here
-
-                            // Pick the first path regardless of
-                            while (fork.Count != 0)
-                            {
-                                var next = fork[0];
-                                if (next is null)
-                                {
-                                    fork.Clear();
-                                }
-                                else
-                                {
-                                    reconstructedPath.Add(next);
-                                    fork.Clear();
-                                    fork.AddRange(reconstructedPath[^1].Followup());
-                                }
-                            }
-
-                            break;
-                        }
-
-                        FOUND_PATH:
-
-                        fork.Clear();
-                        fork.AddRange(reconstructedPath[^1].Followup());
-                    }
-
-                    var context = new DefaultContext(seed, introspection, fieldRegistry);
-                    context.Locals.Clear();
-                    foreach (var local in eventProgress.Permutation.Local)
-                        context.Locals.TryAdd(local);
-
-                    foreach (var executable in reconstructedPath)
-                    {
-                        visited.Add(executable);
-                        executable.Persistence(context, cancellationToken).Forget();
-                    }
-
-                    static bool AllNull(List<IExecutable?> nextPossibilities)
-                    {
-                        foreach (var possibility in nextPossibilities)
-                        {
-                            if (possibility is not null)
-                                return false;
-                        }
-                        return true;
-                    }
-
-                    static bool LastSessionsHasOutdatedNodes(ref int head, List<IExecutable> lastSession, List<IExecutable?> nextPossibilities, [MaybeNullWhen(false)] out IExecutable chosenPossibility)
-                    {
-                        for (int i = head; i < lastSession.Count; i++)
-                        {
-                            if (nextPossibilities.Contains(lastSession[i]))
-                            {
-                                head = i + 1;
-                                chosenPossibility = lastSession[i];
-                                return true;
-                            }
-                        }
-
-                        chosenPossibility = null;
-                        return false;
+                        doneSignal.TrySetResult(expectedJoin);
                     }
                 }
             }
@@ -495,7 +389,17 @@ namespace Screenplay
         public class EventProgress
         {
             public required VisitedPermutation Permutation;
-            [SerializeReference] public List<IExecutable> Executables = new();
+            public required IExecutable First;
+            [SerializeReference] public List<Link> ExecutionOrder = new();
+        }
+
+        public record struct Link(IExecutable Previous, IExecutable Next);
+
+        [Serializable]
+        public record struct ExecutableSerialized(long Previous, long Next)
+        {
+            public long Previous = Previous;
+            public long Next = Next;
         }
 
         public class IntrospectionKey
@@ -512,7 +416,8 @@ namespace Screenplay
             {
                 public required GlobalId[] Local;
                 public required long EventId;
-                public List<long> Executables = new();
+                public required long FirstExecutable;
+                public List<ExecutableSerialized> Executables = new();
             }
 
             public List<EventPlayback> Events = new();
@@ -525,63 +430,286 @@ namespace Screenplay
                     var playback = new EventPlayback
                     {
                         Local = progress.Permutation.Local,
-                        EventId = GetManagedReferenceIdForObject(introspection.Graph, progress.Permutation.Event)
+                        EventId = GetManagedReferenceIdForObject(introspection.Graph, progress.Permutation.Event),
+                        FirstExecutable = GetManagedReferenceIdForObject(introspection.Graph, progress.First),
                     };
-                    foreach (var exe in progress.Executables)
-                        playback.Executables.Add(GetManagedReferenceIdForObject(introspection.Graph, exe));
+                    foreach (var exe in progress.ExecutionOrder)
+                    {
+                        long prev = GetManagedReferenceIdForObject(introspection.Graph, exe.Previous);
+                        long next = GetManagedReferenceIdForObject(introspection.Graph, exe.Next);
+                        playback.Executables.Add(new(prev, next));
+                    }
                     stateOutput.Events.Add(playback);
                 }
 
                 return stateOutput;
             }
 
-            public static List<EventProgress> Reconstruct(State state, ScreenplayGraph graph, bool throwOnMissingEvents)
+            public static List<EventProgress> Reconstruct(State oldStates, RestoreBehavior stopAt, out RestoreBehavior affectedBehavior, ScreenplayGraph graph)
             {
-                var ids = new HashSet<long>(GetManagedReferenceIds(graph));
-                var output = new List<EventProgress>(state.Events.Count);
-                foreach (var stateEvent in state.Events)
-                {
-                    if (ids.Contains(stateEvent.EventId) && GetManagedReference(graph, stateEvent.EventId) is Event e)
-                    {
-                        var progress = new EventProgress
-                        {
-                            Permutation = new VisitedPermutation
-                            {
-                                Event = e,
-                                Local = stateEvent.Local,
-                            }
-                        };
+                affectedBehavior = default;
 
-                        foreach (var executableId in stateEvent.Executables)
+                var refToId = GetManagedReferenceIds(graph).ToDictionary(x => GetManagedReference(graph, x));
+                var idToRef = refToId.ToDictionary(x => x.Value, x => x.Key);
+                var output = new List<EventProgress>(oldStates.Events.Count);
+                foreach (var oldState in oldStates.Events)
+                {
+                    if (idToRef.TryGetValue(oldState.EventId, out object? node) == false || node is not Event e || e.Action is null)
+                    {
+                        Debug.LogError($"Could not find event from id {oldState.EventId}", graph);
+                        affectedBehavior |= RestoreBehavior.EventNotFound;
+                        if ((stopAt & RestoreBehavior.EventNotFound) != 0)
+                            break;
+
+                        continue;
+                    }
+
+                    var progress = new EventProgress
+                    {
+                        First = e.Action,
+                        Permutation = new VisitedPermutation
                         {
-                            var executable = GetManagedReference(graph, executableId) as IExecutable;
-                            if (executable is null)
-                                Debug.LogError($"Could not find executable from id {executableId}, screenplay {graph} will attempt to restore its state through {graph.RestoreMode}", graph);
-                            progress.Executables.Add(executable!);
+                            Event = e,
+                            Local = oldState.Local,
+                        }
+                    };
+
+                    var nodesLeftInState = oldState.Executables
+                        .Select(x => x.Previous)
+                        .Append(oldState.Executables[^1].Next)
+                        .Select(x => idToRef.GetValueOrDefault(x) as IExecutable)
+                        .NotNull()
+                        .ToList();
+
+                    var branches = new List<PathWalker> { new(new List<object>(), e.Action) };
+
+                    do
+                    {
+                        (List<IExecutable> links, PathWalker branch)? pathQuery = null;
+                        foreach (var path in branches)
+                        {
+                            if (FindShortestPathTo(path.Current, nodesLeftInState) is { } pathFound && (pathQuery is null || pathQuery.Value.links.Count > pathFound.Count))
+                            {
+                                pathQuery = (pathFound, path);
+                            }
                         }
 
-                        output.Add(progress);
-                    }
-                    else
+                        if (pathQuery is not { } q)
+                        {
+                            affectedBehavior |= RestoreBehavior.NodeNotInState;
+                            if ((stopAt & RestoreBehavior.NodeNotInState) != 0)
+                                return output;
+                            break;
+                        }
+
+                        var (links, bestBranch) = q;
+
+                        Debug.Assert(bestBranch.Current == links[0]);
+
+                        for (int i = 0; i < links.Count; i++)
+                        {
+                            var current = links[i];
+                            nodesLeftInState.Remove(current);
+
+                            if (TryAdvanceTo(current, i + 1 < links.Count ? links[i + 1] : null, progress, bestBranch, branches) == false)
+                                break; // Stop moving along this path, the other path will take over
+                        }
+                    } while (branches.Count > 0);
+
+                    while (branches.Count > 0)
                     {
-                        string str = $"Could not find event from id {stateEvent.EventId}";
-                        if (throwOnMissingEvents)
-                            throw new InvalidOperationException(str);
+                        var branch = branches[^1];
+                        var followup = branch.Current.Followup().FirstOrDefault(x => x is not null);
+                        if (followup is null)
+                        {
+                            branches.Remove(branch);
+                        }
                         else
-                            Debug.LogError(str, graph);
+                        {
+                            TryAdvanceTo(followup, null, progress, branch, branches);
+                        }
                     }
+
+                    if (nodesLeftInState.Count > 0)
+                    {
+                        affectedBehavior |= RestoreBehavior.NodeNotInGraph;
+                        if ((stopAt & RestoreBehavior.NodeNotInGraph) != 0)
+                            return output;
+                    }
+
+                    output.Add(progress);
                 }
 
                 return output;
+
+                static List<IExecutable>? FindShortestPathTo(IExecutable from, List<IExecutable> targets)
+                {
+                    if (targets.Contains(from))
+                        return new List<IExecutable> { from };
+
+                    var branches = new HashSet<Link>();
+                    var nodeBacklink = new Dictionary<IExecutable, IExecutable>();
+                    var pathsToTraverse = new Queue<(IExecutable? previous, IExecutable current)>();
+                    pathsToTraverse.Enqueue((null, from));
+
+                    while (pathsToTraverse.TryDequeue(out var path))
+                    {
+                        if (path.previous is not null)
+                        {
+                            if (branches.Add(new Link(path.previous, path.current)) == false)
+                                continue;
+
+                            nodeBacklink.TryAdd(path.current, path.previous); // we only keep the shortest path, i.e.: the first link that reaches this node
+                        }
+
+                        // When presented with a branch and multiple nodes that have been traversed, we pick the result which occurs the soonest
+                        int? bestMatch = null;
+                        foreach (var p in path.current.Followup())
+                        {
+                            if (p is not null)
+                            {
+                                pathsToTraverse.Enqueue((path.current, p));
+                                if (targets.IndexOf(p) is var i && i != -1 && (bestMatch is null || bestMatch.Value > i))
+                                {
+                                    bestMatch = i;
+                                }
+                            }
+                        }
+
+                        if (bestMatch != null)
+                        {
+                            var output = new List<IExecutable> { targets[bestMatch.Value], path.current };
+
+                            for (var current = path.current;
+                                 nodeBacklink.TryGetValue(current, out var previous);
+                                 current = previous)
+                            {
+                                output.Add(previous);
+                            }
+
+                            // Caller wants a path from -> target, but we add them in reverse, so we reverse the list
+                            output.Reverse();
+                            return output;
+                        }
+                    }
+
+                    return null;
+                }
+
+                static bool TryAdvanceTo(IExecutable current, IExecutable? preferredNext, EventProgress progress, PathWalker bestBranch, List<PathWalker> branches)
+                {
+                    bestBranch.SetCurrent(current, progress.ExecutionOrder);
+
+                    if (current is IExecutableSimultaneously simultaneous)
+                    {
+                        var keyForThisSimultaneous = new object();
+
+                        bool found = false;
+                        foreach (var followup in simultaneous.Followup())
+                        {
+                            if (preferredNext is not null && preferredNext == followup)
+                            {
+                                // The current path we're traversing goes through this node, this followup will be taken care of within the outer loop
+                                found = true;
+                            }
+                            else if (followup is not null)
+                            {
+                                var pathWalker = new PathWalker(new(bestBranch.SimultaneousToClose) { keyForThisSimultaneous }, simultaneous);
+                                pathWalker.SetCurrent(followup, progress.ExecutionOrder);
+                                branches.Add(pathWalker);
+                            }
+                        }
+
+                        if (preferredNext is null)
+                        {
+                            branches.Remove(bestBranch);
+                            return false;
+                        }
+
+                        Debug.Assert(found);
+
+                        bestBranch.SimultaneousToClose.Add(keyForThisSimultaneous);
+                    }
+                    else if (current is IExecutableJoin join)
+                    {
+                        var simKey = bestBranch.SimultaneousToClose[^1];
+                        int concurrentPaths = 0;
+                        foreach (var path in branches)
+                        {
+                            if (path.SimultaneousToClose.Contains(simKey))
+                                concurrentPaths++;
+                        }
+
+                        Debug.Assert(concurrentPaths != 0);
+
+                        if (concurrentPaths >= 2)
+                        {
+                            // Another path will reach this join,
+                            // we can exit safely knowing that it will take over in our stead
+                            branches.Remove(bestBranch);
+                            return false;
+                        }
+                        else
+                        {
+                            // we're the last path to reach the join for this simultaneous, we'll take over
+                            bestBranch.SimultaneousToClose.RemoveAt(bestBranch.SimultaneousToClose.Count - 1);
+                        }
+                    }
+
+                    return true;
+                }
             }
         }
 
+
+        /// <summary>
+        /// If there is no direct paths, restore may pick a node that was moved from a later point to the
+        /// closest to current point rather than one which was visited earlier than that node but hasn't moved
+        /// </summary>
+        [Flags]
         public enum RestoreBehavior
         {
-            StopOnFirstMismatch,
-            ReconstructLinearPaths,
-            BestGuessPathUpToFirstNonVisitedFork,
-            CompleteAllVisitedEventsPickRandomlyInForkIfWeHaveTo,
+            NoRestriction = 0,
+            /// <summary>
+            /// When an event we previously completed does not exist anymore
+            /// </summary>
+            /// <remarks>
+            /// If this flag is not set, restore ignores that event, and continues on as if we never visited it. Nodes visited through this event are considered not visited.
+            /// </remarks>
+            EventNotFound = 1 << 0,
+            /// <summary>
+            /// When the path we've previously traversed contains a node that now lay outside the path in the latest version
+            /// </summary>
+            /// <remarks>
+            /// If this flag is not set, restore ignores that node, as if we never visited it
+            /// </remarks>
+            NodeNotInGraph = 1 << 1,
+            /// <summary>
+            /// When the path we're restoring from the previous state goes through a node the state hasn't been visited previously
+            /// </summary>
+            /// <remarks>
+            /// This is most likely caused by a node having been inserted into an existing path in the latest version of the graph.
+            /// If this flag is not set, restore adds this node to the path, as if the previous version already visited it
+            /// </remarks>
+            NodeNotInState = 1 << 2,
+        }
+
+        private class PathWalker
+        {
+            public readonly List<object> SimultaneousToClose;
+            public IExecutable Current { get; private set; }
+
+            public PathWalker(List<object> s, IExecutable Current)
+            {
+                SimultaneousToClose = s;
+                this.Current = Current;
+            }
+
+            public void SetCurrent(IExecutable next, List<Link> progress)
+            {
+                progress.Add(new(Current, next));
+                Current = next;
+            }
         }
     }
 }
