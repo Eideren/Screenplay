@@ -183,9 +183,9 @@ namespace Screenplay
                     {
                         introspection.Visited.Add(executable);
 
-                        if (executable is IExecutableSimultaneously ies)
+                        if (executable is IBifurcate bifurcation)
                         {
-                            nextExecutable = await HandleSimultaneousExecutable(ies, progress, context, cancellation);
+                            nextExecutable = await Bifurcate(bifurcation, progress, context, cancellation);
                         }
                         else
                         {
@@ -206,16 +206,16 @@ namespace Screenplay
             }
         }
 
-        private static UniTask<IExecutable?> HandleSimultaneousExecutable(IExecutableSimultaneously ies, EventProgress progress, IEventContext context, CancellationToken cancellation)
+        private static UniTask<IExecutable?> Bifurcate(IBifurcate bifurcation, EventProgress progress, IEventContext context, CancellationToken cancellation)
         {
-            var entries = ies.Followup().Where(x => x != null).ToList();
+            var entries = bifurcation.Followup().Where(x => x != null).ToList();
             var doneSignal = new UniTaskCompletionSource<IExecutable?>();
-            IExecutableJoin? expectedJoin = null;
+            IRejoin? expectedJoin = null;
             int leftToDo = entries.Count;
 
             foreach (var entry in entries)
             {
-                progress.ExecutionOrder.Add(new(ies, entry!));
+                progress.ExecutionOrder.Add(new(bifurcation, entry!));
                 ParallelTask(entry!).Forget();
             }
 
@@ -229,13 +229,13 @@ namespace Screenplay
                     {
                         switch (executable)
                         {
-                            case IExecutableJoin iJoin when expectedJoin is null:
+                            case IRejoin iJoin when expectedJoin is null:
                                 expectedJoin = iJoin;
                                 return; // We're done, let screenplay continue on from this join
-                            case IExecutableJoin iJoin when expectedJoin == iJoin: return; // We reached the same join as the preceding branch
-                            case IExecutableJoin iJoin: throw new InvalidOperationException($"Reached a different join ({iJoin} / {expectedJoin}) while originating from the same {ies}");
-                            case IExecutableSimultaneously ies:
-                                nextExecutable = await HandleSimultaneousExecutable(ies, progress, context, cancellation);
+                            case IRejoin iJoin when expectedJoin == iJoin: return; // We reached the same join as the preceding branch
+                            case IRejoin iJoin: throw new InvalidOperationException($"Reached a different join ({iJoin} / {expectedJoin}) while originating from the same {bifurcation}");
+                            case IBifurcate innerBifurcation:
+                                nextExecutable = await Bifurcate(innerBifurcation, progress, context, cancellation);
                                 break;
                             default:
                                 nextExecutable = await executable.Execute(context, cancellation);
@@ -481,60 +481,75 @@ namespace Screenplay
                         .NotNull()
                         .ToList();
 
-                    var branches = new List<PathWalker> { new(new List<object>(), e.Action) };
+                    var paths = new List<PathWalker>
+                    {
+                        new()
+                        {
+                            Bifurcations = new KeyChain { Previous = null },
+                            Root = null,
+                            Next = e.Action,
+                            ComesFromBranch = null,
+                        }
+                    };
 
                     do
                     {
                         (List<IExecutable> links, PathWalker branch)? pathQuery = null;
-                        foreach (var path in branches)
+                        foreach (var path in paths)
                         {
-                            if (FindShortestPathTo(path.Current, nodesLeftInState) is { } pathFound && (pathQuery is null || pathQuery.Value.links.Count > pathFound.Count))
+                            if (path.Next == null)
+                                continue; // We can't reach any nodes left from the end of a path
+
+                            if (FindShortestPathTo(path.Next, nodesLeftInState) is { } pathFound && (pathQuery is null || pathQuery.Value.links.Count > pathFound.Count))
                             {
                                 pathQuery = (pathFound, path);
                             }
                         }
 
-                        if (pathQuery is not { } q)
+                        if (pathQuery is not { } validQuery)
                         {
-                            affectedBehavior |= RestoreBehavior.NodeNotInState;
-                            if ((stopAt & RestoreBehavior.NodeNotInState) != 0)
-                                return output;
+                            // We can't reach any of the nodes, exit
+                            if (nodesLeftInState.Count > 0)
+                            {
+                                affectedBehavior |= RestoreBehavior.NodeNotInGraph;
+                                if ((stopAt & RestoreBehavior.NodeNotInGraph) != 0)
+                                    return output;
+                            }
                             break;
                         }
 
-                        var (links, bestBranch) = q;
+                        var (links, bestBranch) = validQuery;
 
-                        Debug.Assert(bestBranch.Current == links[0]);
+                        Debug.Assert(bestBranch.Next == links[0]);
 
                         for (int i = 0; i < links.Count; i++)
                         {
                             var current = links[i];
-                            nodesLeftInState.Remove(current);
+                            if (nodesLeftInState.Remove(current) == false)
+                            {
+                                affectedBehavior |= RestoreBehavior.NodeNotInState;
+                                if ((stopAt & RestoreBehavior.NodeNotInState) != 0)
+                                    return output;
+                            }
 
-                            if (TryAdvanceTo(current, i + 1 < links.Count ? links[i + 1] : null, progress, bestBranch, branches) == false)
+                            if (TryAdvancePath(bestBranch, i + 1 < links.Count ? links[i + 1] : null, progress, paths) == false)
                                 break; // Stop moving along this path, the other path will take over
                         }
-                    } while (branches.Count > 0);
 
-                    while (branches.Count > 0)
+                    } while (paths.Count > 0);
+
+                    if (paths.Count > 0)
                     {
-                        var branch = branches[^1];
-                        var followup = branch.Current.Followup().FirstOrDefault(x => x is not null);
-                        if (followup is null)
-                        {
-                            branches.Remove(branch);
-                        }
-                        else
-                        {
-                            TryAdvanceTo(followup, null, progress, branch, branches);
-                        }
+                        affectedBehavior |= RestoreBehavior.NodeNotInState;
+                        if ((stopAt & RestoreBehavior.NodeNotInState) != 0)
+                            return output;
                     }
 
-                    if (nodesLeftInState.Count > 0)
+                    while (paths.Count > 0)
                     {
-                        affectedBehavior |= RestoreBehavior.NodeNotInGraph;
-                        if ((stopAt & RestoreBehavior.NodeNotInGraph) != 0)
-                            return output;
+                        // Prefer closing paths that are almost done
+                        var path = paths.FirstOrDefault(x => x.Next == null) ?? paths[0];
+                        TryAdvancePath(path, null, progress, paths);
                     }
 
                     output.Add(progress);
@@ -596,47 +611,37 @@ namespace Screenplay
                     return null;
                 }
 
-                static bool TryAdvanceTo(IExecutable current, IExecutable? preferredNext, EventProgress progress, PathWalker bestBranch, List<PathWalker> branches)
+                static bool TryAdvancePath(PathWalker bestPath, IExecutable? preferredNext, EventProgress progress, List<PathWalker> paths)
                 {
-                    bestBranch.SetCurrent(current, progress.ExecutionOrder);
-
-                    if (current is IExecutableSimultaneously simultaneous)
+                    if (bestPath.ComesFromBranch is { } key)
                     {
-                        var keyForThisSimultaneous = new object();
+                        bestPath.ComesFromBranch = null;
 
-                        bool found = false;
-                        foreach (var followup in simultaneous.Followup())
+                        // If this path came from an exclusive branch, kill the other paths that came from that same branch
+                        for (int i = paths.Count - 1; i >= 0; i--)
                         {
-                            if (preferredNext is not null && preferredNext == followup)
-                            {
-                                // The current path we're traversing goes through this node, this followup will be taken care of within the outer loop
-                                found = true;
-                            }
-                            else if (followup is not null)
-                            {
-                                var pathWalker = new PathWalker(new(bestBranch.SimultaneousToClose) { keyForThisSimultaneous }, simultaneous);
-                                pathWalker.SetCurrent(followup, progress.ExecutionOrder);
-                                branches.Add(pathWalker);
-                            }
+                            if (paths[i].ComesFromBranch == key)
+                                paths.RemoveAt(i);
                         }
-
-                        if (preferredNext is null)
-                        {
-                            branches.Remove(bestBranch);
-                            return false;
-                        }
-
-                        Debug.Assert(found);
-
-                        bestBranch.SimultaneousToClose.Add(keyForThisSimultaneous);
                     }
-                    else if (current is IExecutableJoin join)
+
+                    var current = bestPath.Next;
+                    if (current == null)
                     {
-                        var simKey = bestBranch.SimultaneousToClose[^1];
+                        paths.Remove(bestPath);
+                        return false;
+                    }
+
+                    if (bestPath.Root is not null)
+                        progress.ExecutionOrder.Add(new(bestPath.Root, current));
+
+                    if (current is IRejoin)
+                    {
+                        var bifurcateKey = bestPath.Bifurcations;
                         int concurrentPaths = 0;
-                        foreach (var path in branches)
+                        foreach (var path in paths)
                         {
-                            if (path.SimultaneousToClose.Contains(simKey))
+                            if (path.Bifurcations.Contains(bifurcateKey))
                                 concurrentPaths++;
                         }
 
@@ -646,14 +651,56 @@ namespace Screenplay
                         {
                             // Another path will reach this join,
                             // we can exit safely knowing that it will take over in our stead
-                            branches.Remove(bestBranch);
+                            paths.Remove(bestPath);
                             return false;
                         }
-                        else
+                    }
+
+                    // Maybe a branch, maybe linear, who knows. We can treat linear as a branch with a single outcome though
+
+                    bool branch = current is not IBifurcate; // Whether we run just one of the many followups
+                    var previousBifurcation = bestPath.Bifurcations;
+                    var newKey = branch ? new KeyChain{ Previous = null } : new KeyChain{ Previous = bestPath.Bifurcations };
+
+                    int indexOfPath = paths.IndexOf(bestPath);
+                    bool found = false;
+                    foreach (var followup in current.Followup())
+                    {
+                        if (preferredNext == followup)
                         {
-                            // we're the last path to reach the join for this simultaneous, we'll take over
-                            bestBranch.SimultaneousToClose.RemoveAt(bestBranch.SimultaneousToClose.Count - 1);
+                            // The current path we're traversing goes through this node, this followup will be taken care of within the outer loop
+                            found = true;
+                            bestPath.Root = bestPath.Next;
+                            bestPath.Next = preferredNext;
+                            if (branch)
+                                bestPath.ComesFromBranch = newKey;
+                            else
+                                bestPath.Bifurcations = newKey;
                         }
+                        else if (followup is not null)
+                        {
+                            var pathWalker = new PathWalker
+                            {
+                                Bifurcations = previousBifurcation,
+                                Root = current,
+                                Next = followup,
+                            };
+
+                            if (branch)
+                                pathWalker.ComesFromBranch = newKey;
+                            else
+                                pathWalker.Bifurcations = newKey;
+
+                            // Insert right after the path we're evaluating to bias best guess a bit more towards continuing the same branch
+                            // This may pull the attention away from concurrently running bifurcating branches
+                            paths.Insert(++indexOfPath, pathWalker);
+                        }
+                    }
+
+                    if (found == false)
+                    {
+                        paths.Remove(bestPath);
+                        return false;
                     }
 
                     return true;
@@ -696,19 +743,25 @@ namespace Screenplay
 
         private class PathWalker
         {
-            public readonly List<object> SimultaneousToClose;
-            public IExecutable Current { get; private set; }
+            public required KeyChain Bifurcations;
+            public object? ComesFromBranch;
+            public required IExecutable? Root;
+            public required IExecutable? Next;
+        }
 
-            public PathWalker(List<object> s, IExecutable Current)
-            {
-                SimultaneousToClose = s;
-                this.Current = Current;
-            }
+        private class KeyChain
+        {
+            public required KeyChain? Previous;
 
-            public void SetCurrent(IExecutable next, List<Link> progress)
+            public bool Contains(KeyChain link)
             {
-                progress.Add(new(Current, next));
-                Current = next;
+                for (var l = this; l != null; l = l.Previous)
+                {
+                    if (l == link)
+                        return true;
+                }
+
+                return false;
             }
         }
     }

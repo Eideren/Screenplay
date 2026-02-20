@@ -9,13 +9,13 @@ using YNode;
 namespace Screenplay.Nodes
 {
     [Serializable, NodeVisuals(Icon = "Git")]
-    public class Simultaneous : AbstractScreenplayNode, IExecutableSimultaneously
+    public class Bifurcate : AbstractScreenplayNode, IBifurcate
     {
         /// <summary>
         /// The different executables which will run at the same time when this node is reached
         /// </summary>
         [ListDrawerSettings(ShowFoldout = false)]
-        public ExecutableEntry[] Entries = Array.Empty<ExecutableEntry>();
+        public ExecutableEntry[] Entries = new ExecutableEntry[2];
 
         public IEnumerable<IExecutable?> Followup()
         {
@@ -82,25 +82,7 @@ namespace Screenplay.Nodes
         }
     }
 
-    public class Join : ExecutableLinear, IExecutableJoin
-    {
-        public override void CollectReferences(ReferenceCollector references) { }
-
-        protected override UniTask LinearExecution(IEventContext context, CancellationToken cancellation) => UniTask.CompletedTask;
-
-        public override UniTask Persistence(IEventContext context, CancellationToken cancellationToken) => UniTask.CompletedTask;
-
-        public override void SetupPreview(IPreviewer previewer, bool fastForwarded) { }
-    }
-
-    public interface IExecutableSimultaneously : IExecutable
-    {
-        UniTask<IExecutable?> IExecutable.Execute(IEventContext context, CancellationToken cancellation) => throw new NotImplementedException();
-        UniTask IExecutable.Persistence(IEventContext context, CancellationToken cancellation) => throw new NotImplementedException();
-        void IPreviewable.SetupPreview(IPreviewer previewer, bool fastForwarded) => throw new NotImplementedException();
-    }
-
-    public interface IExecutableJoin : IExecutable
+    public interface IBifurcate : IExecutable
     {
         UniTask<IExecutable?> IExecutable.Execute(IEventContext context, CancellationToken cancellation) => throw new NotImplementedException();
         UniTask IExecutable.Persistence(IEventContext context, CancellationToken cancellation) => throw new NotImplementedException();
