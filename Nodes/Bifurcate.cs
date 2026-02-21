@@ -8,7 +8,7 @@ using YNode;
 
 namespace Screenplay.Nodes
 {
-    [Serializable, NodeVisuals(Icon = "Git")]
+    [Serializable, NodeVisuals(Icon = "Git@2x")]
     public class Bifurcate : AbstractScreenplayNode, IBifurcate
     {
         /// <summary>
