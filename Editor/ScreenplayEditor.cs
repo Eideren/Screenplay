@@ -192,22 +192,24 @@ namespace Screenplay.Editor
         private void OnSceneGUI(SceneView view)
         {
             bool rebuildPreview = false;
+            var proxy = SceneGUIProxy.Instance;
+            proxy.BeginChangeCheck();
             foreach (var o in Selection.objects)
             {
-                if (o is YNode.Editor.NodeEditor nodeEditor && nodeEditor.Value is INodeWithSceneGizmos sceneGizmos)
-                    sceneGizmos.DrawGizmos(ref rebuildPreview);
+                if (o is NodeEditor nodeEditor && nodeEditor.Value is INodeWithSceneGizmos sceneGizmos)
+                {
+                    using (proxy.AutoUndo(Graph, sceneGizmos.GetType().Name))
+                    {
+                        sceneGizmos.DrawGizmos(proxy, Graph, ref rebuildPreview);
+                    }
+                }
             }
 
-            if (rebuildPreview)
+            if (proxy.EndChangeCheck() || rebuildPreview)
             {
                 Rollback();
                 TryPreview();
             }
-        }
-
-        private ScreenplayNodeEditor? TryGetEditorFromValue(INodeValue value)
-        {
-            return NodesToEditor[value] as ScreenplayNodeEditor;
         }
 
         protected override void OnEnable()

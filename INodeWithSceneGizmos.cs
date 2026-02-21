@@ -2,6 +2,6 @@ namespace Screenplay
 {
     public interface INodeWithSceneGizmos : IScreenplayNode
     {
-        void DrawGizmos(ref bool rebuildPreview);
+        void DrawGizmos(SceneGUIProxy guiProxy, ScreenplayGraph graph, ref bool rebuildPreview);
     }
 }

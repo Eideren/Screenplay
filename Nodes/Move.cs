@@ -57,15 +57,10 @@ namespace Screenplay.Nodes
             go.transform.rotation = Rotation;
         }
 
-        public void DrawGizmos(ref bool rebuildPreview)
+        public void DrawGizmos(SceneGUIProxy guiProxy, ScreenplayGraph graph, ref bool rebuildPreview)
         {
-            #if UNITY_EDITOR
-            var newPosition = UnityEditor.Handles.PositionHandle(Destination, Rotation);
-            var newRotation = UnityEditor.Handles.RotationHandle(Rotation, Destination);
-            rebuildPreview |= newPosition != Destination || newRotation != Rotation;
-            Destination = newPosition;
-            Rotation = newRotation;
-            #endif
+            Destination = guiProxy.PositionHandle(Destination, Rotation);
+            Rotation = guiProxy.RotationHandle(Rotation, Destination);
         }
     }
 }

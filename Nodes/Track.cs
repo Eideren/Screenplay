@@ -137,7 +137,7 @@ namespace Screenplay.Nodes
             Play
         }
 
-        public void DrawGizmos(ref bool rebuildPreview)
+        public void DrawGizmos(SceneGUIProxy guiProxy, ScreenplayGraph graph, ref bool rebuildPreview)
         {
             foreach (var item in Items)
             {
