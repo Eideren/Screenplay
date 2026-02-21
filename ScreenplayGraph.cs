@@ -449,14 +449,13 @@ namespace Screenplay
             {
                 affectedBehavior = default;
 
-                var refToId = GetManagedReferenceIds(graph).ToDictionary(x => GetManagedReference(graph, x));
+                var refToId = GetManagedReferenceIds(graph).Select(x => (id:x, reference:GetManagedReference(graph, x))).Where(x => x.reference is not null).ToDictionary(x => x.reference, x => x.id);
                 var idToRef = refToId.ToDictionary(x => x.Value, x => x.Key);
                 var output = new List<EventProgress>(oldStates.Events.Count);
                 foreach (var oldState in oldStates.Events)
                 {
                     if (idToRef.TryGetValue(oldState.EventId, out object? node) == false || node is not Event e || e.Action is null)
                     {
-                        Debug.LogError($"Could not find event from id {oldState.EventId}", graph);
                         affectedBehavior |= RestoreBehavior.EventNotFound;
                         if ((stopAt & RestoreBehavior.EventNotFound) != 0)
                             break;
@@ -475,8 +474,8 @@ namespace Screenplay
                     };
 
                     var nodesLeftInState = oldState.Executables
-                        .Select(x => x.Previous)
-                        .Append(oldState.Executables[^1].Next)
+                        .Select(x => x.Next)
+                        .Prepend(oldState.FirstExecutable)
                         .Select(x => idToRef.GetValueOrDefault(x) as IExecutable)
                         .NotNull()
                         .ToList();
@@ -538,7 +537,7 @@ namespace Screenplay
 
                     } while (paths.Count > 0);
 
-                    if (paths.Count > 0)
+                    if (paths.Any(x => x.Next is not null))
                     {
                         affectedBehavior |= RestoreBehavior.NodeNotInState;
                         if ((stopAt & RestoreBehavior.NodeNotInState) != 0)
