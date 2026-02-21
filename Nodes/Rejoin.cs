@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using YNode;
 
 namespace Screenplay.Nodes
 {
+    [Serializable, NodeVisuals(Icon = "UnityEditor.Graphs.AnimatorControllerTool@2x")]
     public class Rejoin : Bifurcate, IRejoin
     {
         public Rejoin()

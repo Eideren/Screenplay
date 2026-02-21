@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Linq;
 using Screenplay.Component;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -8,6 +9,7 @@ using UnityEngine;
 using YNode;
 using YNode.Editor;
 using Screenplay.Nodes;
+using UnityEngine.Serialization;
 using Event = Screenplay.Nodes.Event;
 using Random = Unity.Mathematics.Random;
 
@@ -26,6 +28,7 @@ namespace Screenplay.Editor
         private Vector2 _quickjumpScroll;
         private uint _fixedSeed;
         private Random _random = new Random(1);
+        private List<ScreenplayGraph.EventProgress> _saveRestoreResult = new();
 
         public bool InPreviewChain(IScreenplayNode node) => _previewChain.Contains(node);
         public bool IsReachable(IScreenplayNode node) => _reachable.Contains(node);
@@ -37,6 +40,7 @@ namespace Screenplay.Editor
         {
             EditorGUI.BeginChangeCheck();
             base.OnGUI();
+
             if (EditorGUI.EndChangeCheck())
             {
                 Rollback();
@@ -55,6 +59,41 @@ namespace Screenplay.Editor
         {
             base.OnGUIOverlay();
 
+            if (_saveRestoreResult.Count > 0)
+            {
+                var noodleThickness = Preferences.GetSettings().NoodleThickness;
+                var pts = new List<Vector2>();
+                foreach (var eventProgress in _saveRestoreResult)
+                {
+                    Color startColor = Color.yellow;
+                    Color endColor = Color.green;
+                    for (int i = 0; i < eventProgress.ExecutionOrder.Count; i++)
+                    {
+                        ScreenplayGraph.Link link = eventProgress.ExecutionOrder[i];
+                        if (NodesToEditor.TryGetValue(link.Previous, out var prev) == false)
+                            continue;
+                        if (NodesToEditor.TryGetValue(link.Next, out var next) == false)
+                            continue;
+
+                        var start = prev.Value.Position + prev.CachedSize * new Vector2(1f, 0.5f);
+                        var end = next.Value.Position + next.CachedSize * new Vector2(0f, 0.5f);
+                        pts.Add(start);
+                        pts.Add(end);
+
+                        var color = Color.Lerp(startColor, endColor, i / (float)eventProgress.ExecutionOrder.Count);
+
+                        var previousColor = GUI.color;
+                        GUI.color = color;
+                        GUI.Label(new Rect(GridToWindowPosition(start * 0.5f + end * 0.5f), new Vector2(100, 16)), i.ToString());
+                        GUI.color = previousColor;
+
+                        DrawNoodle((color, color), NoodlePath.Angled, NoodleStroke.Dashed, noodleThickness, pts);
+                        DrawArrow(IO.Output, WindowToGridPosition(pts[1]), color);
+                        pts.Clear();
+                    }
+                }
+            }
+
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
                 _quickjump = GUILayout.Toggle(_quickjump, "Quickjump table", EditorStyles.toolbarButton);
@@ -62,6 +101,11 @@ namespace Screenplay.Editor
                 _fixedSeed = (uint)EditorGUILayout.IntField(new GUIContent("Seed:"), (int)_fixedSeed);
 
                 GUILayout.FlexibleSpace();
+
+                if (GUILayout.Button("Preview Save Restore", EditorStyles.toolbarButton))
+                {
+                    SelectionToSaveRestorePreview();
+                }
 
                 Graph.DebugRetainProgressInEditor = GUILayout.Toggle(Graph.DebugRetainProgressInEditor, "Retain Progress", EditorStyles.toolbarButton);
 
@@ -124,6 +168,44 @@ namespace Screenplay.Editor
             {
                 EditorGUILayout.HelpBox($"The existing {nameof(ScreenplayDispatcher)} doesn't run with this screenplay, you might want to assign it to this screenplay", MessageType.Warning);
             }
+        }
+
+        private void SelectionToSaveRestorePreview()
+        {
+            var selection = Selection.objects.Select(x => x as NodeEditor).NotNull().ToList();
+            var @event = selection.FirstOrDefault(x => x.Value is Event)?.Value;
+            if (@event is null)
+            {
+                _saveRestoreResult = new();
+                Debug.LogError("Select at least one event");
+                return;
+            }
+
+            var executables = selection.Select(x => x.Value as IExecutable).NotNull().ToList();
+            var serialized = new List<ScreenplayGraph.ExecutableSerialized>();
+            for (int i = 1; i < executables.Count; i++)
+            {
+                serialized.Add(new()
+                {
+                    Previous = ManagedReferenceUtility.GetManagedReferenceIdForObject(Graph, executables[i-1]),
+                    Next = ManagedReferenceUtility.GetManagedReferenceIdForObject(Graph, executables[i])
+                });
+            }
+            var state = new ScreenplayGraph.State
+            {
+                Events = new()
+                {
+                    new ScreenplayGraph.State.EventPlayback
+                    {
+                        Local = Array.Empty<GlobalId>(),
+                        EventId = ManagedReferenceUtility.GetManagedReferenceIdForObject(Graph, @event),
+                        Executables = serialized,
+                        FirstExecutable = ManagedReferenceUtility.GetManagedReferenceIdForObject(Graph, executables.Count > 0 ? executables[0] : ((Event)@event).Action)
+                    }
+                }
+            };
+            _saveRestoreResult = ScreenplayGraph.State.Reconstruct(state, ScreenplayGraph.RestoreBehavior.NoRestriction, out ScreenplayGraph.RestoreBehavior effects, Graph);
+            Debug.LogWarning(effects);
         }
 
         private void RecalculateReachable()
