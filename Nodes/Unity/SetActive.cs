@@ -10,8 +10,8 @@ namespace Screenplay.Nodes.Unity
     [NodeVisuals(Icon = "d_Toggle Icon")]
     public class SetActive : ExecutableLinear
     {
-        [HideLabel, HorizontalGroup] public required SceneObjectReference<GameObject> Target;
         [HideLabel, HorizontalGroup(width:16)] public bool Active = true;
+        [HideLabel, HorizontalGroup] public required SceneObjectReference<GameObject> Target;
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
