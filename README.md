@@ -7,6 +7,10 @@ An all encompassing tool for games' narrative. Covering interactions, events, di
 <img width="1126" height="655" alt="Image" src="https://github.com/user-attachments/assets/e04853e5-2ec7-4732-87d3-ecc436b79c77" />
 
 
+## Controls
+
+### Controlling Paths
+While holding left mouse button and dragging a path around, you can press the right mouse button to set a routing point to keep your paths clean.
 
 ## Nodes
 

@@ -10,8 +10,6 @@ namespace Screenplay.Editor
 {
     public class BifurcateEditor : NodeEditor, ICustomNodeEditor<Bifurcate>
     {
-        private static readonly string ValueEntries = $"{nameof(NodeEditor.Value)}.{nameof(Bifurcate.Entries)}";
-
         public new Bifurcate Value => (Bifurcate)base.Value;
 
         public override int GetWidth() => 40;
@@ -32,15 +30,28 @@ namespace Screenplay.Editor
 
         public override void OnBodyGUI()
         {
+            if (Value is IRejoin)
+            {
+                var lastRect = GUILayoutUtility.GetLastRect();
+                var timeRect = lastRect;
+
+                timeRect.y += timeRect.height - 10;
+                timeRect.y = CachedSize.y - 20;
+                timeRect.width = timeRect.height = 24;
+                timeRect.x = 0;
+
+                GUI.Box(timeRect, _waitContent, SirenixGUIStyles.None);
+
+                GUIHelper.PushColor(new Color(1, 1, 1, 0.5f));
+                GUI.DrawTexture(new Rect(0, 6, 2, CachedSize.y-12), Texture2D.whiteTexture);
+                GUIHelper.PopColor();
+            }
+
             try
             {
                 ObjectTree.BeginDraw(true);
 
                 GUIHelper.PushLabelWidth(84);
-
-                var add = EditorGUIUtility.IconContent("CollabCreate Icon").image;
-                var remove = EditorGUIUtility.IconContent("CollabDeleted Icon").image;
-                var warn = EditorGUIUtility.IconContent("console.erroricon@2x").image;
 
                 var entriesDrawer = ObjectTree.GetPropertyAtPath(ValueEntries).Children;
                 for (int i = 0; i < Value.Entries.Length; i++)
@@ -53,14 +64,14 @@ namespace Screenplay.Editor
                         lastRect.height -= EditorGUIUtility.singleLineHeight;
                         lastRect.width = GetWidth();
                         lastRect.x = 0;
-                        GUI.Box(lastRect, new GUIContent(warn, "Entry is not connected"), SirenixGUIStyles.Button);
+                        GUI.Box(lastRect, _warnEntryNotConnected, SirenixGUIStyles.Button);
                     }
 
                     removeButtonRect.width = GetWidth();
                     removeButtonRect.y += removeButtonRect.height - EditorGUIUtility.singleLineHeight;
                     removeButtonRect.height = EditorGUIUtility.singleLineHeight;
                     removeButtonRect.x = 0;
-                    if (GUI.Button(removeButtonRect, remove, SirenixGUIStyles.TitleCentered))
+                    if (GUI.Button(removeButtonRect, _remove, SirenixGUIStyles.TitleCentered))
                     {
                         GUI.changed = true;
                         var entries = Value.Entries.ToList();
@@ -72,7 +83,7 @@ namespace Screenplay.Editor
                 var addButtonRect = GUILayoutUtility.GetRect(EditorGUIUtility.currentViewWidth, EditorGUIUtility.singleLineHeight);
                 addButtonRect.width = GetWidth();
                 addButtonRect.x = 0;
-                if (GUI.Button(addButtonRect, add, SirenixGUIStyles.TitleCentered))
+                if (GUI.Button(addButtonRect, _add, SirenixGUIStyles.TitleCentered))
                 {
                     GUI.changed = true;
                     var entries = Value.Entries.ToList();
@@ -95,5 +106,15 @@ namespace Screenplay.Editor
                 ObjectTree.EndDraw();
             }
         }
+
+        private static readonly string ValueEntries = $"{nameof(NodeEditor.Value)}.{nameof(Bifurcate.Entries)}";
+        private static GUIContent? __warnEntryNotConnected;
+        private static GUIContent? __waitContent;
+        private static Texture? __add;
+        private static Texture? __remove;
+        private static GUIContent _warnEntryNotConnected => __warnEntryNotConnected ??= new GUIContent(EditorGUIUtility.IconContent("console.erroricon@2x").image, "Entry is not connected");
+        private static GUIContent _waitContent => __waitContent ??= new GUIContent(EditorGUIUtility.IconContent("UnityEditor.AnimationWindow").image, "Any path reaching this node will block until all of them reached it");
+        private static Texture _add => __add ??= EditorGUIUtility.IconContent("CollabCreate Icon").image;
+        private static Texture _remove => __remove ?? EditorGUIUtility.IconContent("CollabDeleted Icon").image;
     }
 }
