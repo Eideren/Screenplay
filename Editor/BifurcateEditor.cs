@@ -67,11 +67,12 @@ namespace Screenplay.Editor
                         GUI.Box(lastRect, _warnEntryNotConnected, SirenixGUIStyles.Button);
                     }
 
-                    removeButtonRect.width = GetWidth();
                     removeButtonRect.y += removeButtonRect.height - EditorGUIUtility.singleLineHeight;
                     removeButtonRect.height = EditorGUIUtility.singleLineHeight;
-                    removeButtonRect.x = 0;
-                    if (GUI.Button(removeButtonRect, _remove, SirenixGUIStyles.TitleCentered))
+                    removeButtonRect.width = removeButtonRect.height;
+                    removeButtonRect.x = GetWidth() / 2f - removeButtonRect.width / 2f;
+
+                    if (GUI.Button(removeButtonRect, _remove, SirenixGUIStyles.None))
                     {
                         GUI.changed = true;
                         var entries = Value.Entries.ToList();
@@ -81,9 +82,9 @@ namespace Screenplay.Editor
                 }
 
                 var addButtonRect = GUILayoutUtility.GetRect(EditorGUIUtility.currentViewWidth, EditorGUIUtility.singleLineHeight);
-                addButtonRect.width = GetWidth();
-                addButtonRect.x = 0;
-                if (GUI.Button(addButtonRect, _add, SirenixGUIStyles.TitleCentered))
+                addButtonRect.width = addButtonRect.height;
+                addButtonRect.x = GetWidth() / 2f - addButtonRect.width / 2f;
+                if (GUI.Button(addButtonRect, _add, SirenixGUIStyles.None))
                 {
                     GUI.changed = true;
                     var entries = Value.Entries.ToList();
