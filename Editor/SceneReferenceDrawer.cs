@@ -17,7 +17,7 @@ namespace Screenplay.Editor
 
             var value = ValueEntry.SmartValue;
             var obj = value.IsValid() ? AssetDatabase.LoadAssetAtPath<SceneAsset>(value.Path) : null;
-            var newObj = EditorGUILayout.ObjectField(label, obj, typeof(SceneAsset), allowSceneObjects: false);
+            var newObj = EditorGUILayout.ObjectField(label ?? GUIContent.none, obj, typeof(SceneAsset), allowSceneObjects: false);
 
             if (obj != newObj)
             {
