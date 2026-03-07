@@ -10,7 +10,7 @@ namespace Screenplay.Nodes
         [HideLabel]
         public required Interlocutor Interlocutor;
 
-        public UniTask<Interlocutor?> GetInterlocutor(IEventContext context, CancellationToken cancellationToken) => new(Interlocutor);
+        public UniTask<IInterlocutor?> GetInterlocutor(IEventContext context, CancellationToken cancellationToken) => new(Interlocutor);
 
         public override void CollectReferences(ReferenceCollector references) { }
     }

@@ -15,6 +15,5 @@ namespace Screenplay.Component
         public abstract void StartDialogPresentation();
         public abstract void EndDialogPresentation();
         public abstract UniTask<Choice.Data> ChoicePresentation(Choice.Data[] choices, CancellationToken cancellation);
-        public abstract void PlayChatter(AudioClip clip, Interlocutor interlocutor);
     }
 }

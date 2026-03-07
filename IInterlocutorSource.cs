@@ -5,6 +5,6 @@ namespace Screenplay
 {
     public interface IInterlocutorSource : IScreenplayNode
     {
-        UniTask<Interlocutor?> GetInterlocutor(IEventContext context, CancellationToken cancellationToken);
+        UniTask<IInterlocutor?> GetInterlocutor(IEventContext context, CancellationToken cancellationToken);
     }
 }

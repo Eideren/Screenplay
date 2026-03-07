@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -18,7 +17,10 @@ namespace Screenplay.Nodes
         [Input(Stroke = NoodleStroke.Dashed), SerializeReference]
         public IInterlocutorSource? InterlocutorSource;
 
-        public UniTask<Interlocutor?> GetInterlocutor(IEventContext context, CancellationToken cancellationToken) => InterlocutorSource?.GetInterlocutor(context, cancellationToken) ?? new UniTask<Interlocutor?>(null);
+        public UniTask<IInterlocutor?> GetInterlocutor(IEventContext context, CancellationToken cancellationToken)
+        {
+            return InterlocutorSource?.GetInterlocutor(context, cancellationToken) ?? new UniTask<IInterlocutor?>(null);
+        }
 
         IEnumerable<string> Lines()
         {
@@ -60,82 +62,14 @@ namespace Screenplay.Nodes
 
         private async UniTask RunDialog(IEventContext context, CancellationToken cancellation, bool previewMode)
         {
-            var ui = context.GetDialogUI();
             var interlocutor = await GetInterlocutor(context, cancellation);
-            ui.StartDialogPresentation();
-            foreach (var text in Lines())
+            if (interlocutor is not null)
             {
-                ui.StartLineTypewriting(text);
-                ui.SetTypewritingCharacter(0);
-                float time = 0f;
-                int lastChatter = 0;
-                for (int i = 0; i < text.Length; i++)
-                {
-                    ui.SetTypewritingCharacter(i + 1);
-
-                    if (i + 1 == text.Length)
-                        break; // Don't delay for the last character
-
-                    if (interlocutor != null && i - lastChatter >= interlocutor.CharactersPerChatter)
-                        Chatter(ref lastChatter, i, text, interlocutor, ui);
-
-                    time += interlocutor?.GetDuration(text[i]) ?? 0.05f;
-                    for (; time > 0f; time -= Time.unscaledDeltaTime)
-                    {
-                        if (ui.FastForwardRequested)
-                        {
-                            await UniTask.NextFrame(cancellation, cancelImmediately:true);
-                            goto BREAK_TYPEWRITING;
-                        }
-
-                        await UniTask.NextFrame(cancellation, cancelImmediately:true);
-                    }
-                }
-
-                if (interlocutor != null)
-                    Chatter(ref lastChatter, text.Length - 1, text, interlocutor, ui);
-
-                BREAK_TYPEWRITING:
-                ui.SetTypewritingCharacter(text.Length);
-                ui.FinishedTypewriting();
-
-                while (previewMode || ui.DialogAdvancesAutomatically == false)
-                {
-                    if (ui.FastForwardRequested)
-                    {
-                        await UniTask.NextFrame(cancellation, cancelImmediately:true);
-                        break;
-                    }
-
-                    await UniTask.NextFrame(cancellation, cancelImmediately:true);
-                }
-            }
-            ui.EndDialogPresentation();
-        }
-
-        private void Chatter(ref int last, int current, string text, Interlocutor interlocutor, Component.UIBase ui)
-        {
-            int hash = 0;
-            int processed = 0;
-            for (; last <= current; last++)
-            {
-                if (interlocutor.GetDuration(text[last]) == 0f)
-                {
-                    for (; last <= current && interlocutor.GetDuration(text[last]) == 0f; last++) { }
-                    break;
-                }
-
-                hash = HashCode.Combine(hash, text[last]);
-                processed++;
-            }
-
-            if (interlocutor.Chatter.Length == 0 || processed == 0)
+                await interlocutor.RunDialog(context, Lines(), previewMode, cancellation);
                 return;
+            }
 
-            var index = hash % interlocutor.Chatter.Length;
-            index = index < 0 ? interlocutor.Chatter.Length + index : index;
-            var chatter = interlocutor.Chatter[index];
-            ui.PlayChatter(chatter, interlocutor);
+            await IInterlocutor.DefaultRunDialog(context, Lines(), previewMode, cancellation);
         }
     }
 }
