@@ -185,7 +185,7 @@ namespace Screenplay
 
                         if (executable is IBifurcate bifurcation)
                         {
-                            nextExecutable = await Bifurcate(bifurcation, progress, context, cancellation);
+                            nextExecutable = await Bifurcate(bifurcation, progress, context, introspection, cancellation);
                         }
                         else
                         {
@@ -206,7 +206,7 @@ namespace Screenplay
             }
         }
 
-        private static UniTask<IExecutable?> Bifurcate(IBifurcate bifurcation, EventProgress progress, IEventContext context, CancellationToken cancellation)
+        private static UniTask<IExecutable?> Bifurcate(IBifurcate bifurcation, EventProgress progress, IEventContext context, Introspection introspection, CancellationToken cancellation)
         {
             var entries = bifurcation.Followup().Where(x => x != null).ToList();
             var doneSignal = new UniTaskCompletionSource<IExecutable?>();
@@ -235,9 +235,11 @@ namespace Screenplay
                             case IRejoin iJoin when expectedJoin == iJoin: return; // We reached the same join as the preceding branch
                             case IRejoin iJoin: throw new InvalidOperationException($"Reached a different join ({iJoin} / {expectedJoin}) while originating from the same {bifurcation}");
                             case IBifurcate innerBifurcation:
-                                nextExecutable = await Bifurcate(innerBifurcation, progress, context, cancellation);
+                                introspection.Visited.Add(innerBifurcation);
+                                nextExecutable = await Bifurcate(innerBifurcation, progress, context, introspection, cancellation);
                                 break;
                             default:
+                                introspection.Visited.Add(executable);
                                 nextExecutable = await executable.Execute(context, cancellation);
                                 executable.Persistence(context, cancellation).Forget();
                                 if (nextExecutable is not null)
