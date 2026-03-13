@@ -48,13 +48,5 @@ namespace Screenplay.Component
                 throw new InvalidOperationException("Screenplay is running, too late to set the state to load");
             _key.StateToLoad = state;
         }
-
-        private void OnDrawGizmos()
-        {
-            if (Screenplay == null)
-                return;
-
-            ScreenplayGizmos.Draw(Screenplay);
-        }
     }
 }

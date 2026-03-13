@@ -271,6 +271,10 @@ namespace Screenplay.Editor
             }
         }
 
+        private static readonly List<Vector3> _positions = new();
+        private static readonly HashSet<NodeEditor> _traversed = new();
+        private static readonly ReferenceCollector _collector = new();
+
         private void OnSceneGUI(SceneView view)
         {
             bool rebuildPreview = false;
@@ -291,6 +295,83 @@ namespace Screenplay.Editor
             {
                 Rollback();
                 TryPreview();
+            }
+
+            SceneGUIProxy gui = SceneGUIProxy.Instance;
+            foreach (var node in Graph.Nodes)
+            {
+                if (node is Event or ICustomEntry && NodesToEditor.TryGetValue(node, out var eventEditor))
+                {
+                    CollectConnectedEditors(eventEditor);
+
+                    foreach (var nodeEditor in _traversed)
+                    {
+                        if (nodeEditor.Value is not IScreenplayNode sp)
+                            continue;
+
+                        sp.CollectReferences(_collector);
+                        for (int j = _collector.RawData.Count - 1; j >= 0; j--)
+                        {
+                            var genericSceneObjectReference = _collector.RawData[j];
+                            if (genericSceneObjectReference.TryGet(out var obj, out _))
+                            {
+                                Vector3 otherPos;
+                                if (obj is GameObject go)
+                                    otherPos = go.transform.position;
+                                else if (obj is UnityEngine.Component c)
+                                    otherPos = c.transform.position;
+                                else
+                                    continue;
+
+                                _positions.Add(otherPos);
+                                gui.Label(otherPos, nodeEditor.Value.GetType().Name);
+                            }
+                        }
+
+                        _collector.Clear();
+                    }
+
+                    Vector3 middle = default;
+                    foreach (var vector3 in _positions)
+                        middle += vector3 / _positions.Count;
+
+                    if (_positions.Count > 0)
+                    {
+                        if (node is Event e)
+                            gui.Label(middle, e.Name);
+                        else
+                            gui.Label(middle, node.GetType().Name);
+
+                        var handleSize = HandleUtility.GetHandleSize(middle) * 0.1f;
+                        Handles.color = Color.blue;
+                        if (Handles.Button(middle, Quaternion.identity, handleSize, handleSize, Handles.SphereHandleCap))
+                        {
+                            Vector2 nodeDimension = NodesToEditor[node].CachedSize / 2;
+                            PanOffset = -node.Position - nodeDimension;
+                        }
+                    }
+
+                    foreach (var vector3 in _positions)
+                        gui.DottedLine(vector3, middle);
+
+                    _traversed.Clear();
+                    _collector.Clear();
+                    _positions.Clear();
+                }
+            }
+
+            static void CollectConnectedEditors(NodeEditor editor)
+            {
+                if (_traversed.Add(editor) == false)
+                    return;
+
+                foreach (var activePort in editor.ActivePorts)
+                {
+                    if (activePort.Value.ConnectedEditor is null)
+                        continue;
+
+                    CollectConnectedEditors(activePort.Value.ConnectedEditor);
+                }
             }
         }
 
