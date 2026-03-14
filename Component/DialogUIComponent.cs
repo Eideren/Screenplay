@@ -64,7 +64,12 @@ namespace Screenplay.Component
             finally
             {
                 foreach (var go in choiceGameObjects)
-                    Destroy(go);
+                {
+                    if (Application.isPlaying)
+                        Destroy(go);
+                    else
+                        DestroyImmediate(go);
+                }
                 OnChoiceClosed?.Invoke();
                 OnEnd?.Invoke();
             }
