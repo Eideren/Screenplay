@@ -47,16 +47,20 @@ namespace Screenplay.Nodes
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)
         {
             if (fastForwarded == false)
-                previewer.AddCustomPreview(cs => RunDialog(previewer, cs, true));
-
-            var ui = previewer.GetDialogUI();
-            if (Lines().LastOrDefault() is {} lastLine)
             {
-                ui.StartDialogPresentation();
-                ui.StartLineTypewriting(lastLine);
-                ui.SetTypewritingCharacter(lastLine.Length);
-                ui.FinishedTypewriting();
-                ui.EndDialogPresentation();
+                previewer.AddCustomPreview(cs => RunDialog(previewer, cs, true));
+            }
+            else
+            {
+                var ui = previewer.GetDialogUI();
+                if (Lines().LastOrDefault() is { } lastLine)
+                {
+                    ui.StartDialogPresentation();
+                    ui.StartLineTypewriting(lastLine);
+                    ui.SetTypewritingCharacter(lastLine.Length);
+                    ui.FinishedTypewriting();
+                    ui.EndDialogPresentation();
+                }
             }
         }
 

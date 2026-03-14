@@ -12,7 +12,13 @@ namespace Screenplay
         public void GetValue(ScreenplayGraph graph, out UIBase value, out Action<UIBase>? onCleanup)
         {
             value = Object.Instantiate(DialogUIPrefab);
-            onCleanup = Object.Destroy;
+            onCleanup = o =>
+            {
+                if (UnityEngine.Application.isPlaying)
+                    Object.Destroy(o.gameObject);
+                else
+                    Object.DestroyImmediate(o.gameObject);
+            };
         }
     }
 
