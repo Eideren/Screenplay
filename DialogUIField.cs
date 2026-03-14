@@ -14,6 +14,9 @@ namespace Screenplay
             value = Object.Instantiate(DialogUIPrefab);
             onCleanup = o =>
             {
+                if (o == null || o.gameObject == null)
+                    return;
+
                 if (UnityEngine.Application.isPlaying)
                     Object.Destroy(o.gameObject);
                 else
