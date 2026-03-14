@@ -1,7 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 
 namespace Screenplay;
 
@@ -18,13 +18,20 @@ public interface IInterlocutor
             ui.StartLineTypewriting(text);
             ui.SetTypewritingCharacter(0);
 
-            for (int i = 0;
-                 // Length - 1 as we don't want to delay after showing the last character
-                 i < text.Length - 1 && ui.FastForwardRequested == false;
-                 i++)
+            float delay = 0;
+            // Length - 1 as we don't want to delay after showing the last character
+            for (int i = 0; i < text.Length - 1; i++)
             {
                 ui.SetTypewritingCharacter(i + 1);
-                await UniTask.Delay(TimeSpan.FromSeconds(0.05), DelayType.UnscaledDeltaTime, cancellationToken: cancellation, cancelImmediately: true);
+                delay += 0.05f;
+                while ((delay -= Time.unscaledDeltaTime) > 0 && ui.FastForwardRequested == false)
+                    await UniTask.NextFrame(cancellationToken: cancellation, cancelImmediately: true);
+
+                if (ui.FastForwardRequested) // After a skip in the middle of typewriting, wait for another skip signal before continuing
+                {
+                    await UniTask.NextFrame(cancellation, cancelImmediately: true);
+                    break;
+                }
             }
 
             ui.SetTypewritingCharacter(text.Length);
