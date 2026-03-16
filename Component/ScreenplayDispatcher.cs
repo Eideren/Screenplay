@@ -22,7 +22,14 @@ namespace Screenplay.Component
 
             DontDestroyOnLoad(gameObject);
             _existing = new CancellationTokenSource();
-            await Screenplay.StartExecution(_existing.Token, Seed == 0 ? (uint)System.Diagnostics.Stopwatch.GetTimestamp() : Seed, _key);
+            try
+            {
+                await Screenplay.StartExecution(_existing.Token, Seed == 0 ? (uint)System.Diagnostics.Stopwatch.GetTimestamp() : Seed, _key);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         private void OnDisable()
