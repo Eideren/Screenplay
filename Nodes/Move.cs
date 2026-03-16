@@ -10,23 +10,32 @@ namespace Screenplay.Nodes
     [NodeVisuals(Icon = "EchoFilter Icon")]
     public class Move : ExecutableLinear, INodeWithSceneGizmos
     {
+        public float Duration = 1f;
+        public EasingType EasingType = EasingType.InOut;
         [HideLabel] public SceneObjectReference<GameObject> Target;
         [HideLabel] public Vector3 Destination;
         [HideLabel] public Quaternion Rotation = Quaternion.identity;
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
-        protected override UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
+        protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
         {
             if (Target.TryGet(out var go, out var failure) == false)
             {
                 Debug.LogWarning($"Failed to {nameof(Move)}, {nameof(Target)}: {failure}", context.Source);
-                return UniTask.CompletedTask;
+                return;
             }
 
-            go.transform.position = Destination;
-            go.transform.rotation = Rotation;
-            return UniTask.CompletedTask;
+            var startPos = go.transform.position;
+            var startRot = go.transform.rotation;
+            float f = 0;
+            do
+            {
+                await UniTask.NextFrame(cancellation, cancelImmediately: true);
+                f = Mathf.Clamp01(f + Time.deltaTime);
+                go.transform.position = Vector3.Lerp(startPos, Destination, f);
+                go.transform.rotation = Quaternion.Lerp(startRot, Rotation, f);
+            } while (f < Duration);
         }
 
         public override async UniTask Persistence(IEventContext context, CancellationToken cancellationToken)
@@ -52,9 +61,20 @@ namespace Screenplay.Nodes
                 go.transform.position = previousPosition;
                 go.transform.rotation = previousRotation;
             });
+            if (fastForwarded)
+            {
+                go.transform.position = Destination;
+                go.transform.rotation = Rotation;
+            }
+            else
+            {
+                previewer.AddCustomPreview(Preview);
 
-            go.transform.position = Destination;
-            go.transform.rotation = Rotation;
+                async UniTask Preview(CancellationToken cts)
+                {
+                    await LinearExecution(previewer, cts);
+                }
+            }
         }
 
         public void DrawGizmos(SceneGUIProxy guiProxy, ScreenplayGraph graph, ref bool rebuildPreview)
