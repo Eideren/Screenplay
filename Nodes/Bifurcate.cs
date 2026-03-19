@@ -28,6 +28,9 @@ namespace Screenplay.Nodes
         [Serializable]
         public struct ExecutableEntry
         {
+            /// <summary>
+            /// Will be executed at the same time as the other branches coming from this bifurcate
+            /// </summary>
             [Output, SerializeReference]
             public required IExecutable Executable;
         }

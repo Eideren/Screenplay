@@ -55,6 +55,36 @@ namespace Screenplay.Editor
             RecalculateReachable();
         }
 
+        protected override void DrawConnections()
+        {
+            foreach (var (_, nodeEditor) in NodesToEditor)
+            {
+                if (nodeEditor is BifurcateEditor be)
+                {
+                    be.DrawExtension();
+                }
+            }
+            base.DrawConnections();
+        }
+
+        protected override void ControlsPostDraw()
+        {
+            if (focusedWindow != this)
+                return;
+
+            var e = UnityEngine.Event.current;
+
+            switch (e.type)
+            {
+                case EventType.MouseDrag when CurrentActivity is null && e.button == 0 && (e.modifiers & EventModifiers.Control) != 0:
+                    CurrentActivity = new SplitBifurcateActivity(this, e.mousePosition);
+                    e.Use();
+                    break;
+            }
+
+            base.ControlsPostDraw();
+        }
+
         protected override void OnGUIOverlay()
         {
             base.OnGUIOverlay();
