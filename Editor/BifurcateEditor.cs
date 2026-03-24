@@ -224,8 +224,7 @@ namespace Screenplay.Editor
                     orderby port.Value.CachedRect.y
                     select port.Value).ToArray();
 
-                Undo.SetCurrentGroupName("Dissolve Bifurcate");
-                int group = Undo.GetCurrentGroup();
+                using (new UndoGroup("Dissolve Bifurcate"))
                 {
                     for (int i = 0; i < ports.Length; i++)
                     {
@@ -237,13 +236,12 @@ namespace Screenplay.Editor
                         else
                         {
                             var dest = Value.Entries[Math.Min(i, Value.Entries.Length - 1)].Executable;
-                            port.Connect(Window.NodesToEditor[dest], true);
+                            port.TryConnectTo(dest, true);
                         }
                     }
 
                     Window.RemoveNode(this, true);
                 }
-                Undo.CollapseUndoOperations(group);
             }
         }
 

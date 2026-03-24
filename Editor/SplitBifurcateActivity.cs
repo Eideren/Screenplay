@@ -31,22 +31,22 @@ namespace Screenplay.Editor
 
                     if (_intersectsWith.Count > 0)
                     {
-                        Undo.SetCurrentGroupName("Split Bifurcate");
-                        int group = Undo.GetCurrentGroup();
-                        var rejoinEditor = Window.CreateNode(_intersectsWith.Count > 1 ? typeof(Rejoin) : typeof(Bifurcate), Window.WindowToGridPosition(_nodeCreationPosition), true);
-                        var rejoin = (Bifurcate)rejoinEditor.Value;
-                        rejoin.Entries = new Bifurcate.ExecutableEntry[_intersectsWith.Count];
-
-                        for (int i = 0; i < _intersectsWith.Count; i++)
+                        using (new UndoGroup("Split Bifurcate"))
                         {
-                            var port = _intersectsWith[i];
+                            var rejoinEditor = Window.CreateNode(_intersectsWith.Count > 1 ? typeof(Rejoin) : typeof(Bifurcate), Window.WindowToGridPosition(_nodeCreationPosition), true);
+                            var rejoin = (Bifurcate)rejoinEditor.Value;
+                            rejoin.Entries = new Bifurcate.ExecutableEntry[_intersectsWith.Count];
 
-                            if (port.Connected is IExecutable exec)
-                                rejoin.Entries[i].Executable = exec;
+                            for (int i = 0; i < _intersectsWith.Count; i++)
+                            {
+                                var port = _intersectsWith[i];
 
-                            port.Connect(rejoinEditor, true);
+                                if (port.Connected is IExecutable exec)
+                                    rejoin.Entries[i].Executable = exec;
+
+                                port.TryConnectTo(rejoin, true);
+                            }
                         }
-                        Undo.CollapseUndoOperations(group);
                     }
 
                     GUI.changed = true;
