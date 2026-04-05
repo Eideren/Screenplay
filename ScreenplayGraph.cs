@@ -206,7 +206,7 @@ namespace Screenplay
             }
         }
 
-        private static UniTask<IExecutable?> Bifurcate(IBifurcate bifurcation, EventProgress progress, IEventContext context, Introspection introspection, CancellationToken cancellation)
+        public static UniTask<IExecutable?> Bifurcate(IBifurcate bifurcation, EventProgress? progress, IEventContext context, Introspection? introspection, CancellationToken cancellation)
         {
             var entries = bifurcation.Followup().Where(x => x != null).ToList();
             var doneSignal = new UniTaskCompletionSource<IExecutable?>();
@@ -215,7 +215,7 @@ namespace Screenplay
 
             foreach (var entry in entries)
             {
-                progress.ExecutionOrder.Add(new(bifurcation, entry!));
+                progress?.ExecutionOrder.Add(new(bifurcation, entry!));
                 ParallelTask(entry!).Forget();
             }
 
@@ -235,15 +235,15 @@ namespace Screenplay
                             case IRejoin iJoin when expectedJoin == iJoin: return; // We reached the same join as the preceding branch
                             case IRejoin iJoin: throw new InvalidOperationException($"Reached a different join ({iJoin} / {expectedJoin}) while originating from the same {bifurcation}");
                             case IBifurcate innerBifurcation:
-                                introspection.Visited.Add(innerBifurcation);
+                                introspection?.Visited.Add(innerBifurcation);
                                 nextExecutable = await Bifurcate(innerBifurcation, progress, context, introspection, cancellation);
                                 break;
                             default:
-                                introspection.Visited.Add(executable);
+                                introspection?.Visited.Add(executable);
                                 nextExecutable = await executable.Execute(context, cancellation);
                                 executable.Persistence(context, cancellation).Forget();
                                 if (nextExecutable is not null)
-                                    progress.ExecutionOrder.Add(new(executable, nextExecutable));
+                                    progress?.ExecutionOrder.Add(new(executable, nextExecutable));
                                 break;
                         }
                     }
