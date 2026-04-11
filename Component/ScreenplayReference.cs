@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -10,7 +9,7 @@ namespace Screenplay.Component
     [ExecuteAlways]
     public class ScreenplayReference : MonoBehaviour, ISerializationCallbackReceiver
     {
-        private static readonly Dictionary<guid, UniTaskCompletionSource<Object>> s_completionSources = new();
+        private static readonly Dictionary<guid, CancelableCompletionSource<Object>> s_completionSources = new();
         private static readonly Dictionary<guid, Object> s_idToRef = new();
         private static readonly Dictionary<Object, guid> s_refToId = new();
 
@@ -35,7 +34,7 @@ namespace Screenplay.Component
                         s_idToRef[Guid] = Reference;
                         s_refToId[Reference] = Guid;
                         if (s_completionSources.TryGetValue(Guid, out var acs))
-                            acs.TrySetResult(this);
+                            acs.SetResult(this);
                     }
                 }
             }
@@ -51,7 +50,7 @@ namespace Screenplay.Component
                     s_refToId.Remove(Reference);
                     if (s_completionSources.TryGetValue(Guid, out var acs))
                     {
-                        acs.TrySetCanceled();
+                        acs.SetCanceled();
                         s_completionSources.Remove(Guid);
                     }
                 }
@@ -101,7 +100,7 @@ namespace Screenplay.Component
                         && ReferenceEquals(existingRef, Reference)
                         && s_completionSources.TryGetValue(Guid, out var acs))
                     {
-                        acs.TrySetResult(Reference);
+                        acs.SetResult(Reference);
                     }
                 }
             }
@@ -124,19 +123,19 @@ namespace Screenplay.Component
                 return s_refToId.TryGetValue(obj, out guid);
         }
 
-        public static async UniTask<T> GetAsync<T>(guid guid, CancellationToken cancellationToken) where T : Object
+        public static async UniTask<T> GetAsync<T>(guid guid, Cancellation cancellation) where T : Object
         {
             if (TryGetRef(guid, out var output))
                 return (T)output;
 
-            UniTaskCompletionSource<Object>? completion;
+            CancelableCompletionSource<Object>? completion;
             lock (s_idToRef)
             {
                 if (s_completionSources.TryGetValue(guid, out completion) == false)
-                    s_completionSources[guid] = completion = new UniTaskCompletionSource<Object>();
+                    s_completionSources[guid] = completion = new CancelableCompletionSource<Object>();
             }
 
-            return (T)await completion.Task.WithInterruptingCancellation(cancellationToken);
+            return (T)await completion.AwaitResult(cancellation);
         }
 
         public static guid GetOrCreate(GameObject obj)

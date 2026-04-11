@@ -15,7 +15,7 @@ namespace Screenplay.Nodes.Triggers
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Sources);
 
-        public override async UniTask Setup(IPreconditionCollector tracker, CancellationToken triggerCancellation)
+        public override async UniTask Setup(IPreconditionCollector tracker, Cancellation triggerCancellation)
         {
             var door = new Door(tracker, Sources, out IPreconditionCollector[] collectors);
 
@@ -27,12 +27,12 @@ namespace Screenplay.Nodes.Triggers
                 if (door.Open)
                 {
                     tracker.SetUnlockedState(true);
-                    await door.WaitClosed().WithInterruptingCancellation(triggerCancellation);
+                    await door.WaitClosed(triggerCancellation);
                 }
                 else
                 {
                     tracker.SetUnlockedState(false);
-                    await door.WaitOpen().WithInterruptingCancellation(triggerCancellation);
+                    await door.WaitOpen(triggerCancellation);
                 }
             }
         }

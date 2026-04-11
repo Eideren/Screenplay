@@ -15,19 +15,19 @@ namespace Screenplay.Nodes.Unity
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
-        protected override UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
+        protected override UniTask LinearExecution(IEventContext context, Cancellation cancellation)
         {
             return UniTask.CompletedTask; // Let persistence deal with this
         }
 
-        public override async UniTask Persistence(IEventContext context, CancellationToken cancellationToken)
+        public override async UniTask Persistence(IEventContext context, Cancellation cancellation)
         {
             do
             {
-                var go = await Target.GetAsync(cancellationToken);
+                var go = await Target.GetAsync(cancellation);
                 go.SetActive(Active);
                 await go.OnDestroyAsync();
-            } while (cancellationToken.IsCancellationRequested == false);
+            } while (cancellation.IsCancellationRequested == false);
         }
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)

@@ -51,15 +51,15 @@ namespace Screenplay.Nodes
 
             public IEnumerable<IExecutable?> Followup() => throw new InvalidOperationException();
 
-            public UniTask<IExecutable?> Execute(IEventContext context, CancellationToken cancellation)
+            public async UniTask<IExecutable?> Execute(IEventContext context, Cancellation cancellation)
             {
-                var doneSignal = new UniTaskCompletionSource<IExecutable?>();
+                var doneSignal = new CancelableCompletionSource<IExecutable?>();
                 int leftToDo = Entries.Length;
 
                 foreach (var entries in Entries)
                     ParallelTask(entries.Executable).Forget();
 
-                return doneSignal.Task.WithInterruptingCancellation(cancellation);
+                return await doneSignal.AwaitResult(cancellation);
 
                 async UniTask ParallelTask(IExecutable executable)
                 {
@@ -76,19 +76,19 @@ namespace Screenplay.Nodes
                     finally
                     {
                         if (Interlocked.Decrement(ref leftToDo) == 0)
-                            doneSignal.TrySetResult(null);
+                            doneSignal.SetResult(null);
                     }
                 }
             }
 
-            public UniTask Persistence(IEventContext context, CancellationToken cancellation) => throw new NotImplementedException();
+            public UniTask Persistence(IEventContext context, Cancellation cancellation) => throw new NotImplementedException();
         }
     }
 
     public interface IBifurcate : IExecutable
     {
-        UniTask<IExecutable?> IExecutable.Execute(IEventContext context, CancellationToken cancellation) => throw new NotImplementedException();
-        UniTask IExecutable.Persistence(IEventContext context, CancellationToken cancellation) => throw new NotImplementedException();
+        UniTask<IExecutable?> IExecutable.Execute(IEventContext context, Cancellation cancellation) => throw new NotImplementedException();
+        UniTask IExecutable.Persistence(IEventContext context, Cancellation cancellation) => throw new NotImplementedException();
         void IPreviewable.SetupPreview(IPreviewer previewer, bool fastForwarded) => throw new NotImplementedException();
     }
 }

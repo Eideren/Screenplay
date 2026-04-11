@@ -15,15 +15,15 @@ namespace Screenplay.Nodes
         [Output, SerializeReference, HideLabel, Tooltip("What would run right after this is done running")]
         public IExecutable? Next;
 
-        public async UniTask<IExecutable?> Execute(IEventContext context, CancellationToken cancellation)
+        public async UniTask<IExecutable?> Execute(IEventContext context, Cancellation cancellation)
         {
             await LinearExecution(context, cancellation);
             return Next;
         }
 
-        protected abstract UniTask LinearExecution(IEventContext context, CancellationToken cancellation);
+        protected abstract UniTask LinearExecution(IEventContext context, Cancellation cancellation);
 
-        public abstract UniTask Persistence(IEventContext context, CancellationToken cancellationToken);
+        public abstract UniTask Persistence(IEventContext context, Cancellation cancellation);
 
         public abstract void SetupPreview(IPreviewer previewer, bool fastForwarded);
 

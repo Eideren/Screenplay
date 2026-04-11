@@ -6,15 +6,25 @@ namespace Screenplay
     public class Lock
     {
         private readonly IPreconditionCollector _parentTracker;
-        private readonly SafeManualResetEvent _manualResetEvent = new();
+        private readonly CancelableAutoResetEvent<bool> _resetEvent = new();
         private readonly object _lock = new();
         private int _counter;
 
         public bool Open => _counter != 0;
 
-        public UniTask WaitOpen() => _manualResetEvent.AwaitOpen;
+        public async UniTask WaitOpen(Cancellation cancellation)
+        {
+            if (Open)
+                return;
+            await _resetEvent.NextSignal(cancellation);
+        }
 
-        public UniTask WaitClosed() => _manualResetEvent.AwaitClosed;
+        public async UniTask WaitClosed(Cancellation cancellation)
+        {
+            if (Open == false)
+                return;
+            await _resetEvent.NextSignal(cancellation);
+        }
 
         public Lock(IPreconditionCollector parentTracker, IList<Precondition> targets, out IPreconditionCollector[] preconditions)
         {
@@ -66,9 +76,9 @@ namespace Screenplay
                         || previousCounter == 1 && _lock._counter == 0)
                     {
                         if (_lock.Open)
-                            _lock._manualResetEvent.Open();
+                            _lock._resetEvent.Signal(true);
                         else
-                            _lock._manualResetEvent.Close();
+                            _lock._resetEvent.Signal(false);
                     }
                 }
             }

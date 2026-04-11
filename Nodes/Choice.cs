@@ -34,9 +34,9 @@ namespace Screenplay.Nodes
             }
         }
 
-        public UniTask Persistence(IEventContext context, CancellationToken cancellationToken) => UniTask.CompletedTask;
+        public UniTask Persistence(IEventContext context, Cancellation cancellation) => UniTask.CompletedTask;
 
-        public async UniTask<IExecutable?> Execute(IEventContext context, CancellationToken cancellation)
+        public async UniTask<IExecutable?> Execute(IEventContext context, Cancellation cancellation)
         {
             var choicesThin = Choices.Select(x => new Data(x.Prerequisite?.TestPrerequisite(context) ?? true, x.Text.Content)).ToArray();
             var ui = context.GetDialogUI();

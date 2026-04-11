@@ -4,6 +4,6 @@ namespace Screenplay
 {
     public interface ICustomEntry : IScreenplayNode
     {
-        void Run(IEventContext context, CancellationToken cancellation);
+        void Run(IEventContext context, Cancellation cancellation);
     }
 }

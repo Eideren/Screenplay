@@ -13,7 +13,7 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(ReferenceCollector references) { }
 
-        protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
+        protected override async UniTask LinearExecution(IEventContext context, Cancellation cancellation)
         {
             if (BackgroundPlayer is null)
             {
@@ -25,7 +25,7 @@ namespace Screenplay.Nodes
             //context.StopAsynchronous(BackgroundPlayer);
         }
 
-        public override UniTask Persistence(IEventContext context, CancellationToken cancellationToken)
+        public override UniTask Persistence(IEventContext context, Cancellation cancellation)
         {
             if (BackgroundPlayer is null)
             {

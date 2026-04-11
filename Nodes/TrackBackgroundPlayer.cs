@@ -10,9 +10,9 @@ namespace Screenplay.Nodes
     {
         public bool Loop;
 
-        private UniTask AsyncRunner(CancellationToken cancellation) => Track!.RangePlayer(GetTimeSpan(Track), cancellation, Loop);
+        private UniTask AsyncRunner(Cancellation cancellation) => Track!.RangePlayer(GetTimeSpan(Track), cancellation, Loop);
 
-        protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
+        protected override async UniTask LinearExecution(IEventContext context, Cancellation cancellation)
         {
             if (Track == null)
             {
@@ -24,7 +24,7 @@ namespace Screenplay.Nodes
             //context.RunAsynchronously(this, AsyncRunner);
         }
 
-        public override UniTask Persistence(IEventContext context, CancellationToken cancellationToken)
+        public override UniTask Persistence(IEventContext context, Cancellation cancellation)
         {
             if (Track == null)
             {

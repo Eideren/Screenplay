@@ -18,7 +18,7 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
-        protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
+        protected override async UniTask LinearExecution(IEventContext context, Cancellation cancellation)
         {
             if (Target.TryGet(out var go, out var failure) == false)
             {
@@ -31,22 +31,22 @@ namespace Screenplay.Nodes
             float f = 0;
             do
             {
-                await UniTask.NextFrame(cancellation, cancelImmediately: true);
+                await UniTaskExtensions.NextFrame(cancellation, cancelImmediately: true);
                 f = Mathf.Clamp01(f + Time.deltaTime);
                 go.transform.position = Vector3.Lerp(startPos, Destination, f);
                 go.transform.rotation = Quaternion.Lerp(startRot, Rotation, f);
             } while (f < Duration);
         }
 
-        public override async UniTask Persistence(IEventContext context, CancellationToken cancellationToken)
+        public override async UniTask Persistence(IEventContext context, Cancellation cancellation)
         {
             do
             {
-                var go = await Target.GetAsync(cancellationToken);
+                var go = await Target.GetAsync(cancellation);
                 go.transform.position = Destination;
                 go.transform.rotation = Rotation;
                 await go.OnDestroyAsync();
-            } while (cancellationToken.IsCancellationRequested == false);
+            } while (cancellation.IsCancellationRequested == false);
         }
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)
@@ -70,7 +70,7 @@ namespace Screenplay.Nodes
             {
                 previewer.AddCustomPreview(Preview);
 
-                async UniTask Preview(CancellationToken cts)
+                async UniTask Preview(Cancellation cts)
                 {
                     await LinearExecution(previewer, cts);
                 }

@@ -7,7 +7,7 @@ namespace Screenplay.Component
 {
     public class ScreenplayDispatcher : MonoBehaviour
     {
-        private CancellationTokenSource? _existing;
+        private CancellationSource? _existing;
 
         public required ScreenplayGraph Screenplay = null!;
         public uint Seed = 0;
@@ -21,7 +21,7 @@ namespace Screenplay.Component
                 transform.parent = null;
 
             DontDestroyOnLoad(gameObject);
-            _existing = new CancellationTokenSource();
+            _existing = new CancellationSource();
             try
             {
                 await Screenplay.StartExecution(_existing.Token, Seed == 0 ? (uint)System.Diagnostics.Stopwatch.GetTimestamp() : Seed, _key);
@@ -35,7 +35,6 @@ namespace Screenplay.Component
         private void OnDisable()
         {
             _existing?.Cancel();
-            _existing?.Dispose();
             _existing = null;
         }
 

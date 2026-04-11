@@ -12,7 +12,7 @@ namespace Screenplay
         /// <summary>
         /// Run the barebone logic for this action, return the next action to run
         /// </summary>
-        UniTask<IExecutable?> Execute(IEventContext context, CancellationToken cancellation);
+        UniTask<IExecutable?> Execute(IEventContext context, Cancellation cancellation);
 
         /// <summary>
         /// Applies all the changes <see cref="Execute"/> introduces to the objects it touches,
@@ -21,7 +21,7 @@ namespace Screenplay
         /// <remarks>
         /// Is called by the saving system on each node traversed in the saved session to reload that session's state
         /// </remarks>
-        UniTask Persistence(IEventContext context, CancellationToken cancellation);
+        UniTask Persistence(IEventContext context, Cancellation cancellation);
 
         /// <inheritdoc />
         bool IPrerequisite.TestPrerequisite(IEventContext context) => context.Visited(this);

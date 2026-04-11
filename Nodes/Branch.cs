@@ -28,7 +28,7 @@ namespace Screenplay.Nodes
             yield return False;
         }
 
-        public UniTask<IExecutable?> Execute(IEventContext context, CancellationToken cancellation)
+        public UniTask<IExecutable?> Execute(IEventContext context, Cancellation cancellation)
         {
             if (Prerequisite.TestPrerequisite(context))
                 return new UniTask<IExecutable?>(True);
@@ -36,7 +36,7 @@ namespace Screenplay.Nodes
                 return new UniTask<IExecutable?>(False);
         }
 
-        public UniTask Persistence(IEventContext context, CancellationToken cancellationToken) => UniTask.CompletedTask;
+        public UniTask Persistence(IEventContext context, Cancellation cancellation) => UniTask.CompletedTask;
 
         public void SetupPreview(IPreviewer previewer, bool fastForwarded)
         {

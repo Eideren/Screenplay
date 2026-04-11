@@ -7,9 +7,9 @@ namespace Screenplay;
 
 public interface IInterlocutor
 {
-    UniTask RunDialog(IEventContext context, IEnumerable<string> lines, bool previewMode, CancellationToken cancellation);
+    UniTask RunDialog(IEventContext context, IEnumerable<string> lines, bool previewMode, Cancellation cancellation);
 
-    public static async UniTask DefaultRunDialog(IEventContext context, IEnumerable<string> lines, bool previewMode, CancellationToken cancellation)
+    public static async UniTask DefaultRunDialog(IEventContext context, IEnumerable<string> lines, bool previewMode, Cancellation cancellation)
     {
         var ui = context.GetDialogUI();
         ui.StartDialogPresentation();
@@ -25,11 +25,11 @@ public interface IInterlocutor
                 ui.SetTypewritingCharacter(i + 1);
                 delay += 0.05f;
                 while ((delay -= Time.unscaledDeltaTime) > 0 && ui.FastForwardRequested == false)
-                    await UniTask.NextFrame(cancellationToken: cancellation, cancelImmediately: true);
+                    await UniTaskExtensions.NextFrame(cancellation: cancellation, cancelImmediately: true);
 
                 if (ui.FastForwardRequested) // After a skip in the middle of typewriting, wait for another skip signal before continuing
                 {
-                    await UniTask.NextFrame(cancellation, cancelImmediately: true);
+                    await UniTaskExtensions.NextFrame(cancellation, cancelImmediately: true);
                     break;
                 }
             }
@@ -41,11 +41,11 @@ public interface IInterlocutor
             {
                 if (ui.FastForwardRequested)
                 {
-                    await UniTask.NextFrame(cancellation, cancelImmediately:true);
+                    await UniTaskExtensions.NextFrame(cancellation, cancelImmediately:true);
                     break;
                 }
 
-                await UniTask.NextFrame(cancellation, cancelImmediately:true);
+                await UniTaskExtensions.NextFrame(cancellation, cancelImmediately:true);
             }
         }
         ui.EndDialogPresentation();

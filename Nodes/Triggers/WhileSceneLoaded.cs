@@ -10,7 +10,7 @@ namespace Screenplay.Nodes.Triggers
 
         public override void CollectReferences(ReferenceCollector references) { }
 
-        public override async UniTask Setup(IPreconditionCollector tracker, CancellationToken triggerCancellation)
+        public override async UniTask Setup(IPreconditionCollector tracker, Cancellation triggerCancellation)
         {
             if (SceneManager.GetSceneByPath(Target.Path).IsValid())
                 tracker.SetUnlockedState(true);
@@ -29,7 +29,7 @@ namespace Screenplay.Nodes.Triggers
             SceneManager.sceneUnloaded += OnUnload;
             SceneManager.sceneLoaded += OnLoad;
 
-            await UniTask.WaitUntilCanceled(triggerCancellation);
+            await UniTask.WaitUntilCanceled(triggerCancellation.GetStandardToken());
 
             SceneManager.sceneUnloaded -= OnUnload;
             SceneManager.sceneLoaded -= OnLoad;

@@ -14,6 +14,6 @@ namespace Screenplay.Component
         public abstract void SetTypewritingCharacter(int characters);
         public abstract void StartDialogPresentation();
         public abstract void EndDialogPresentation();
-        public abstract UniTask<Choice.Data> ChoicePresentation(Choice.Data[] choices, CancellationToken cancellation);
+        public abstract UniTask<Choice.Data> ChoicePresentation(Choice.Data[] choices, Cancellation cancellation);
     }
 }

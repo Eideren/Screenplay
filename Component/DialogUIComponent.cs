@@ -29,7 +29,7 @@ namespace Screenplay.Component
         public override void StartDialogPresentation() => OnStart?.Invoke();
         public override void EndDialogPresentation() => OnEnd?.Invoke();
 
-        public override async UniTask<Choice.Data> ChoicePresentation(Choice.Data[] choices, CancellationToken cancellation)
+        public override async UniTask<Choice.Data> ChoicePresentation(Choice.Data[] choices, Cancellation cancellation)
         {
             DialogChoiceTemplate.gameObject.SetActive(false);
             OnStart?.Invoke();
@@ -52,7 +52,7 @@ namespace Screenplay.Component
 
                 async UniTask<Choice.Data> AwaitClick()
                 {
-                    await uiChoice.Button.onClick.OnInvokeAsync(cancellation);
+                    await uiChoice.Button.onClick.OnInvokeAsync(cancellation.GetStandardToken());
                     return choice;
                 }
             }

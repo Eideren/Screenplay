@@ -12,7 +12,7 @@ namespace Screenplay.Nodes
         public required SceneObjectReference<GameObject> Target;
         public required AnimationClip? Clip = null;
 
-        protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
+        protected override async UniTask LinearExecution(IEventContext context, Cancellation cancellation)
         {
             if (Target.TryGet(out var go, out var failure) == false)
             {
@@ -32,15 +32,15 @@ namespace Screenplay.Nodes
                 t += Time.deltaTime;
                 t = t > Clip.length ? Clip.length : t;
                 sampler.SampleAt(t);
-                await UniTask.NextFrame(cancellation, cancelImmediately:true);
+                await UniTaskExtensions.NextFrame(cancellation, cancelImmediately:true);
             } while (t < Clip.length);
         }
 
-        public override async UniTask Persistence(IEventContext context, CancellationToken cancellationToken)
+        public override async UniTask Persistence(IEventContext context, Cancellation cancellation)
         {
             do
             {
-                var go = await Target.GetAsync(cancellationToken);
+                var go = await Target.GetAsync(cancellation);
                 if (Clip == null)
                 {
                     Debug.LogWarning($"Failed to {nameof(PlayAnimation)} on '{go}', {nameof(Clip)} is null", context.Source);
@@ -51,7 +51,7 @@ namespace Screenplay.Nodes
                     sampler.SampleAt(Clip.length);
                 }
                 await go.OnDestroyAsync();
-            } while (cancellationToken.IsCancellationRequested == false);
+            } while (cancellation.IsCancellationRequested == false);
         }
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)

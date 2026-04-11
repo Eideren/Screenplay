@@ -11,12 +11,12 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(ReferenceCollector references) { }
 
-        protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
+        protected override async UniTask LinearExecution(IEventContext context, Cancellation cancellation)
         {
-            await UniTask.WaitForSeconds(Duration, cancellationToken:cancellation, cancelImmediately:true);
+            await UniTaskExtensions.Delay(Duration, cancellation:cancellation, cancelImmediately:true);
         }
 
-        public override UniTask Persistence(IEventContext context, CancellationToken cancellationToken) => UniTask.CompletedTask;
+        public override UniTask Persistence(IEventContext context, Cancellation cancellation) => UniTask.CompletedTask;
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded) { }
     }

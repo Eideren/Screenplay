@@ -17,9 +17,9 @@ namespace Screenplay.Nodes
         [Input(Stroke = NoodleStroke.Dashed), SerializeReference]
         public IInterlocutorSource? InterlocutorSource;
 
-        public UniTask<IInterlocutor?> GetInterlocutor(IEventContext context, CancellationToken cancellationToken)
+        public UniTask<IInterlocutor?> GetInterlocutor(IEventContext context, Cancellation cancellation)
         {
-            return InterlocutorSource?.GetInterlocutor(context, cancellationToken) ?? new UniTask<IInterlocutor?>(null);
+            return InterlocutorSource?.GetInterlocutor(context, cancellation) ?? new UniTask<IInterlocutor?>(null);
         }
 
         IEnumerable<string> Lines()
@@ -40,9 +40,9 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(ReferenceCollector references) { }
 
-        public override UniTask Persistence(IEventContext context, CancellationToken cancellationToken) => UniTask.CompletedTask;
+        public override UniTask Persistence(IEventContext context, Cancellation cancellation) => UniTask.CompletedTask;
 
-        protected override UniTask LinearExecution(IEventContext context, CancellationToken cancellation) => RunDialog(context, cancellation, false);
+        protected override UniTask LinearExecution(IEventContext context, Cancellation cancellation) => RunDialog(context, cancellation, false);
 
         public override void SetupPreview(IPreviewer previewer, bool fastForwarded)
         {
@@ -64,7 +64,7 @@ namespace Screenplay.Nodes
             }
         }
 
-        private async UniTask RunDialog(IEventContext context, CancellationToken cancellation, bool previewMode)
+        private async UniTask RunDialog(IEventContext context, Cancellation cancellation, bool previewMode)
         {
             var interlocutor = await GetInterlocutor(context, cancellation);
             if (interlocutor is not null)

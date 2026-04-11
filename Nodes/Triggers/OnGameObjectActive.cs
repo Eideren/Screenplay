@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using Cysharp.Threading.Tasks.Triggers;
 using UnityEngine;
@@ -13,16 +12,16 @@ namespace Screenplay.Nodes.Triggers
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
-        public override async UniTask Setup(IPreconditionCollector tracker, CancellationToken triggerCancellation)
+        public override async UniTask Setup(IPreconditionCollector tracker, Cancellation triggerCancellation)
         {
             while (triggerCancellation.IsCancellationRequested == false)
             {
                 var target = await Target.GetAsync(triggerCancellation);
 
                 var output = target.gameObject;
-                await output.GetAsyncEnableTrigger().OnEnableAsync(triggerCancellation);
+                await output.GetAsyncEnableTrigger().OnEnableAsync(triggerCancellation.GetStandardToken());
                 tracker.SetUnlockedState(true);
-                await output.GetAsyncDisableTrigger().OnDisableAsync(triggerCancellation);
+                await output.GetAsyncDisableTrigger().OnDisableAsync(triggerCancellation.GetStandardToken());
                 tracker.SetUnlockedState(false);
             }
         }

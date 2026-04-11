@@ -14,9 +14,9 @@ namespace Screenplay.Editor
     public class Previewer : IPreviewer, IDisposable
     {
         private float _delayBetweenLoops = 1f;
-        private CancellationTokenSource _cancellationTokenSource = new();
+        private CancellationSource _cancellationSource = new();
         private int _running;
-        private List<Func<CancellationToken, UniTask>> _asynchronousRunner = new();
+        private List<Func<Cancellation, UniTask>> _asynchronousRunner = new();
         private Stack<Action> _rollbacksRegistered = new();
         private bool _loopPreview;
         private UIBase? _dialogUIComponentPrefab, _dialogUI;
@@ -66,8 +66,7 @@ namespace Screenplay.Editor
 
             try
             {
-                _cancellationTokenSource.Cancel();
-                _cancellationTokenSource.Dispose();
+                _cancellationSource.Cancel();
             }
             catch (Exception e)
             {
@@ -139,7 +138,7 @@ namespace Screenplay.Editor
             try
             {
                 _running++;
-                await UniTask.WaitForSeconds(delay, cancellationToken:_cancellationTokenSource.Token, cancelImmediately: true);
+                await UniTaskExtensions.Delay(delay, cancellation:_cancellationSource.Token, cancelImmediately: true);
                 foreach (var func in _asynchronousRunner)
                     RunAndMonitorExit(func);
             }
@@ -149,12 +148,12 @@ namespace Screenplay.Editor
             }
         }
 
-        private async void RunAndMonitorExit(Func<CancellationToken, UniTask> runner)
+        private async void RunAndMonitorExit(Func<Cancellation, UniTask> runner)
         {
             try
             {
                 _running++;
-                await runner(_cancellationTokenSource.Token);
+                await runner(_cancellationSource.Token);
             }
             catch (Exception e)
             {
@@ -209,7 +208,7 @@ namespace Screenplay.Editor
             _rollbacksRegistered.Push(() => { animState.Rollback(); });
         }
 
-        public void AddCustomPreview(Func<CancellationToken, UniTask> signal)
+        public void AddCustomPreview(Func<Cancellation, UniTask> signal)
         {
             RunAndMonitorExit(signal);
             _asynchronousRunner.Add(signal);

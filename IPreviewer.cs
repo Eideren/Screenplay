@@ -16,19 +16,19 @@ namespace Screenplay
         void RegisterBoneOnlyRollback(Animator animator);
         void RegisterRollback(Animator animator, int hash, int layer);
         void RegisterRollback(Animator animator, AnimationClip clip);
-        void AddCustomPreview(Func<CancellationToken, UniTask> signal);
+        void AddCustomPreview(Func<Cancellation, UniTask> signal);
 
         void PlaySafeAction(IExecutable executable)
         {
             AddCustomPreview(PreviewPlay);
 
-            async UniTask PreviewPlay(CancellationToken cancellation)
+            async UniTask PreviewPlay(Cancellation cancellation)
             {
                 await executable.Execute(this, cancellation);
 
                 if (Loop)
                 {
-                    await UniTask.WaitForSeconds(1f, cancellationToken: cancellation, cancelImmediately:true);
+                    await UniTaskExtensions.Delay(1f, cancellation: cancellation, cancelImmediately:true);
                 }
             }
         }

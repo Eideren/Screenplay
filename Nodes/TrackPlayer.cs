@@ -12,7 +12,7 @@ namespace Screenplay.Nodes
 
         public override void CollectReferences(ReferenceCollector references) => Track?.CollectReferences(references);
 
-        protected override async UniTask LinearExecution(IEventContext context, CancellationToken cancellation)
+        protected override async UniTask LinearExecution(IEventContext context, Cancellation cancellation)
         {
             if (Track == null)
             {
@@ -23,7 +23,7 @@ namespace Screenplay.Nodes
             await Track.RangePlayer(GetTimeSpan(Track), cancellation, false);
         }
 
-        public override UniTask Persistence(IEventContext context, CancellationToken cancellationToken)
+        public override UniTask Persistence(IEventContext context, Cancellation cancellation)
         {
             if (Track == null)
             {
@@ -50,7 +50,7 @@ namespace Screenplay.Nodes
                 trackItem?.AppendRollbackMechanism(previewer);
 
             if (fastForwarded)
-                Persistence(previewer, CancellationToken.None);
+                Persistence(previewer, Cancellation.None);
             else
                 previewer.PlaySafeAction(this);
         }

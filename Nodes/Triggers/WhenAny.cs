@@ -15,7 +15,7 @@ namespace Screenplay.Nodes.Triggers
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Sources);
 
-        public override async UniTask Setup(IPreconditionCollector tracker, CancellationToken triggerCancellation)
+        public override async UniTask Setup(IPreconditionCollector tracker, Cancellation triggerCancellation)
         {
             var @lock = new Lock(tracker, Sources, out var collectors);
             for (int i = 0; i < Sources.Length; i++)
@@ -26,12 +26,12 @@ namespace Screenplay.Nodes.Triggers
                 if (@lock.Open)
                 {
                     tracker.SetUnlockedState(true);
-                    await @lock.WaitClosed().WithInterruptingCancellation(triggerCancellation);
+                    await @lock.WaitClosed(triggerCancellation);
                 }
                 else
                 {
                     tracker.SetUnlockedState(false);
-                    await @lock.WaitOpen().WithInterruptingCancellation(triggerCancellation);
+                    await @lock.WaitOpen(triggerCancellation);
                 }
             }
         }

@@ -27,7 +27,7 @@ namespace Screenplay.Nodes.Triggers
 
         public override void CollectReferences(ReferenceCollector references) => references.Collect(Target);
 
-        public override async UniTask Setup(IPreconditionCollector tracker, CancellationToken triggerCancellation)
+        public override async UniTask Setup(IPreconditionCollector tracker, Cancellation triggerCancellation)
         {
             while (triggerCancellation.IsCancellationRequested == false)
             {
@@ -37,7 +37,7 @@ namespace Screenplay.Nodes.Triggers
                 trigger.Tracker = tracker;
                 trigger.LayerMask = LayerMask;
 
-                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(trigger.destroyCancellationToken, triggerCancellation))
+                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(trigger.destroyCancellationToken, triggerCancellation.GetStandardToken()))
                 {
                     await UniTask.WaitUntilCanceled(cts.Token, completeImmediately: true);
                 }

@@ -32,7 +32,7 @@ namespace Screenplay
         /// <summary>
         /// You must cancel this UniTask when reloading a running game.
         /// </summary>
-        public async UniTask StartExecution(CancellationToken cancellation, uint seed, IntrospectionKey key)
+        public async UniTask StartExecution(Cancellation cancellation, uint seed, IntrospectionKey key)
         {
             if (Introspections.Count > 0 && AllowMultipleInstances == false)
                 return;
@@ -41,8 +41,8 @@ namespace Screenplay
             key.BoundIntrospection = introspection;
 
             using var fieldRegistry = new FieldRegistry(this);
-            var eventsReadySignal = new SafeManualResetEvent();
-            var eventsCleanup = new Dictionary<Event, CancellationTokenSource>();
+            var eventsReadySignal = new CancelableAutoResetEvent<bool>();
+            var eventsCleanup = new Dictionary<Event, CancellationSource>();
             Introspections.Add(introspection);
 
             State? state;
@@ -97,12 +97,12 @@ namespace Screenplay
                             lock (introspection.EventsReady)
                             {
                                 introspection.EventsReady.Add((e, null));
-                                eventsReadySignal.Open();
+                                eventsReadySignal.Signal(true);
                             }
                         }
                         else
                         {
-                            var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+                            var cts = CancellationSource.CreateLinkedTokenSource(cancellation);
                             eventsCleanup[e] = cts;
                             var task = triggerSource.Setup(new PreconditionCollector(OnUnlocked, OnLocked, triggerSource, introspection), cts.Token);
                             task.Forget();
@@ -112,7 +112,7 @@ namespace Screenplay
                                 lock (introspection.EventsReady)
                                 {
                                     introspection.EventsReady.Add((e, pc));
-                                    eventsReadySignal.Open();
+                                    eventsReadySignal.Signal(true);
                                 }
                             }
 
@@ -121,8 +121,6 @@ namespace Screenplay
                                 lock (introspection.EventsReady)
                                 {
                                     introspection.EventsReady.Remove((e, pc));
-                                    if (introspection.EventsReady.Count == 0)
-                                        eventsReadySignal.Close();
                                 }
                             }
                         }
@@ -142,8 +140,6 @@ namespace Screenplay
                         {
                             var ready = introspection.EventsReady[0];
                             introspection.EventsReady.RemoveAt(0);
-                            if (introspection.EventsReady.Count == 0)
-                                eventsReadySignal.Close();
 
                             context.Locals.Clear();
                             ready.collector?.SharedLocals.CopyTo(context.Locals);
@@ -152,12 +148,11 @@ namespace Screenplay
                             if (eventToProcess.Repeatable)
                             {
                                 introspection.EventsReady.Add(ready); // Move it to the end of the list
-                                eventsReadySignal.Open();
+                                eventsReadySignal.Signal(true);
                             }
                             else if (eventsCleanup.Remove(eventToProcess, out var triggerSource))
                             {
                                 triggerSource.Cancel(); // Otherwise dispose of the trigger and be done with it
-                                triggerSource.Dispose();
                             }
                         }
                         else
@@ -168,7 +163,7 @@ namespace Screenplay
 
                     if (eventToProcess?.Action is null)
                     {
-                        await eventsReadySignal.AwaitOpen.WithInterruptingCancellation(cancellation);
+                        await eventsReadySignal.NextSignal(cancellation);
                         continue;
                     }
 
@@ -200,16 +195,16 @@ namespace Screenplay
             finally
             {
                 Introspections.Remove(introspection);
-                eventsReadySignal.TrySetCanceled();
+                eventsReadySignal.Close();
                 if (DebugRetainProgressInEditor)
                     _debugState = State.CreateFrom(introspection);
             }
         }
 
-        public static UniTask<IExecutable?> Bifurcate(IBifurcate bifurcation, EventProgress? progress, IEventContext context, Introspection? introspection, CancellationToken cancellation)
+        public static CancelableCompletionSource<IExecutable?>.Awaitable Bifurcate(IBifurcate bifurcation, EventProgress? progress, IEventContext context, Introspection? introspection, Cancellation cancellation)
         {
             var entries = bifurcation.Followup().Where(x => x != null).ToList();
-            var doneSignal = new UniTaskCompletionSource<IExecutable?>();
+            var doneSignal = new CancelableCompletionSource<IExecutable?>();
             IRejoin? expectedJoin = null;
             int leftToDo = entries.Count;
 
@@ -219,7 +214,7 @@ namespace Screenplay
                 ParallelTask(entry!).Forget();
             }
 
-            return doneSignal.Task.WithInterruptingCancellation(cancellation);
+            return doneSignal.AwaitResult(cancellation);
 
             async UniTask ParallelTask(IExecutable? executable)
             {
@@ -252,7 +247,7 @@ namespace Screenplay
                 {
                     if (Interlocked.Decrement(ref leftToDo) == 0)
                     {
-                        doneSignal.TrySetResult(expectedJoin);
+                        doneSignal.SetResult(expectedJoin);
                     }
                 }
             }
