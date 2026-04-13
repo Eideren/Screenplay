@@ -7,7 +7,7 @@ namespace Screenplay;
 
 public interface IInterlocutor
 {
-    UniTask RunDialog(IEventContext context, IEnumerable<string> lines, bool previewMode, Cancellation cancellation);
+    UniTask RunDialog(IEventContext context, IEnumerable<string> lines, bool previewMode, bool passive, Cancellation cancellation);
 
     public static async UniTask DefaultRunDialog(IEventContext context, IEnumerable<string> lines, bool previewMode, Cancellation cancellation)
     {

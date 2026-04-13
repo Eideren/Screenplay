@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -9,7 +9,7 @@ using YNode;
 namespace Screenplay.Nodes
 {
     [NodeVisuals(Icon = "d_console.infoicon")]
-    public class Dialog : ExecutableLinear, ILocalizableNode, IInterlocutorSource
+    public class PassiveDialog : ExecutableLinear, ILocalizableNode, IInterlocutorSource
     {
         [InlineProperty, HideLabel]
         public LocalizableText Line = new("Dialog Line\n\nAnother Line");
@@ -69,7 +69,7 @@ namespace Screenplay.Nodes
             var interlocutor = await GetInterlocutor(context, cancellation);
             if (interlocutor is not null)
             {
-                await interlocutor.RunDialog(context, Lines(), previewMode, false, cancellation);
+                await interlocutor.RunDialog(context, Lines(), previewMode, true, cancellation);
                 return;
             }
 

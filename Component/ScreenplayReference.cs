@@ -10,7 +10,7 @@ namespace Screenplay.Component
     public class ScreenplayReference : MonoBehaviour, ISerializationCallbackReceiver
     {
         private static readonly Dictionary<guid, CancelableCompletionSource<Object>> s_completionSources = new();
-        private static readonly Dictionary<guid, Object> s_idToRef = new();
+        private static readonly Dictionary<guid, Object> s_idToRef = new(){ { default, null! } };
         private static readonly Dictionary<Object, guid> s_refToId = new();
 
         [OnValueChanged(nameof(ReAssignReference)), SerializeField]
@@ -112,7 +112,7 @@ namespace Screenplay.Component
             {
                 return s_idToRef.TryGetValue(guid, out obj)
                        // obj may be destroyed
-                       && obj != null
+                       && (obj != null || guid == default)
                        && (obj is not MonoBehaviour mb || mb.destroyCancellationToken.IsCancellationRequested == false);
             }
         }
