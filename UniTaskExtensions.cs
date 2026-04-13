@@ -42,7 +42,7 @@ public static class UniTaskExtensions
 
     sealed class NextFramePromise : IUniTaskSource, IPlayerLoopItem, ITaskPoolNode<NextFramePromise>
     {
-        static TaskPool<NextFramePromise> pool;
+        private static TaskPool<NextFramePromise> pool;
         private static Action<object> s_action;
         NextFramePromise? nextNode;
         public ref NextFramePromise NextNode => ref nextNode!;
@@ -204,10 +204,8 @@ public static class UniTaskExtensions
             result.cancellation = cancellation;
             result.cancelImmediately = cancelImmediately;
 
-            if (cancelImmediately && cancellation.CanBeCanceled)
-            {
+            if (cancelImmediately)
                 cancellation.Register(ImmediateCancellationHandler, result);
-            }
 
             TaskTracker.TrackActiveTask(result, 3);
 
@@ -279,9 +277,9 @@ public static class UniTaskExtensions
             TaskTracker.RemoveTracking(this);
             core.Reset();
             target = default;
-            cancellation = default;
             if (cancelImmediately)
                 cancellation.Unregister(ImmediateCancellationHandler, this);
+            cancellation = default;
             cancelImmediately = default;
             delayType = default;
             return pool.TryPush(this);
@@ -391,9 +389,9 @@ public static class UniTaskExtensions
         {
             TaskTracker.RemoveTracking(this);
             core.Reset();
-            cancellationToken = default;
             if (cancelImmediately)
                 cancellationToken.Unregister(ImmediateCancellationHandler, this);
+            cancellationToken = default;
             cancelImmediately = default;
             return pool.TryPush(this);
         }
@@ -502,9 +500,9 @@ public static class UniTaskExtensions
         {
             TaskTracker.RemoveTracking(this);
             core.Reset();
-            cancellationToken = default;
             if (cancelImmediately)
                 cancellationToken.Unregister(ImmediateCancellationHandler, this);
+            cancellationToken = default;
             cancelImmediately = default;
             return pool.TryPush(this);
         }
