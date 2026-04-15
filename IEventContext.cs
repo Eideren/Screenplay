@@ -7,6 +7,8 @@ namespace Screenplay
     /// </summary>
     public interface IEventContext : IPrerequisiteContext
     {
+        Cancellation ContextClosed { get; }
+
         FieldRegistry FieldRegistry { get; }
 
         Locals Locals { get; }

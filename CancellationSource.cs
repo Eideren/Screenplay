@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using UnityEngine;
@@ -9,19 +10,34 @@ namespace Screenplay
     {
         private int _canceled;
         private CancellationTokenSource? _cts;
-        private ConditionalWeakTable<object, Action<object>> _onCancel = new();
+        #warning this is problematic, I'm supposed to keep a hold of *some* of these, otherwise they are GCed
+        private Dictionary<object, Action<object>> _onCancel = new();
         private CancellationTokenRegistration _ctr;
+        private string? mn, fp;
+        public int ln;
 
-        public CancellationSource() { }
+        public CancellationSource([CallerMemberName] string? mn = null, [CallerLineNumber] int ln = -1, [CallerFilePath] string? fp = null)
+        {
+            this.mn = mn;
+            this.fp = fp;
+            this.ln = ln;
+        }
 
         /// <summary> When <paramref name="parent"/> is canceled, so will this one be </summary>
-        public CancellationSource(Cancellation parent) => parent.Register(this);
-
-        public static CancellationSource CreateLinkedTokenSource(Cancellation parent) => new(parent);
-
-        public static CancellationSource CreateLinkedTokenSource(Cancellation parentA, Cancellation parentB)
+        public CancellationSource(Cancellation parent, [CallerMemberName]string? mn = null, [CallerLineNumber] int ln = 0, [CallerFilePath] string? fp = null)
+            : this(mn, ln, fp)
         {
-            var source = new CancellationSource();
+            parent.Register(this);
+        }
+
+        public static CancellationSource CreateLinkedTokenSource(Cancellation parent, [CallerMemberName]string? mn = null, [CallerLineNumber] int ln = 0, [CallerFilePath] string? fp = null)
+        {
+            return new CancellationSource(parent, mn, ln, fp);
+        }
+
+        public static CancellationSource CreateLinkedTokenSource(Cancellation parentA, Cancellation parentB, [CallerMemberName]string? mn = null, [CallerLineNumber] int ln = 0, [CallerFilePath] string? fp = null)
+        {
+            var source = new CancellationSource(mn, ln, fp);
             parentA.Register(source);
             parentB.Register(source);
             return source;

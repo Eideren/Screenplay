@@ -61,7 +61,7 @@ namespace Screenplay
                     var reconstructed = State.Reconstruct(state, RestoreMode, out RestoreBehavior effects, this);
                     foreach (var eventProgress in reconstructed)
                     {
-                        var context = new DefaultContext(seed, introspection, fieldRegistry);
+                        using var context = new DefaultContext(seed, introspection, fieldRegistry);
                         context.Locals.Clear();
                         foreach (var local in eventProgress.Permutation.Local)
                             context.Locals.TryAdd(local);
@@ -132,7 +132,7 @@ namespace Screenplay
 
                 while (cancellation.IsCancellationRequested == false)
                 {
-                    var context = new DefaultContext(randomSeeder.NextUInt(1, uint.MaxValue), introspection, fieldRegistry);
+                    using var context = new DefaultContext(randomSeeder.NextUInt(1, uint.MaxValue), introspection, fieldRegistry);
                     Event? eventToProcess;
                     lock (introspection.EventsReady)
                     {
@@ -190,6 +190,8 @@ namespace Screenplay
                                 progress.ExecutionOrder.Add(new(executable, nextExecutable));
                         }
                     }
+
+                    context.NewCancellationContext();
                 }
             }
             finally
@@ -352,9 +354,13 @@ namespace Screenplay
 
         void ISerializationCallbackReceiver.OnAfterDeserialize() { }
 
-        private record DefaultContext : IEventContext
+        private record DefaultContext : IEventContext, IDisposable
         {
+            private CancellationSource _cts = new();
+
             private Random _random;
+
+            public Cancellation ContextClosed => _cts.Token;
 
             public FieldRegistry FieldRegistry { get; }
 
@@ -369,7 +375,14 @@ namespace Screenplay
                 FieldRegistry = fieldRegistry;
             }
 
+            public void NewCancellationContext()
+            {
+                Interlocked.Exchange(ref _cts, new()).Cancel();
+            }
+
             public ref Random GetRandom() => ref _random;
+
+            public void Dispose() => _cts.Cancel();
         }
 
         public class Introspection

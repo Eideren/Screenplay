@@ -30,9 +30,9 @@ public static class UniTaskExtensions
         return new UniTask(DelayPromise.Create(delayTimeSpan, delayTiming, cancellation, cancelImmediately, delayType, out var token), token);
     }
 
-    public static UniTask WaitUntilCanceled(Cancellation cancellationToken, PlayerLoopTiming timing = PlayerLoopTiming.Update, bool completeImmediately = false)
+    public static UniTask WaitUntilCanceled(Cancellation cancellationToken, PlayerLoopTiming? delayed = null)
     {
-        return new UniTask(WaitUntilCanceledPromise.Create(cancellationToken, timing, completeImmediately, out var token), token);
+        return new UniTask(WaitUntilCanceledPromise.Create(cancellationToken, delayed, out var token), token);
     }
 
     public static UniTask Yield(PlayerLoopTiming timing, Cancellation cancellationToken, bool cancelImmediately = false)
@@ -312,7 +312,7 @@ public static class UniTaskExtensions
         {
         }
 
-        public static IUniTaskSource Create(Cancellation cancellationToken, PlayerLoopTiming timing, bool cancelImmediately, out short token)
+        public static IUniTaskSource Create(Cancellation cancellationToken, PlayerLoopTiming? delayed, out short token)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -325,16 +325,17 @@ public static class UniTaskExtensions
             }
 
             result.cancellationToken = cancellationToken;
-            result.cancelImmediately = cancelImmediately;
+            result.cancelImmediately = delayed is null;
 
-            if (cancelImmediately && cancellationToken.CanBeCanceled)
+            if (result.cancelImmediately && cancellationToken.CanBeCanceled)
             {
                 cancellationToken.Register(ImmediateCancellationHandler, result);
             }
 
             TaskTracker.TrackActiveTask(result, 3);
 
-            PlayerLoopHelper.AddAction(timing, result);
+            if (delayed is {} timing)
+                PlayerLoopHelper.AddAction(timing, result);
 
             token = result.core.Version;
             return result;

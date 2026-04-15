@@ -1,4 +1,3 @@
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine.SceneManagement;
 
@@ -29,7 +28,7 @@ namespace Screenplay.Nodes.Triggers
             SceneManager.sceneUnloaded += OnUnload;
             SceneManager.sceneLoaded += OnLoad;
 
-            await UniTask.WaitUntilCanceled(triggerCancellation.GetStandardToken());
+            await UniTaskExtensions.WaitUntilCanceled(triggerCancellation);
 
             SceneManager.sceneUnloaded -= OnUnload;
             SceneManager.sceneLoaded -= OnLoad;

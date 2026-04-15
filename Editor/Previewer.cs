@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using Screenplay.Component;
 using UnityEditor;
@@ -21,6 +20,8 @@ namespace Screenplay.Editor
         private bool _loopPreview;
         private UIBase? _dialogUIComponentPrefab, _dialogUI;
         private Random _random;
+
+        public Cancellation ContextClosed => throw new InvalidOperationException();
 
         public FieldRegistry FieldRegistry { get; }
 
