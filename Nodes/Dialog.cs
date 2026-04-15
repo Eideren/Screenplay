@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -22,9 +21,9 @@ namespace Screenplay.Nodes
             return InterlocutorSource?.GetInterlocutor(context, cancellation) ?? new UniTask<IInterlocutor?>(null);
         }
 
-        private IEnumerable<string> Lines()
+        public static IEnumerable<string> SplitByLines(string lines)
         {
-            foreach (string s in Line.Content.Split("\n\n"))
+            foreach (string s in lines.Split("\n\n"))
             {
                 var trimmed = s.Trim();
                 if (trimmed.Length == 0)
@@ -53,7 +52,7 @@ namespace Screenplay.Nodes
             else
             {
                 var ui = previewer.GetDialogUI();
-                if (Lines().LastOrDefault() is { } lastLine)
+                if (SplitByLines(Line.Content).LastOrDefault() is { } lastLine)
                 {
                     ui.StartDialogPresentation();
                     ui.StartLineTypewriting(lastLine);
@@ -69,11 +68,11 @@ namespace Screenplay.Nodes
             var interlocutor = await GetInterlocutor(context, cancellation);
             if (interlocutor is not null)
             {
-                await interlocutor.RunDialog(context, Lines(), previewMode, false, cancellation);
+                await interlocutor.RunDialog(context, SplitByLines(Line.Content), previewMode, false, cancellation);
                 return;
             }
 
-            await IInterlocutor.DefaultRunDialog(context, Lines(), previewMode, cancellation);
+            await IInterlocutor.DefaultRunDialog(context, SplitByLines(Line.Content), previewMode, cancellation);
         }
     }
 }
