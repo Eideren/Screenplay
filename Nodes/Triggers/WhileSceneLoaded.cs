@@ -28,7 +28,7 @@ namespace Screenplay.Nodes.Triggers
             SceneManager.sceneUnloaded += OnUnload;
             SceneManager.sceneLoaded += OnLoad;
 
-            await UniTaskExtensions.WaitUntilCanceled(triggerCancellation);
+            await Uni.WaitUntilCanceled(triggerCancellation);
 
             SceneManager.sceneUnloaded -= OnUnload;
             SceneManager.sceneLoaded -= OnLoad;

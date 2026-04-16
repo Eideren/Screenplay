@@ -139,7 +139,7 @@ namespace Screenplay.Editor
             try
             {
                 _running++;
-                await UniTaskExtensions.Delay(delay, cancellation:_cancellationSource.Token, cancelImmediately: true);
+                await Uni.Delay(delay, cancellation:_cancellationSource.Token, cancelImmediately: true);
                 foreach (var func in _asynchronousRunner)
                     RunAndMonitorExit(func);
             }

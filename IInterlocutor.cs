@@ -25,11 +25,11 @@ public interface IInterlocutor
                 ui.SetTypewritingCharacter(i + 1);
                 delay += 0.05f;
                 while ((delay -= Time.unscaledDeltaTime) > 0 && ui.FastForwardRequested == false)
-                    await UniTaskExtensions.NextFrame(cancellation: cancellation, cancelImmediately: true);
+                    await Uni.NextFrame(cancellation: cancellation, cancelImmediately: true);
 
                 if (ui.FastForwardRequested) // After a skip in the middle of typewriting, wait for another skip signal before continuing
                 {
-                    await UniTaskExtensions.NextFrame(cancellation, cancelImmediately: true);
+                    await Uni.NextFrame(cancellation, cancelImmediately: true);
                     break;
                 }
             }
@@ -41,11 +41,11 @@ public interface IInterlocutor
             {
                 if (ui.FastForwardRequested)
                 {
-                    await UniTaskExtensions.NextFrame(cancellation, cancelImmediately:true);
+                    await Uni.NextFrame(cancellation, cancelImmediately:true);
                     break;
                 }
 
-                await UniTaskExtensions.NextFrame(cancellation, cancelImmediately:true);
+                await Uni.NextFrame(cancellation, cancelImmediately:true);
             }
         }
         ui.EndDialogPresentation();

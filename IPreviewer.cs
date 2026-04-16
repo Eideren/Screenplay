@@ -28,7 +28,7 @@ namespace Screenplay
 
                 if (Loop)
                 {
-                    await UniTaskExtensions.Delay(1f, cancellation: cancellation, cancelImmediately:true);
+                    await Uni.Delay(1f, cancellation: cancellation, cancelImmediately:true);
                 }
             }
         }

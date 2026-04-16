@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Screenplay
@@ -10,7 +11,7 @@ namespace Screenplay
     {
         private int _canceled;
         private CancellationTokenSource? _cts;
-        #warning this is problematic, I'm supposed to keep a hold of *some* of these, otherwise they are GCed
+#warning this is problematic, I'm supposed to keep a hold of *some* of these, otherwise they are GCed
         private Dictionary<object, Action<object>> _onCancel = new();
         private CancellationTokenRegistration _ctr;
         private string? mn, fp;
@@ -24,18 +25,18 @@ namespace Screenplay
         }
 
         /// <summary> When <paramref name="parent"/> is canceled, so will this one be </summary>
-        public CancellationSource(Cancellation parent, [CallerMemberName]string? mn = null, [CallerLineNumber] int ln = 0, [CallerFilePath] string? fp = null)
+        public CancellationSource(Cancellation parent, [CallerMemberName] string? mn = null, [CallerLineNumber] int ln = 0, [CallerFilePath] string? fp = null)
             : this(mn, ln, fp)
         {
             parent.Register(this);
         }
 
-        public static CancellationSource CreateLinkedTokenSource(Cancellation parent, [CallerMemberName]string? mn = null, [CallerLineNumber] int ln = 0, [CallerFilePath] string? fp = null)
+        public static CancellationSource CreateLinkedTokenSource(Cancellation parent, [CallerMemberName] string? mn = null, [CallerLineNumber] int ln = 0, [CallerFilePath] string? fp = null)
         {
             return new CancellationSource(parent, mn, ln, fp);
         }
 
-        public static CancellationSource CreateLinkedTokenSource(Cancellation parentA, Cancellation parentB, [CallerMemberName]string? mn = null, [CallerLineNumber] int ln = 0, [CallerFilePath] string? fp = null)
+        public static CancellationSource CreateLinkedTokenSource(Cancellation parentA, Cancellation parentB, [CallerMemberName] string? mn = null, [CallerLineNumber] int ln = 0, [CallerFilePath] string? fp = null)
         {
             var source = new CancellationSource(mn, ln, fp);
             parentA.Register(source);
@@ -64,6 +65,8 @@ namespace Screenplay
             if (Interlocked.CompareExchange(ref _canceled, 1, 0) != 0)
                 return;
 
+            Debug.Assert(PlayerLoopHelper.IsMainThread);
+
             lock (_onCancel)
             {
                 _cts?.Cancel();
@@ -74,11 +77,12 @@ namespace Screenplay
                     {
                         action(param);
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         Debug.LogException(e);
                     }
                 }
+
                 _onCancel.Clear();
             }
         }
@@ -93,10 +97,11 @@ namespace Screenplay
                     {
                         action(parameter);
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         Debug.LogException(e);
                     }
+
                     return;
                 }
 
@@ -114,10 +119,11 @@ namespace Screenplay
                     {
                         action(parameter);
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         Debug.LogException(e);
                     }
+
                     return;
                 }
 

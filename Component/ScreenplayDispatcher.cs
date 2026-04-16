@@ -28,7 +28,8 @@ namespace Screenplay.Component
             }
             catch (Exception e)
             {
-                Debug.LogException(e);
+                if (e is not OperationCanceledException)
+                    Debug.LogException(e);
             }
         }
 

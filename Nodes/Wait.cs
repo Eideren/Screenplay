@@ -13,7 +13,7 @@ namespace Screenplay.Nodes
 
         protected override async UniTask LinearExecution(IEventContext context, Cancellation cancellation)
         {
-            await UniTaskExtensions.Delay(Duration, cancellation:cancellation, cancelImmediately:true);
+            await Uni.Delay(Duration, cancellation:cancellation, cancelImmediately:true);
         }
 
         public override UniTask Persistence(IEventContext context, Cancellation cancellation) => UniTask.CompletedTask;

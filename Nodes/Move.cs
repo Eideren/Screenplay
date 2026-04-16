@@ -31,7 +31,7 @@ namespace Screenplay.Nodes
             float f = 0;
             do
             {
-                await UniTaskExtensions.NextFrame(cancellation, cancelImmediately: true);
+                await Uni.NextFrame(cancellation, cancelImmediately: true);
                 f = Mathf.Clamp01(f + Time.deltaTime);
                 go.transform.position = Vector3.Lerp(startPos, Destination, f);
                 go.transform.rotation = Quaternion.Lerp(startRot, Rotation, f);
