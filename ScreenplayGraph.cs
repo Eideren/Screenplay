@@ -97,7 +97,6 @@ namespace Screenplay
                             lock (introspection.EventsReady)
                             {
                                 introspection.EventsReady.Add((e, null));
-                                eventsReadySignal.Signal(true);
                             }
                         }
                         else
@@ -148,7 +147,6 @@ namespace Screenplay
                             if (eventToProcess.Repeatable)
                             {
                                 introspection.EventsReady.Add(ready); // Move it to the end of the list
-                                eventsReadySignal.Signal(true);
                             }
                             else if (eventsCleanup.Remove(eventToProcess, out var triggerSource))
                             {
