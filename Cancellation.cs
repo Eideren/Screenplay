@@ -27,6 +27,6 @@ namespace Screenplay
         public void Unregister(Action action) => _source?.Unregister(action);
         public void Unregister(Action<object> action, object parameter) => _source?.Unregister(action, parameter);
 
-        public void Register(CancellationSource source) => _source?.Register(source);
+        public void AlsoCancels(CancellationSource source) => _source?.AlsoCancel(source);
     }
 }

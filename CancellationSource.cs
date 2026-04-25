@@ -28,7 +28,7 @@ namespace Screenplay
         public CancellationSource(Cancellation parent, [CallerMemberName] string? mn = null, [CallerLineNumber] int ln = 0, [CallerFilePath] string? fp = null)
             : this(mn, ln, fp)
         {
-            parent.Register(this);
+            parent.AlsoCancels(this);
         }
 
         public static CancellationSource CreateLinkedTokenSource(Cancellation parent, [CallerMemberName] string? mn = null, [CallerLineNumber] int ln = 0, [CallerFilePath] string? fp = null)
@@ -39,8 +39,8 @@ namespace Screenplay
         public static CancellationSource CreateLinkedTokenSource(Cancellation parentA, Cancellation parentB, [CallerMemberName] string? mn = null, [CallerLineNumber] int ln = 0, [CallerFilePath] string? fp = null)
         {
             var source = new CancellationSource(mn, ln, fp);
-            parentA.Register(source);
-            parentB.Register(source);
+            parentA.AlsoCancels(source);
+            parentB.AlsoCancels(source);
             return source;
         }
 
@@ -141,7 +141,7 @@ namespace Screenplay
             Unregister(static o => ((Action)o).Invoke(), action);
         }
 
-        public void Register(CancellationSource source)
+        public void AlsoCancel(CancellationSource source)
         {
             Register(static o => ((CancellationSource)o).Cancel(), source);
         }
