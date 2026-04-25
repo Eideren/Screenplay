@@ -1,4 +1,3 @@
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using Cysharp.Threading.Tasks.Triggers;
 using Sirenix.OdinInspector;
@@ -28,14 +27,14 @@ namespace Screenplay.Nodes
 
             var startPos = go.transform.position;
             var startRot = go.transform.rotation;
-            float f = 0;
-            do
+            for(float f = 0; f < Duration; await Uni.NextFrame(cancellation), f += Time.deltaTime)
             {
-                await Uni.NextFrame(cancellation, cancelImmediately: true);
-                f = Mathf.Clamp01(f + Time.deltaTime);
-                go.transform.position = Vector3.Lerp(startPos, Destination, f);
-                go.transform.rotation = Quaternion.Lerp(startRot, Rotation, f);
-            } while (f < Duration);
+                float t = EasingType.Apply(Mathf.Clamp01(f / Duration));
+                go.transform.position = Vector3.Lerp(startPos, Destination, t);
+                go.transform.rotation = Quaternion.Lerp(startRot, Rotation, t);
+            }
+            go.transform.position = Destination;
+            go.transform.rotation = Rotation;
         }
 
         public override async UniTask Persistence(IEventContext context, Cancellation cancellation)
