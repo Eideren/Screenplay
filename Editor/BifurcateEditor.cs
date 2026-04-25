@@ -40,11 +40,24 @@ namespace Screenplay.Editor
                 return;
 
             GUIHelper.PushColor(new Color(0, 0, 0, 0.1f));
+            var previousRect = new Rect(Value.Position + Vector2.right * CachedSize.x / 2f, Vector2.one);
             foreach (var (_, port) in ActivePorts)
             {
                 RecursiveRectGrow(port, out var r);
-                r.xMin = Value.Position.x + CachedSize.x / 2f;
+                if (r.size == default)
+                {
+                    r = previousRect;
+                    r.y += previousRect.height;
+                    r.height = 1;
+                    r.width = 1;
+                }
+                else
+                {
+                    r.xMin = Value.Position.x + CachedSize.x / 2f;
+                }
+
                 _connectedToPortsRect.Add(r);
+                previousRect = r;
                 r = Window.GridToWindowRect(r);
                 GUI.DrawTexture(r, Texture2D.whiteTexture);
             }
@@ -95,7 +108,7 @@ namespace Screenplay.Editor
 
         public override void OnBodyGUI()
         {
-            Rect disolveRect;
+            Rect dissolveRect;
 
             try
             {
@@ -129,9 +142,9 @@ namespace Screenplay.Editor
                 gridspaceHeight += Value.Position.y + GetBodyStyle().border.top;
 
                 gridspaceHeight += EditorGUIUtility.singleLineHeight;
-                disolveRect = GUILayoutUtility.GetRect(EditorGUIUtility.currentViewWidth, EditorGUIUtility.singleLineHeight);
-                disolveRect.width = disolveRect.height;
-                disolveRect.x = GetWidth() / 2f - disolveRect.width / 2f;
+                dissolveRect = GUILayoutUtility.GetRect(EditorGUIUtility.currentViewWidth, EditorGUIUtility.singleLineHeight);
+                dissolveRect.width = dissolveRect.height;
+                dissolveRect.x = GetWidth() / 2f - dissolveRect.width / 2f;
 
                 while (_connectedToPortsRect.Count < entriesDrawer.Count)
                     _connectedToPortsRect.Add(new Rect(Value.Position, default));
@@ -214,7 +227,7 @@ namespace Screenplay.Editor
                 ObjectTree.EndDraw();
             }
 
-            if (GUI.Button(disolveRect, _disolve, SirenixGUIStyles.None))
+            if (GUI.Button(dissolveRect, _disolve, SirenixGUIStyles.None))
             {
                 GUI.changed = true;
                 var ports = (
