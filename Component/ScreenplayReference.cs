@@ -135,7 +135,20 @@ namespace Screenplay.Component
                     s_completionSources[guid] = completion = new CancelableCompletionSource<Object>();
             }
 
-            return (T)await completion.AwaitResult(cancellation);
+            output = await completion.AwaitResult(cancellation);
+
+            if (output is MonoBehaviour mono && mono.destroyCancellationToken.IsCancellationRequested) // This is for cases where the monobehavior is inside its OnDestroy scope
+            {
+                lock (s_idToRef)
+                {
+                    if (s_completionSources.TryGetValue(guid, out var newCompletion) && completion == newCompletion)
+                        s_completionSources.Remove(guid);
+                }
+
+                return await GetAsync<T>(guid, cancellation);
+            }
+
+            return (T)output;
         }
 
         public static guid GetOrCreate(GameObject obj)
