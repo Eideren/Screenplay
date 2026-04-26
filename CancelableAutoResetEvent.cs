@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using Screenplay;
 using UnityEngine;
@@ -9,23 +7,14 @@ using UnityEngine;
 public class CancelableAutoResetEvent<T> where T : notnull
 {
     private readonly Action<object> _onExternalCancel;
-    private readonly List<Cancellation> _cancellations = new(4);
-    private readonly List<Action> _continuations = new(4);
+    private readonly Deque<(Cancellation token, Action continuation, int version)> _cancellations = new(4);
     private T? _currentVal;
     private int _version;
-    private bool _closed, _internal;
+    private bool _closed, _recusion;
 
     public CancelableAutoResetEvent()
     {
-        _onExternalCancel = o =>
-        {
-            var continuation = (Action)o;
-            int i = _continuations.IndexOf(continuation);
-            // We're not removing, as it makes signaling a bit more complex
-            _continuations[i] = static () => { };
-            _cancellations[i] = Cancellation.None;
-            continuation.Invoke();
-        };
+        _onExternalCancel = OnExternalCancel;
     }
 
     private void CheckThread()
@@ -40,6 +29,7 @@ public class CancelableAutoResetEvent<T> where T : notnull
             throw new OperationCanceledException($"{nameof(CancelableAutoResetEvent<T>)} closed");
     }
 
+    /// <exception cref="OperationCanceledException">When closed or when the token is canceled</exception>
     public Awaitable NextSignal(Cancellation cancellation) => new(this, cancellation);
 
     private void RegisterNewContinuation(Action continuation, Cancellation cancellation)
@@ -48,8 +38,7 @@ public class CancelableAutoResetEvent<T> where T : notnull
         ThrowWhenClosed();
 
         cancellation.ThrowIfCancellationRequested();
-        _continuations.Add(continuation);
-        _cancellations.Add(cancellation);
+        _cancellations.AddToBack((cancellation, continuation, _version + 1));
         cancellation.Register(_onExternalCancel, continuation);
     }
 
@@ -57,24 +46,22 @@ public class CancelableAutoResetEvent<T> where T : notnull
     {
         CheckThread();
 
+        if (_closed)
+            throw new InvalidOperationException($"{nameof(CancelableAutoResetEvent<T>)} has been closed, it cannot be signaled");
+
+        if (_recusion)
+            throw new InvalidOperationException($"{nameof(CancelableAutoResetEvent<T>)} called recursively, a task that was just waiting on this signal is signaling it");
+
         try
         {
-            if (_closed)
-                throw new InvalidOperationException();
-
-            if (_internal)
-                throw new InvalidOperationException();
-            _internal = true;
+            _recusion = true;
 
             _version++;
             _currentVal = value;
-            int end = _continuations.Count;
-            for (int i = 0; i < end; i++)
+            while (_cancellations.Count > 0 && _cancellations.PeekBack().version == _version)
             {
-                var continuation = _continuations[i];
-                _cancellations[i].Unregister(_onExternalCancel, continuation);
-                _cancellations[i] = default;
-                _continuations[i] = static () => { };
+                var (token, continuation, version) = _cancellations.RemoveFromBack();
+                token.Unregister(_onExternalCancel, continuation);
                 try
                 {
                     continuation();
@@ -84,13 +71,10 @@ public class CancelableAutoResetEvent<T> where T : notnull
                     Debug.LogException(e);
                 }
             }
-
-            _continuations.RemoveRange(0, end);
-            _cancellations.RemoveRange(0, end);
         }
         finally
         {
-            _internal = false;
+            _recusion = false;
             _currentVal = default;
         }
     }
@@ -100,12 +84,10 @@ public class CancelableAutoResetEvent<T> where T : notnull
         CheckThread();
         _closed = true;
 
-        for (int i = 0; i < _continuations.Count; i++)
+        while (_cancellations.Count > 0)
         {
-            var continuation = _continuations[i];
-            _cancellations[i].Unregister(_onExternalCancel, continuation);
-            _cancellations[i] = default;
-            _continuations[i] = static () => { };
+            var (token, continuation, version) = _cancellations.RemoveFromFront();
+            token.Unregister(_onExternalCancel, continuation);
             try
             {
                 continuation();
@@ -117,19 +99,34 @@ public class CancelableAutoResetEvent<T> where T : notnull
         }
     }
 
+    private void OnExternalCancel(object o)
+    {
+        var continuation = (Action)o;
+        for (int j = 0; j < _cancellations.Count; j++)
+        {
+            var d = _cancellations[j];
+            if (d.continuation == continuation)
+            {
+                // We're not removing, as it makes signaling a bit more complex
+                _cancellations[j] = (Cancellation.None, static () => { }, d.version);
+                continuation.Invoke();
+                break;
+            }
+        }
+    }
 
     public readonly struct Awaitable
     {
-        readonly CancelableAutoResetEvent<T> provider;
-        readonly Cancellation ct;
+        private readonly CancelableAutoResetEvent<T> _provider;
+        private readonly Cancellation _ct;
 
         public Awaitable(CancelableAutoResetEvent<T> provider, Cancellation ct = default)
         {
-            this.provider = provider ?? throw new ArgumentNullException(nameof(provider));
-            this.ct = ct;
+            _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+            _ct = ct;
         }
 
-        public Awaiter GetAwaiter() => new(provider, ct);
+        public Awaiter GetAwaiter() => new(_provider, _ct);
 
         public readonly struct Awaiter : ICriticalNotifyCompletion
         {
