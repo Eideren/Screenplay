@@ -6,7 +6,8 @@ namespace Screenplay
     public class Lock
     {
         private readonly IPreconditionCollector _parentTracker;
-        private readonly CancelableAutoResetEvent<bool> _resetEvent = new();
+        // Need to split into two as a close might signal an open and vice versa
+        private readonly CancelableAutoResetEvent<int> _openEvent = new(), _closeEvent = new();
         private readonly object _lock = new();
         private int _counter;
 
@@ -16,14 +17,14 @@ namespace Screenplay
         {
             if (Open)
                 return;
-            await _resetEvent.NextSignal(cancellation);
+            await _openEvent.NextSignal(cancellation);
         }
 
         public async UniTask WaitClosed(Cancellation cancellation)
         {
             if (Open == false)
                 return;
-            await _resetEvent.NextSignal(cancellation);
+            await _closeEvent.NextSignal(cancellation);
         }
 
         public Lock(IPreconditionCollector parentTracker, IList<Precondition> targets, out IPreconditionCollector[] preconditions)
@@ -76,9 +77,9 @@ namespace Screenplay
                         || previousCounter == 1 && _lock._counter == 0)
                     {
                         if (_lock.Open)
-                            _lock._resetEvent.Signal(true);
+                            _lock._openEvent.Signal(0);
                         else
-                            _lock._resetEvent.Signal(false);
+                            _lock._closeEvent.Signal(0);
                     }
                 }
             }

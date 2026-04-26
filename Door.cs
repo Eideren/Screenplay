@@ -7,7 +7,7 @@ namespace Screenplay
     {
         private readonly IPreconditionCollector _parentTracker;
         private readonly object _lock = new();
-        private CancelableAutoResetEvent<bool> _resetEvent = new();
+        private readonly CancelableAutoResetEvent<int> _openEvent = new(), _closeEvent = new();
         private int _counter;
 
         public bool Open => _counter == 0;
@@ -16,14 +16,14 @@ namespace Screenplay
         {
             if (Open)
                 return;
-            await _resetEvent.NextSignal(cancellation);
+            await _openEvent.NextSignal(cancellation);
         }
 
         public async UniTask WaitClosed(Cancellation cancellation)
         {
             if (Open == false)
                 return;
-            await _resetEvent.NextSignal(cancellation);
+            await _closeEvent.NextSignal(cancellation);
         }
 
         public Door(IPreconditionCollector parentTracker, IList<Precondition> targets, out IPreconditionCollector[] preconditions)
@@ -73,9 +73,9 @@ namespace Screenplay
                         || IsUnlocked == false && ++_door._counter == 1)
                     {
                         if (_door.Open)
-                            _door._resetEvent.Signal(true);
+                            _door._openEvent.Signal(0);
                         else
-                            _door._resetEvent.Signal(false);
+                            _door._closeEvent.Signal(0);
                     }
                 }
             }
