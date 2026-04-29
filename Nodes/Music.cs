@@ -12,9 +12,9 @@ namespace Screenplay.Nodes
 
         public required AudioClip Track;
 
-        public float Volume = 1f;
+        [Range(0, 1)] public float Volume = 1f;
 
-        public bool Loop = true;
+        public AudioSourceFlags Flags = AudioSourceFlags.Loop;
 
         [Unit(Units.Second)]
         public float TransitionDuration;
@@ -51,7 +51,7 @@ namespace Screenplay.Nodes
             }
 
             CurrentPlaying.clip = Track;
-            CurrentPlaying.loop = Loop;
+            Flags.Apply(CurrentPlaying);
             CurrentPlaying.time = start;
             CurrentPlaying.Play();
             TransitionIn(CurrentPlaying, TransitionDuration, Volume, cancellation).Forget();
