@@ -1,4 +1,3 @@
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 // Async method lacks 'await' operators and will run synchronously - done on purpose

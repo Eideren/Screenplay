@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Screenplay.Nodes;
 
 namespace Screenplay
 {
