@@ -201,9 +201,12 @@ namespace Screenplay
             }
         }
 
-        public static CancelableCompletionSource<IExecutable?>.Awaitable Bifurcate(IBifurcate bifurcation, EventProgress? progress, IEventContext context, Introspection? introspection, Cancellation cancellation)
+        public static async UniTask<IExecutable?> Bifurcate(IBifurcate bifurcation, EventProgress? progress, IEventContext context, Introspection? introspection, Cancellation cancellation)
         {
             var entries = bifurcation.Followup().Where(x => x != null).ToList();
+            if (entries.Count == 0)
+                return null;
+
             var doneSignal = new CancelableCompletionSource<IExecutable?>();
             IRejoin? expectedJoin = null;
             int leftToDo = entries.Count;
@@ -214,7 +217,7 @@ namespace Screenplay
                 ParallelTask(entry!).Forget();
             }
 
-            return doneSignal.AwaitResult(cancellation);
+            return await doneSignal.AwaitResult(cancellation);
 
             async UniTask ParallelTask(IExecutable? executable)
             {
