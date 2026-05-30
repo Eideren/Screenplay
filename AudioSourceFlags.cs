@@ -18,6 +18,11 @@ namespace Screenplay
     {
         public static void Apply(this AudioSourceFlags flags, AudioSource source)
         {
+            source.SetFlags(flags);
+        }
+
+        public static void SetFlags(this AudioSource source, AudioSourceFlags flags)
+        {
             source.loop = (AudioSourceFlags.Loop & flags) != 0;
             source.mute = (AudioSourceFlags.Mute & flags) != 0;
             source.bypassEffects = (AudioSourceFlags.BypassEffects & flags) != 0;
