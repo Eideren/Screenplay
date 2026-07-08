@@ -12,7 +12,7 @@ namespace Screenplay
         private int _canceled;
         private CancellationTokenSource? _cts;
 #warning this is problematic, I'm supposed to keep a hold of *some* of these, otherwise they are GCed
-        private Dictionary<object, Action<object>> _onCancel = new();
+        private readonly Dictionary<object, Action<object>> _onCancel = new();
         private CancellationTokenRegistration _ctr;
         private string? mn, fp;
         public int ln;
@@ -71,18 +71,29 @@ namespace Screenplay
             {
                 _cts?.Cancel();
                 _cts?.Dispose();
+
+                var buffer = System.Buffers.ArrayPool<(object, Action<object>)>.Shared.Rent(_onCancel.Count);
+
+                int i = 0;
                 foreach (var (param, action) in _onCancel)
+                    buffer[i++] = (param, action);
+
+                foreach (var (param, action) in buffer.AsSpan(0, i))
                 {
-                    try
+                    if (_onCancel.ContainsKey(param))
                     {
-                        action(param);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogException(e);
+                        try
+                        {
+                            action(param);
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogException(e);
+                        }
                     }
                 }
 
+                System.Buffers.ArrayPool<(object, Action<object>)>.Shared.Return(buffer);
                 _onCancel.Clear();
             }
         }
@@ -113,6 +124,10 @@ namespace Screenplay
         {
             lock (_onCancel)
             {
+                bool removed = _onCancel.Remove(parameter);
+
+                Debug.Assert(removed);
+
                 if (IsCancellationRequested)
                 {
                     try
@@ -123,11 +138,7 @@ namespace Screenplay
                     {
                         Debug.LogException(e);
                     }
-
-                    return;
                 }
-
-                _onCancel.Remove(parameter);
             }
         }
 

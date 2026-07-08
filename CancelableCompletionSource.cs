@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
@@ -31,7 +32,14 @@ namespace Screenplay
                 // We're not removing, as it makes signaling a bit more complex
                 _continuations[i] = static () => { };
                 _cancellations[i] = Cancellation.None;
-                continuation.Invoke();
+                try
+                {
+                    continuation();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
             };
         }
 
@@ -42,6 +50,18 @@ namespace Screenplay
         }
 
         public Awaitable AwaitResult(Cancellation cancellation) => new(this, cancellation);
+
+        public bool IsCompleted([NotNullWhen(true)] out T? val)
+        {
+            if (_state == State.Successful)
+            {
+                val = _currentVal!;
+                return true;
+            }
+
+            val = default;
+            return false;
+        }
 
         private void RegisterNewContinuation(Action continuation, Cancellation cancellation)
         {
@@ -78,27 +98,11 @@ namespace Screenplay
 
             if (_state != State.Idle)
                 throw new InvalidOperationException();
+
             _currentVal = value;
             _state = State.Successful;
 
-            for (int i = 0; i < _continuations.Count; i++)
-            {
-                var continuation = _continuations[i];
-                _cancellations[i].Unregister(_onExternalCancel, continuation);
-                _cancellations[i] = default;
-                _continuations[i] = static () => { };
-                try
-                {
-                    continuation();
-                }
-                catch (Exception e)
-                {
-                    Debug.LogException(e);
-                }
-            }
-
-            _continuations.Clear();
-            _cancellations.Clear();
+            Release();
         }
 
         public void SetCanceled()
@@ -110,10 +114,17 @@ namespace Screenplay
 
             _state = State.Canceled;
 
+            Release();
+        }
+
+        private void Release()
+        {
             for (int i = 0; i < _continuations.Count; i++)
             {
+                _cancellations[i].Unregister(_onExternalCancel, _continuations[i]);
+                // The above may or may not run the _continuations[i] method, we shouldn't double-run it,
+                // so fetch it again as it'll be replaced by a no-op if it ran
                 var continuation = _continuations[i];
-                _cancellations[i].Unregister(_onExternalCancel, continuation);
                 _cancellations[i] = default;
                 _continuations[i] = static () => { };
                 try
