@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using UnityEditor;
-using UnityEngine;
 using UnityEngine.LowLevel;
 using UnityEngine.PlayerLoop;
+using Object = UnityEngine.Object;
 
 namespace Screenplay.Component
 {
@@ -39,18 +39,7 @@ namespace Screenplay.Component
 
         private static void CustomUpdate()
         {
-            lock (s_onDestroyCompletion)
-            {
-                for (int i = s_monitored.Count - 1; i >= 0; i--)
-                {
-                    var source = s_monitored[i];
-                    if (source == null && s_onDestroyCompletion.Remove(source!, out var completion))
-                    {
-                        s_monitored.RemoveAt(i);
-                        completion.SetResult(true);
-                    }
-                }
-            }
+            CleanupDestroyed();
 
             lock (s_srMonitored)
             {
@@ -66,7 +55,23 @@ namespace Screenplay.Component
             }
         }
 
-        [InitializeOnLoadMethod]
+        private static void CleanupDestroyed()
+        {
+            lock (s_onDestroyCompletion)
+            {
+                for (int i = s_monitored.Count - 1; i >= 0; i--)
+                {
+                    var source = s_monitored[i];
+                    if (source == null && s_onDestroyCompletion.Remove(source!, out var completion))
+                    {
+                        s_monitored.RemoveAt(i);
+                        completion.SetResult(true);
+                    }
+                }
+            }
+        }
+
+        [UnityEditor.InitializeOnLoadMethod]
         private static void OnLoad()
         {
             // Retrieve the default Player loop system. Get the current loop instead if the default was already modified previously.
@@ -83,7 +88,28 @@ namespace Screenplay.Component
             // Add the custom update system after the PreLateUpdate phase in the Player Loop
             var loopWithCustomUpdate = InsertSystemAfter<PreUpdate>(in defaultLoop, myCustomUpdate);
             PlayerLoop.SetPlayerLoop(loopWithCustomUpdate);
+            #if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged += OnEnterPlaymodeInEditor;
+            #endif
         }
+
+#if UNITY_EDITOR
+        private static void OnEnterPlaymodeInEditor(UnityEditor.PlayModeStateChange change)
+        {
+            switch (change)
+            {
+                case UnityEditor.PlayModeStateChange.ExitingPlayMode:
+                case UnityEditor.PlayModeStateChange.ExitingEditMode:
+                    CleanupDestroyed();
+                    break;
+                case UnityEditor.PlayModeStateChange.EnteredEditMode:
+                case UnityEditor.PlayModeStateChange.EnteredPlayMode:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(change), change, null);
+            }
+        }
+#endif
 
         private static PlayerLoopSystem InsertSystemAfter<T>(in PlayerLoopSystem loopSystem, PlayerLoopSystem newSystem) where T : struct
         {
