@@ -7,7 +7,7 @@ using Object = UnityEngine.Object;
 
 namespace Screenplay.Component
 {
-    public class ScreenplayReference : MonoBehaviour
+    public class ScreenplayReference : MonoBehaviour, ISerializationCallbackReceiver
     {
         private static readonly Dictionary<guid, CancelableCompletionSource<Object>> s_idToRef = new(){ { default, null! } };
         private static readonly Dictionary<Object, guid> s_existingRefToId = new();
@@ -20,9 +20,59 @@ namespace Screenplay.Component
 
         public guid Guid => _guid;
 
-        public ScreenplayReference()
+        public void OnBeforeSerialize() {}
+
+        public void OnAfterDeserialize()
         {
+            CancelableCompletionSource<Object> completion;
+            lock (s_idToRef)
+            {
+                if (s_idToRef.TryGetValue(Guid, out completion))
+                {
+                    if (completion.IsCompleted(out var existingRef))
+                    {
+                        Debug.LogError($"Id conflict between {existingRef.GetInstanceID()} and {Reference?.GetInstanceID()}");
+                        return;
+                    }
+
+                    // Use existing completion
+                }
+                else
+                {
+                    s_idToRef[Guid] = completion = new CancelableCompletionSource<Object>();
+                }
+
+                if (Reference is null)
+                {
+                    Debug.LogError($"{nameof(Reference)} is null");
+                    return;
+                }
+
+                s_existingRefToId[Reference] = Guid;
+            }
+
             DestroyManager.RegisterScreenplayReference(this);
+        }
+
+        public void Setup()
+        {
+            if (Reference != null)
+            {
+                if (s_idToRef.TryGetValue(Guid, out var completion))
+                {
+                    if (completion.IsCompleted(out _) == false)
+                        completion.SetResult(Reference);
+                }
+            }
+
+            MonitorLifetime().Forget();
+
+            async UniTask MonitorLifetime()
+            {
+                await DestroyManager.WaitForDestroy(Reference!, Cancellation.None);
+
+                OnDestroyProxy();
+            }
         }
 
         private void ReAssignReference()
@@ -49,46 +99,6 @@ namespace Screenplay.Component
                     return;
 
                 s_existingRefToId[Reference] = Guid;
-            }
-
-            completion.SetResult(Reference);
-        }
-
-        public void Setup()
-        {
-            CancelableCompletionSource<Object> completion;
-            lock (s_idToRef)
-            {
-                if (s_idToRef.TryGetValue(Guid, out completion))
-                {
-                    if (completion.IsCompleted(out var existingRef))
-                    {
-                        Debug.LogError($"Id conflict between {existingRef.GetInstanceID()} and {Reference?.GetInstanceID()}");
-                        return;
-                    }
-
-                    // Use existing ccs
-                }
-                else
-                {
-                    s_idToRef[Guid] = completion = new CancelableCompletionSource<Object>();
-                }
-
-                if (Reference is null)
-                {
-                    Debug.LogError($"{nameof(Reference)} is null");
-                    return;
-                }
-
-                s_existingRefToId[Reference] = Guid;
-            }
-
-            MonitorLifetime().Forget();
-
-            async UniTask MonitorLifetime()
-            {
-                await DestroyManager.WaitForDestroy(Reference!, Cancellation.None);
-                OnDestroyProxy();
             }
 
             completion.SetResult(Reference);
