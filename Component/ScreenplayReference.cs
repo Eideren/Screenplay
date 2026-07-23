@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
@@ -20,6 +21,31 @@ namespace Screenplay.Component
 
         public guid Guid => _guid;
 
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void OnLoad()
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged += change =>
+            {
+
+                switch (change)
+                {
+                    case UnityEditor.PlayModeStateChange.ExitingPlayMode:
+                        // Workaround for objects disabled throughout a run, they don't execute their Destroy()
+                        s_idToRef.Clear();
+                        s_existingRefToId.Clear();
+                        break;
+                    case UnityEditor.PlayModeStateChange.ExitingEditMode:
+                    case UnityEditor.PlayModeStateChange.EnteredEditMode:
+                    case UnityEditor.PlayModeStateChange.EnteredPlayMode:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(change), change, null);
+                }
+            };
+#endif
+        }
+
         public void OnBeforeSerialize() {}
 
         public void OnAfterDeserialize()
@@ -31,7 +57,14 @@ namespace Screenplay.Component
                 {
                     if (completion.IsCompleted(out var existingRef))
                     {
-                        Debug.LogError($"Id conflict between {existingRef.GetInstanceID()} and {Reference?.GetInstanceID()}");
+                        #if UNITY_EDITOR
+                        var newRef = Reference;
+                        UnityEditor.EditorApplication.delayCall += () =>
+                        {
+                            Debug.LogError($"Id conflict between {existingRef} and {newRef}, click on me for existing ref", existingRef);
+                            Debug.LogError($"Id conflict between {existingRef} and {newRef}, click on me for new ref", newRef);
+                        };
+                        #endif
                         return;
                     }
 
