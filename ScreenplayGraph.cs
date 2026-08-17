@@ -401,10 +401,13 @@ namespace Screenplay
         {
             public required VisitedPermutation Permutation;
             public required IExecutable First;
-            [SerializeReference] public List<Link> ExecutionOrder = new();
+            public List<Link> ExecutionOrder = new();
         }
 
-        public record struct Link(IExecutable Previous, IExecutable Next);
+        public record struct Link(IExecutable Previous, IExecutable Next)
+        {
+            [SerializeReference] public IExecutable Previous = Previous, Next = Next;
+        }
 
         [Serializable]
         public record struct ExecutableSerialized(long Previous, long Next)

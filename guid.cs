@@ -51,12 +51,12 @@
         }
 
         #if UNITY_EDITOR
-        public static implicit operator guid(UnityEditor.GUID systemGuid)
+        public static implicit operator guid(UnityEngine.GUID systemGuid)
         {
             unsafe
             {
-                if (sizeof(UnityEditor.GUID) != sizeof(guid))
-                    throw new InvalidOperationException($"Size mismatch between {typeof(UnityEditor.GUID)} and {nameof(guid)}, {sizeof(UnityEditor.GUID)} != {sizeof(guid)}");
+                if (sizeof(UnityEngine.GUID) != sizeof(guid))
+                    throw new InvalidOperationException($"Size mismatch between {typeof(UnityEngine.GUID)} and {nameof(guid)}, {sizeof(UnityEngine.GUID)} != {sizeof(guid)}");
                 return *(guid*)&systemGuid;
             }
         }
