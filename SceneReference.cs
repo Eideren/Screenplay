@@ -81,7 +81,7 @@ namespace Screenplay
 
         public bool IsValid()
         {
-            return _path != null;
+            return _path.IsNullOrWhitespace() == false;
         }
 
         public override bool Equals(object? obj)
