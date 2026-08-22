@@ -2,9 +2,10 @@
 using System.Runtime.CompilerServices;
 using Cysharp.Threading.Tasks;
 using Screenplay;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
-public static class Uni
+public static partial class Uni
 {
     public static UniTask NextFrame(Cancellation cancellation = default, bool cancelImmediately = true)
     {
@@ -132,9 +133,9 @@ public static class Uni
         }
     }
 
-    private sealed class GenericPromise<T> : IUniTaskSource, IPlayerLoopItem, ITaskPoolNode<GenericPromise<T>> where T : struct, IPromiseStruct
+    private sealed partial class GenericPromise<T> : IUniTaskSource, IPlayerLoopItem, ITaskPoolNode<GenericPromise<T>> where T : struct, IPromiseStruct
     {
-        private static TaskPool<GenericPromise<T>> s_pool;
+        [AutoStaticsCleanup] private static TaskPool<GenericPromise<T>> s_pool;
 
         static GenericPromise()
         {

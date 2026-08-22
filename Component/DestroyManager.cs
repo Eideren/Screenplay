@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.LowLevel;
 using UnityEngine.PlayerLoop;
 using Object = UnityEngine.Object;
@@ -9,9 +10,9 @@ namespace Screenplay.Component
 {
     public static class DestroyManager
     {
-        private static readonly Dictionary<Object, CancelableCompletionSource<bool>> s_onDestroyCompletion = new();
-        private static readonly List<Object> s_monitored = new();
-        private static readonly List<ScreenplayReference> s_srMonitored = new();
+        [NoAutoStaticsCleanup] private static readonly Dictionary<Object, CancelableCompletionSource<bool>> s_onDestroyCompletion = new();
+        [NoAutoStaticsCleanup] private static readonly List<Object> s_monitored = new();
+        [NoAutoStaticsCleanup] private static readonly List<ScreenplayReference> s_srMonitored = new();
 
         public static async UniTask WaitForDestroy(Object obj, Cancellation cancellation)
         {
