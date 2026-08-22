@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using YNode;
 
 namespace Screenplay.Nodes
 {
-    [NodeVisuals(Icon = "d_CollabConflict Icon", Width = 312)]
+    [NodeVisuals(Icon = "d_CollabConflict Icon", Width = 312), Serializable]
     public class Event : AbstractScreenplayNode, IBranch
     {
         [HideInInspector, SerializeField]

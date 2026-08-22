@@ -9,13 +9,14 @@ using UnityEngine;
 using YNode;
 using YNode.Editor;
 using Screenplay.Nodes;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Serialization;
 using Event = Screenplay.Nodes.Event;
 using Random = Unity.Mathematics.Random;
 
 namespace Screenplay.Editor
 {
-    public class ScreenplayEditor : CustomGraphWindow<ScreenplayGraph>
+    public partial class ScreenplayEditor : CustomGraphWindow<ScreenplayGraph>
     {
         private List<IScreenplayNode> _previewChain = new();
         private List<IScreenplayNode> _rootToPreview = new();
@@ -179,7 +180,11 @@ namespace Screenplay.Editor
 
             TryPreview();
 
+            #if UNITY_6000_0_OR_NEWER
+            var dispatcher = FindAnyObjectByType<ScreenplayDispatcher>();
+            #else
             var dispatcher = FindFirstObjectByType<ScreenplayDispatcher>();
+            #endif
             if (dispatcher == null)
             {
                 if (GUILayout.Button(EditorGUIUtility.TrTextContentWithIcon($"You must add a {nameof(ScreenplayDispatcher)} to the scene to run this screenplay,\nclick me to add one automatically", MessageType.Warning), EditorStyles.helpBox))
@@ -301,9 +306,9 @@ namespace Screenplay.Editor
             }
         }
 
-        private static readonly List<Vector3> _positions = new();
-        private static readonly HashSet<NodeEditor> _traversed = new();
-        private static readonly ReferenceCollector _collector = new();
+        [NoAutoStaticsCleanup] private static readonly List<Vector3> _positions = new();
+        [AutoStaticsCleanup] private static readonly HashSet<NodeEditor> _traversed = new();
+        [AutoStaticsCleanup] private static readonly ReferenceCollector _collector = new();
 
         private void OnSceneGUI(SceneView view)
         {
@@ -485,11 +490,11 @@ namespace Screenplay.Editor
 
         private class SortByXPos : IComparer<Event>
         {
-            public static SortByXPos Instance = new SortByXPos();
+            [NoAutoStaticsCleanup] public static SortByXPos Instance = new SortByXPos();
             public int Compare(Event x, Event y) => x.Position.x.CompareTo(y.Position.x);
         }
 
-        private static GUIStyle? s_buttonWithClipping;
+        [NoAutoStaticsCleanup] private static GUIStyle? s_buttonWithClipping;
         private static GUIStyle ButtonWithClipping => s_buttonWithClipping ??= new GUIStyle(EditorStyles.miniButton)
         {
 #if UNITY_2023_1_OR_NEWER

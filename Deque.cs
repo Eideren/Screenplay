@@ -308,7 +308,7 @@ namespace Screenplay
             Remove((T)value);
         }
 
-        object System.Collections.IList.this[int index]
+        object? System.Collections.IList.this[int index]
         {
             get
             {
@@ -317,7 +317,7 @@ namespace Screenplay
 
             set
             {
-                this[index] = (T)value;
+                this[index] = (T)(value ?? throw new NullReferenceException());
             }
         }
 

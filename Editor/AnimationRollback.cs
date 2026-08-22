@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -182,7 +183,8 @@ namespace Screenplay
             }
         }
 
-        private static HashSet<string> _Dof = new()
+        [NoAutoStaticsCleanup]
+        private static readonly HashSet<string> _Dof = new()
         {
             "Spine Front-Back",
             "Spine Left-Right",
@@ -193,18 +195,6 @@ namespace Screenplay
             "UpperChest Front-Back",
             "UpperChest Left-Right",
             "UpperChest Twist Left-Right",
-            "Neck Nod Down-Up",
-            "Neck Tilt Left-Right",
-            "Neck Turn Left-Right",
-            "Head Nod Down-Up",
-            "Head Tilt Left-Right",
-            "Head Turn Left-Right",
-            "Left Eye Down-Up",
-            "Left Eye In-Out",
-            "Right Eye Down-Up",
-            "Right Eye In-Out",
-            "Jaw Close",
-            "Jaw Left-Right",
             "Neck Nod Down-Up",
             "Neck Tilt Left-Right",
             "Neck Turn Left-Right",

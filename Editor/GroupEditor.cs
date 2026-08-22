@@ -2,6 +2,7 @@
 using UnityEngine;
 using YNode.Editor;
 using Screenplay.Nodes;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using Event = UnityEngine.Event;
 
@@ -285,8 +286,8 @@ namespace Screenplay.Editor
             }
         }
 
-        private static GUIStyle? s_body;
-        private static Texture2D? s_nodeBody;
+        [NoAutoStaticsCleanup] private static GUIStyle? s_body;
+        [NoAutoStaticsCleanup] private static Texture2D? s_nodeBody;
         private static Texture2D NodeBody =>
             s_nodeBody != null ? s_nodeBody : s_nodeBody = UnityEngine.Resources.Load<Texture2D>("ynode_group");
     }

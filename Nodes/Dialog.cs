@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
@@ -7,7 +8,7 @@ using YNode;
 
 namespace Screenplay.Nodes
 {
-    [NodeVisuals(Icon = "d_console.infoicon")]
+    [NodeVisuals(Icon = "d_console.infoicon"), Serializable]
     public class Dialog : ExecutableLinear, ILocalizableNode, IInterlocutorSource
     {
         [InlineProperty, HideLabel]

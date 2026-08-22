@@ -38,12 +38,12 @@ namespace Screenplay.Editor
                 {
                     await care.NextSignal(cancellation);
                 }
-                catch (OperationCanceledException e)
+                catch (OperationCanceledException)
                 {
                     task.TrySetResult(true);
                     return;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     task.TrySetResult(false);
                 }

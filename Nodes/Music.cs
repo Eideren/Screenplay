@@ -1,13 +1,15 @@
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using YNode;
 
 namespace Screenplay.Nodes
 {
     [NodeVisuals(Icon = "d_AudioImporter Icon")]
-    public class Music : ExecutableLinear
+    public partial class Music : ExecutableLinear
     {
+        [AutoStaticsCleanup]
         public static AudioSource? CurrentPlaying;
 
         public required AudioClip Track;
@@ -96,10 +98,13 @@ namespace Screenplay.Nodes
 
         }
 
+        #if UNITY_6000_0_OR_NEWER
+        #else
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
         private static void Init()
         {
             CurrentPlaying = null;
         }
+        #endif
     }
 }

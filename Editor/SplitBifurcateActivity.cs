@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Screenplay.Nodes;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 using YNode.Editor;
@@ -10,7 +11,7 @@ namespace Screenplay.Editor
 {
     public class SplitBifurcateActivity : NodeActivity
     {
-        private static Texture? __rejoinIcon, __bifurcateIcon;
+        [NoAutoStaticsCleanup] private static Texture? __rejoinIcon, __bifurcateIcon;
         private static Texture _rejoinIcon => __rejoinIcon ??= EditorGUIUtility.IconContent("UnityEditor.Graphs.AnimatorControllerTool@2x").image;
         private static Texture _bifurcateIcon => __bifurcateIcon ??= EditorGUIUtility.IconContent("Git@2x").image;
         private Vector2 _startingPos;
@@ -61,8 +62,8 @@ namespace Screenplay.Editor
             }
         }
 
-        private static List<Vector2> _cacheA = new();
-        private static List<Vector3> _cacheB = new();
+        [NoAutoStaticsCleanup] private static List<Vector2> _cacheA = new();
+        [NoAutoStaticsCleanup] private static List<Vector3> _cacheB = new();
 
         public override void PreNodeDraw()
         {

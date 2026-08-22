@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Reflection;
 using Sirenix.OdinInspector.Editor;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 
@@ -66,7 +67,7 @@ namespace Screenplay
             }
         }
 
-        static GUIStyle? objectPickerButton;
+        [NoAutoStaticsCleanup] static GUIStyle? objectPickerButton;
 
         static GUIStyle ObjectPickerButton
         {

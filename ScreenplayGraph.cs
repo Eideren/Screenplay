@@ -8,6 +8,7 @@ using UnityEngine;
 using YNode;
 using Screenplay.Nodes.Triggers;
 using Sirenix.OdinInspector;
+using Unity.Scripting.LifecycleManagement;
 using Event = Screenplay.Nodes.Event;
 using Random = Unity.Mathematics.Random;
 using static UnityEngine.Serialization.ManagedReferenceUtility;
@@ -270,8 +271,9 @@ namespace Screenplay
             }
         }
 
-        [ThreadStatic]
+        [ThreadStatic, NoAutoStaticsCleanup/*doubt it can cleanup accross threads*/]
         private static HashSet<IBranch>? _isNodeReachableVisitation;
+
         public bool IsNodeReachable(IBranch thisExecutable, List<IScreenplayNode>? path = null)
         {
             _isNodeReachableVisitation ??= new();
@@ -404,6 +406,7 @@ namespace Screenplay
             public List<Link> ExecutionOrder = new();
         }
 
+        [Serializable]
         public record struct Link(IExecutable Previous, IExecutable Next)
         {
             [SerializeReference] public IExecutable Previous = Previous, Next = Next;

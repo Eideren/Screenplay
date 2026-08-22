@@ -1,9 +1,10 @@
+using System;
 using Cysharp.Threading.Tasks;
 using YNode;
 
 namespace Screenplay.Nodes
 {
-    [NodeVisuals(Icon = "UnityEditor.AnimationWindow")]
+    [NodeVisuals(Icon = "UnityEditor.AnimationWindow"), Serializable]
     public class Wait : ExecutableLinear
     {
         public float Duration = 1f;

@@ -4,6 +4,7 @@ using UnityEngine;
 using YNode.Editor;
 using Screenplay.Nodes;
 using Sirenix.Utilities;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 
 namespace Screenplay.Editor
@@ -12,7 +13,7 @@ namespace Screenplay.Editor
     {
         public new Notes Value => (Notes)base.Value;
 
-        private static Dictionary<int, GUIStyle> s_bodyStyleBackingField = new();
+        [NoAutoStaticsCleanup] private static Dictionary<int, GUIStyle> s_bodyStyleBackingField = new();
 
         private GUIStyle BodyStyle
         {

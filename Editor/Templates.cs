@@ -2,6 +2,7 @@
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 
@@ -10,7 +11,7 @@ namespace Screenplay.Editor
     public static class Templates
     {
         /// <summary>C#'s Script Icon [The one MonoBehaviour Scripts have].</summary>
-        private static Texture2D s_scriptIcon = (Texture2D)EditorGUIUtility.IconContent("cs Script Icon").image;
+        [NoAutoStaticsCleanup] private static Texture2D s_scriptIcon = (Texture2D)EditorGUIUtility.IconContent("cs Script Icon").image;
 
         /// <summary>Creates a new C# Class.</summary>
         [MenuItem("Assets/Create/Screenplay/Interaction Template", false, 89)]

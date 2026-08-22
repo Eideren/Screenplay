@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -10,7 +11,9 @@ namespace Screenplay.Component
 {
     public class ScreenplayReference : MonoBehaviour, ISerializationCallbackReceiver
     {
+        [NoAutoStaticsCleanup] // Done manually
         private static readonly Dictionary<guid, CancelableCompletionSource<Object>> s_idToRef = new(){ { default, null! } };
+        [NoAutoStaticsCleanup] // Done manually
         private static readonly Dictionary<Object, guid> s_existingRefToId = new();
 
         [OnValueChanged(nameof(ReAssignReference)), SerializeField]
@@ -21,13 +24,12 @@ namespace Screenplay.Component
 
         public guid Guid => _guid;
 
+#if UNITY_EDITOR
         [UnityEditor.InitializeOnLoadMethod]
         private static void OnLoad()
         {
-#if UNITY_EDITOR
             UnityEditor.EditorApplication.playModeStateChanged += change =>
             {
-
                 switch (change)
                 {
                     case UnityEditor.PlayModeStateChange.ExitingPlayMode:
@@ -43,8 +45,8 @@ namespace Screenplay.Component
                         throw new ArgumentOutOfRangeException(nameof(change), change, null);
                 }
             };
-#endif
         }
+#endif
 
         public void OnBeforeSerialize() {}
 

@@ -4,13 +4,14 @@ using System.Linq;
 using YNode.Editor;
 using Screenplay.Nodes;
 using Sirenix.Utilities.Editor;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 using YNode;
 
 namespace Screenplay.Editor
 {
-    public class BifurcateEditor : NodeEditor, ICustomNodeEditor<Bifurcate>
+    public partial class BifurcateEditor : NodeEditor, ICustomNodeEditor<Bifurcate>
     {
         private List<Rect> _connectedToPortsRect = new();
         public new Bifurcate Value => (Bifurcate)base.Value;
@@ -31,7 +32,7 @@ namespace Screenplay.Editor
             }
         }
 
-        private static readonly HashSet<object> _recursiveCutoff = new();
+        [AutoStaticsCleanup] private static readonly HashSet<object> _recursiveCutoff = new();
 
         public void DrawExtension()
         {
@@ -259,9 +260,9 @@ namespace Screenplay.Editor
         }
 
         private static readonly string ValueEntries = $"{nameof(NodeEditor.Value)}.{nameof(Bifurcate.Entries)}";
-        private static GUIContent? __warnEntryNotConnected;
-        private static GUIContent? __waitContent;
-        private static Texture? __add, __remove, __disolve;
+        [NoAutoStaticsCleanup] private static GUIContent? __warnEntryNotConnected;
+        [NoAutoStaticsCleanup] private static GUIContent? __waitContent;
+        [NoAutoStaticsCleanup] private static Texture? __add, __remove, __disolve;
         private static GUIContent _warnEntryNotConnected => __warnEntryNotConnected ??= new GUIContent(EditorGUIUtility.IconContent("console.erroricon@2x").image, "Entry is not connected");
         private static GUIContent _waitContent => __waitContent ??= new GUIContent(EditorGUIUtility.IconContent("UnityEditor.AnimationWindow").image, "Any path reaching this node will block until all of them reached it");
         private static Texture _add => __add ??= EditorGUIUtility.IconContent("CollabCreate Icon").image;

@@ -71,7 +71,11 @@ namespace Screenplay.Component
             }
         }
 
+#if UNITY_EDITOR
         [UnityEditor.InitializeOnLoadMethod]
+#else
+        [UnityEngine.RuntimeInitializeOnLoadMethod]
+#endif
         private static void OnLoad()
         {
             // Retrieve the default Player loop system. Get the current loop instead if the default was already modified previously.

@@ -1,6 +1,7 @@
 using System.Reflection;
 using Screenplay;
 using Sirenix.OdinInspector.Editor;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 
@@ -8,9 +9,9 @@ namespace Source.Screenplay.Editor
 {
     public class TextEditor : OdinAttributeDrawer<TextAttribute>
     {
-        private static GUIContent s_content = new();
-        private static FieldInfo? s_lastControl;
-        private static GUIStyle? s_richTextStyle;
+        [NoAutoStaticsCleanup] private static GUIContent s_content = new();
+        [NoAutoStaticsCleanup] private static FieldInfo? s_lastControl;
+        [NoAutoStaticsCleanup] private static GUIStyle? s_richTextStyle;
 
         private Vector2 _cachedSize;
         private bool _richText;

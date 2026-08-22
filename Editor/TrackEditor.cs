@@ -4,6 +4,7 @@ using Screenplay.Nodes;
 using Screenplay.Nodes.TrackItems;
 using Sirenix.OdinInspector.Editor;
 using Sirenix.Utilities.Editor;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 using Event = UnityEngine.Event;
@@ -13,16 +14,16 @@ namespace Screenplay.Editor
     public class TrackEditor : OdinValueDrawer<Track>
     {
         private const string _tooltip = "Hold the Control key while dragging to prevent rounding down to the closest frame\nMiddle or left mouse button to pan the view\nF to recenter the view";
-        private static Color s_textColor = Color.black;
-        private static Color s_markerColor = new Color32(100,100,200,127);
-        private static Color s_markerTextColor = new Color32(200,200,200,255);
-        private static Color s_background = new Color(0,0,0,0.25f);
-        private static Color s_timeTickColor = new Color(0,0,0,0.25f);
-        private static Color s_itemColor = new Color32(70,96,124,255);
-        private static Color s_itemLabelColor = new Color32(255,255,255,255);
-        private static Color s_playHeadColor = new Color32(225,150,100,255);
-        private static GUIStyle? s_leftStyle, s_middleStyle, s_rightStyle, s_itemLabel;
-        private static GUIContent s_tempContent = new GUIContent();
+        private static readonly Color s_textColor = Color.black;
+        private static readonly Color s_markerColor = new Color32(100,100,200,127);
+        private static readonly Color s_markerTextColor = new Color32(200,200,200,255);
+        private static readonly Color s_background = new Color(0,0,0,0.25f);
+        private static readonly Color s_timeTickColor = new Color(0,0,0,0.25f);
+        private static readonly Color s_itemColor = new Color32(70,96,124,255);
+        private static readonly Color s_itemLabelColor = new Color32(255,255,255,255);
+        private static readonly Color s_playHeadColor = new Color32(225,150,100,255);
+        [NoAutoStaticsCleanup] private static GUIStyle? s_leftStyle, s_middleStyle, s_rightStyle, s_itemLabel;
+        [NoAutoStaticsCleanup] private static GUIContent s_tempContent = new GUIContent();
 
         private float _start, _end;
         private ITrackItem? _itemHover, _itemHeld;

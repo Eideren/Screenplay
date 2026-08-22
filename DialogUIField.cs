@@ -4,6 +4,7 @@ using Object = UnityEngine.Object;
 
 namespace Screenplay
 {
+    [Serializable]
     public class DialogUIField : ICustomField<UIBase>
     {
         [PrefabWithComponent]
