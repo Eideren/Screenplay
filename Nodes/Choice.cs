@@ -9,7 +9,7 @@ using YNode;
 
 namespace Screenplay.Nodes
 {
-    [NodeVisuals(60, 60, 60, Icon = "BlendTree Icon")]
+    [NodeVisuals(60, 60, 60, Icon = "BlendTree Icon"), Serializable]
     public class Choice : AbstractScreenplayNode, IExecutable, ILocalizableNode
     {
         [ListDrawerSettings(ShowFoldout = false), LabelText(" ")]

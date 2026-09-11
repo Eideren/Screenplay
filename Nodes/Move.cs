@@ -1,3 +1,4 @@
+using System;
 using Cysharp.Threading.Tasks;
 using Cysharp.Threading.Tasks.Triggers;
 using Sirenix.OdinInspector;
@@ -6,7 +7,7 @@ using YNode;
 
 namespace Screenplay.Nodes
 {
-    [NodeVisuals(Icon = "EchoFilter Icon")]
+    [NodeVisuals(Icon = "EchoFilter Icon"), Serializable]
     public class Move : ExecutableLinear, INodeWithSceneGizmos
     {
         public float Duration = 1f;
